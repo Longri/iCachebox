@@ -6,6 +6,7 @@ struct MapDownloadView: View {
     @Environment(AppState.self) private var state
     @State private var search = ""
     @State private var confirm: MapCatalogEntry?
+    @State private var deleting: MapCatalogEntry?
 
     private var library: MapLibrary { state.mapLibrary }
     private let language = Locale.current.language.languageCode?.identifier ?? "en"
@@ -14,8 +15,14 @@ struct MapDownloadView: View {
         List {
             if let catalog = library.catalog {
                 if !installed.isEmpty {
-                    Section("Auf diesem Gerät") {
-                        ForEach(installed) { row($0) }
+                    Section {
+                        ForEach(installed) { row($0, deletable: true) }
+                    } header: {
+                        Text("Auf diesem Gerät")
+                    } footer: {
+                        if let free = library.availableSpace {
+                            Text("Frei: \(Self.bytes(free))")
+                        }
                     }
                 }
                 Section {
@@ -74,12 +81,23 @@ struct MapDownloadView: View {
         } message: { entry in
             Text(confirmMessage(entry))
         }
+        // an alert, not a confirmation dialog: on iOS 26 that is a popover anchored at the list, not at the row
+        .alert(deleting.map { "„\($0.title(language: language))“ löschen?" } ?? "",
+               isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+               presenting: deleting) { entry in
+            Button("Löschen", role: .destructive) { library.delete(entry.id) }
+            Button("Abbrechen", role: .cancel) {}
+        } message: { entry in
+            Text(deleteMessage(entry))
+        }
     }
 
     // MARK: - Rows
 
-    private func row(_ entry: MapCatalogEntry) -> some View {
+    /// `deletable`: rows of the installed section get a visible delete button instead of the check mark.
+    private func row(_ entry: MapCatalogEntry, deletable: Bool = false) -> some View {
         let entryState = library.state(of: entry)
+        let isInstalled = entryState == .installed || entryState == .updateAvailable
         return HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.title(language: language))
@@ -89,12 +107,19 @@ struct MapDownloadView: View {
                     .lineLimit(2)
             }
             Spacer()
-            control(entry, entryState)
+            if deletable, isInstalled {
+                if entryState == .updateAvailable { control(entry, entryState) }
+                iconButton("trash", "Löschen") { deleting = entry }
+                    .tint(.red)
+            } else {
+                control(entry, entryState)
+            }
         }
         .swipeActions {
             switch entryState {
             case .installed, .updateAvailable:
-                Button("Löschen", role: .destructive) { library.delete(entry.id) }
+                Button { deleting = entry } label: { Label("Löschen", systemImage: "trash") }
+                    .tint(.red)
             case .paused, .failed:
                 Button("Verwerfen", role: .destructive) { library.discard(entry.id) }
             default:
@@ -151,7 +176,19 @@ struct MapDownloadView: View {
             return fraction > 0 ? "Angehalten bei \(Int(fraction * 100)) %" : "Angehalten"
         case .installing: return "Wird geprüft und entpackt …"
         case .failed(let message): return message
-        case .installed: return "\(size) · Ausgabe \(entry.release)"
+        case .installed:
+            return "\(Self.bytes(entry.unpackedSize ?? entry.size)) · Ausgabe \(entry.release)"
+        }
+    }
+
+    private func deleteMessage(_ entry: MapCatalogEntry) -> String {
+        let freed = Self.bytes(library.installedSize(entry.id))
+        switch entry.kind {
+        case .map:
+            return "Gibt \(freed) frei. Die Karte lässt sich jederzeit wieder laden."
+        case .theme:
+            return "Gibt \(freed) frei. Ohne Freizeitkarte-Design werden diese Karten mit dem Standard-Theme "
+                + "gezeichnet. Das Design lässt sich jederzeit wieder laden."
         }
     }
 

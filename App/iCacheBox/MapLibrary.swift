@@ -191,7 +191,23 @@ final class MapLibrary {
         for ext in ["resume", "zip", "json"] { try? FileManager.default.removeItem(at: file(id, ext)) }
     }
 
-    /// Deletes the files of an installed entry.
+    /// Bytes on disk taken by an installed entry (theme folders included).
+    func installedSize(_ id: String) -> Int64 {
+        let fm = FileManager.default
+        let keys: Set<URLResourceKey> = [.totalFileAllocatedSizeKey, .isRegularFileKey]
+        func size(_ url: URL) -> Int64 {
+            guard let values = try? url.resourceValues(forKeys: keys) else { return 0 }
+            return values.isRegularFile == true ? Int64(values.totalFileAllocatedSize ?? 0) : 0
+        }
+        return (installations[id]?.files ?? []).reduce(0) { total, path in
+            let url = Self.documents.appending(path: path)
+            let nested = fm.enumerator(at: url, includingPropertiesForKeys: Array(keys))?.allObjects as? [URL] ?? []
+            return total + size(url) + nested.reduce(0) { $0 + size($1) }
+        }
+    }
+
+    /// Deletes the files of an installed entry. A map shown on the map tab switches to another one there
+    /// (`MapModel.refreshSources`).
     func delete(_ id: String) {
         guard let installation = installations.removeValue(forKey: id) else { return }
         for path in installation.files {
