@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- iCachebox-Icon: Nachbau des Cachebox-Icons (CB_Android/res/drawable-xxhdpi/cb.png) mit Schriftzug "iOS".
+     Der Schriftzug (id="label") ist "iOS" in Arial Bold 60, in Pfade umgewandelt, damit er überall gleich aussieht.
+     Bei anderem Schriftzug die Lücke im orangen Rahmen (id="frame", H-Werte 222 / 354) anpassen. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 576" width="576" height="576">
+  <defs>
+    <linearGradient id="green" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a3b07a"/>
+      <stop offset="0.45" stop-color="#8a9860"/>
+      <stop offset="1" stop-color="#7b8a52"/>
+    </linearGradient>
+    <linearGradient id="glossTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glossBottom" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="shadow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Spiegelung unter dem Button -->
+  <rect x="52" y="466" width="472" height="62" rx="26" fill="url(#shadow)"/>
+
+  <!-- Oranger Rahmen mit Lücke für den Schriftzug -->
+  <path id="frame" fill="none" stroke="#f07d1a" stroke-width="10" stroke-linecap="butt"
+        d="M354 113 H492 A60 60 0 0 1 552 173 V402 A60 60 0 0 1 492 462 H84 A60 60 0 0 1 24 402 V173 A60 60 0 0 1 84 113 H222"/>
+
+  <!-- Schriftzug -->
+  <path id="label" fill="#f07d1a" d="M240.6 95.7L240.6 88.1L248.9 88.1L248.9 95.7ZM240.6 131.0L240.6 99.9L248.9 99.9L248.9 131.0ZM255.6 109.8Q255.6 103.2 257.6 98.8Q259.0 95.5 261.6 92.9Q264.1 90.3 267.1 89.0Q271.1 87.3 276.4 87.3Q285.9 87.3 291.6 93.2Q297.3 99.1 297.3 109.6Q297.3 120.0 291.6 125.9Q285.9 131.7 276.5 131.7Q266.9 131.7 261.3 125.9Q255.6 120.0 255.6 109.8ZM264.5 109.5Q264.5 116.8 267.9 120.6Q271.3 124.3 276.5 124.3Q281.6 124.3 285.0 120.6Q288.3 116.8 288.3 109.4Q288.3 102.0 285.1 98.4Q281.8 94.7 276.5 94.7Q271.1 94.7 267.8 98.4Q264.5 102.1 264.5 109.5ZM301.8 117.0L310.3 116.2Q311.0 120.5 313.4 122.4Q315.7 124.4 319.6 124.4Q323.8 124.4 326.0 122.7Q328.1 120.9 328.1 118.5Q328.1 117.0 327.2 115.9Q326.3 114.9 324.1 114.1Q322.5 113.5 317.1 112.2Q310.1 110.5 307.3 107.9Q303.4 104.4 303.4 99.3Q303.4 96.0 305.2 93.2Q307.1 90.3 310.6 88.8Q314.1 87.3 319.1 87.3Q327.1 87.3 331.2 90.9Q335.3 94.4 335.5 100.3L326.8 100.7Q326.3 97.4 324.5 95.9Q322.6 94.5 319.0 94.5Q315.2 94.5 313.0 96.0Q311.7 97.0 311.7 98.7Q311.7 100.2 313.0 101.3Q314.6 102.7 320.9 104.2Q327.3 105.7 330.3 107.3Q333.3 108.9 335.0 111.6Q336.8 114.4 336.8 118.5Q336.8 122.2 334.7 125.4Q332.6 128.6 328.9 130.2Q325.1 131.8 319.6 131.8Q311.4 131.8 307.0 128.0Q302.7 124.2 301.8 117.0Z"/>
+
+  <!-- Button -->
+  <rect x="44" y="134" width="488" height="308" rx="50" fill="url(#green)" stroke="#111" stroke-width="5"/>
+  <rect x="60" y="148" width="456" height="70" rx="34" fill="url(#glossTop)"/>
+  <rect x="60" y="372" width="456" height="56" rx="28" fill="url(#glossBottom)"/>
+
+  <!-- C (weiß) und B (schwarz) -->
+  <path fill="none" stroke="#fff" stroke-width="33"
+        d="M272 238 H192 Q160 238 160 270 V320 Q160 352 192 352 H272"/>
+  <path fill="none" stroke="#111" stroke-width="33" stroke-linejoin="round"
+        d="M290 238 H372 Q402 238 402 266.500 Q402 295 372 295 H290 M372 295 Q402 295 402 323.500 Q402 352 372 352 H290"/>
+</svg>

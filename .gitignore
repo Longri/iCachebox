@@ -60,3 +60,36 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# ---------------------------------------------------------------------------
+# iCacheBox-spezifisch
+# ---------------------------------------------------------------------------
+
+# macOS
+.DS_Store
+._*
+
+# Xcode / SwiftPM Build-Ausgaben
+DerivedData/
+build/
+.swiftpm/
+*.xcuserstate
+*.xcscmblueprint
+*.moved-aside
+*.xcresult
+
+# Testdaten (große Karten, Referenz-JSON, Elevate – siehe CLAUDE.md für die Bezugsquellen)
+/TestData/
+
+# Gebündelte Karten/Themes: nur die README gehört ins Git
+# (Karten sind groß, Elevate ist CC BY-NC-SA)
+/App/BundledMaps/*
+!/App/BundledMaps/README.md
+
+# Claude Code: lokale, benutzerspezifische Einstellungen
+.claude/settings.local.json
+
+# Editoren
+.vscode/
+*.swp
+*~

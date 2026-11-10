@@ -1,0 +1,51 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+.flattened-pom.xml
+.mvn/wrapper/maven-wrapper.jar
+
+# Java
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+# Vaadin / Frontend (wird beim Build erzeugt)
+node_modules/
+src/main/frontend/generated/
+src/main/bundles/
+package.json
+package-lock.json
+pnpm-lock.yaml
+pnpmfile.js
+.pnpm-debug.log
+.npmrc
+tsconfig.json
+types.d.ts
+vite.config.ts
+vite.generated.ts
+webpack.generated.js
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse / NetBeans / VS Code
+.classpath
+.project
+.settings/
+.factorypath
+nbproject/
+nb-configuration.xml
+.vscode/
+
+# Lokale Konfiguration / Secrets
+.env
+application-local.properties

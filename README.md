@@ -1,2 +1,50 @@
+![Cachebox – too many secrets.](docs/banner.jpg)
+
 # iCachebox
-Cachebox native for iOS
+
+iCachebox bringt [Cachebox](https://github.com/Ging-Buh/cachebox), die Geocaching-App für Android, aufs iPhone –
+als nativer Neubau in Swift/SwiftUI. Mapsforge-Offlinekarten (`.map` + XML-RenderThemes) rendert ein eigener
+Swift-Port von Mapsforge.
+
+> **Stand:** Prototyp, in Entwicklung. Noch nicht im App Store.
+
+## Was schon läuft
+
+- Mapsforge-Kartenleser, gegen die Java-Referenz verifiziert
+- RenderTheme v6 inklusive Stylemenü (Stile und Overlays), SVG-Symbole, Label-Kollision über Kachelgrenzen
+- OpenAndroMaps mit Elevate-Theme (Stile Wandern, Stadt, Rad, MTB)
+- iOS-App mit Karten-, Theme-, Stil- und Overlay-Auswahl
+
+Im Aufbau: Cacheliste, Cache-Details, Log-Entwürfe.
+
+## Aufbau
+
+| Ordner | Inhalt |
+| --- | --- |
+| [`App/`](App) | iOS-App (Xcode-Projekt, SwiftUI) |
+| [`Packages/Mapsforge/`](Packages/Mapsforge) | Swift-Port von Mapsforge (LGPL-3.0): Kartenleser, Renderer, Entwickler-CLI `mfdump` |
+| [`Website/`](Website) | Promotion-Website (Java, Vaadin) |
+
+## Bauen
+
+```bash
+cd Packages/Mapsforge && swift test
+```
+
+```bash
+cd App && xcodebuild -project iCacheBox.xcodeproj -scheme iCacheBox -configuration Release -destination "platform=iOS Simulator,name=iPhone 17 Pro" -derivedDataPath ../.build/DerivedData build
+```
+
+Karten und Themes sind nicht im Repository: `*.map`-Dateien und Theme-Ordner nach `App/BundledMaps/` legen
+(siehe README dort). Die Tests brauchen zusätzlich die Testdaten unter `TestData/`.
+
+## Cachebox für Android
+
+Das Original gibt es im [Play Store](https://play.google.com/store/apps/details?id=de.droidcachebox),
+den Quellcode unter [Ging-Buh/cachebox](https://github.com/Ging-Buh/cachebox). Logo, Hintergrundbild und Icons
+stammen von dort.
+
+## Dank
+
+[Mapsforge](https://mapsforge.org) · [OpenStreetMap](https://www.openstreetmap.org) ·
+[OpenAndroMaps](https://www.openandromaps.org)
