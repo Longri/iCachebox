@@ -23,36 +23,3 @@ struct LogDraftsView: View {
         }
     }
 }
-
-/// Tab 5: account, import, maps, settings (Cachebox: main button 5).
-struct MoreView: View {
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    row("Geocaching-Konto", "person.crop.circle")
-                }
-                Section {
-                    row("Import", "square.and.arrow.down")
-                    row("Karten und Themes", "map")
-                    row("Schnellzugriffe", "rectangle.grid.1x2")
-                    row("Einstellungen", "gearshape")
-                }
-                Section {
-                    row("Hilfe", "questionmark.circle")
-                    row("Über", "info.circle")
-                }
-            }
-            .navigationTitle("Mehr")
-        }
-    }
-
-    private func row(_ title: String, _ symbol: String) -> some View {
-        NavigationLink {
-            ContentUnavailableView(title, systemImage: symbol, description: Text("Noch nicht umgesetzt."))
-                .navigationTitle(title)
-        } label: {
-            Label(title, systemImage: symbol)
-        }
-    }
-}

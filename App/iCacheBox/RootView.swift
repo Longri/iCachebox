@@ -1,11 +1,25 @@
 import SwiftUI
 
-/// Main tab bar. Replaces the five gesture buttons of Cachebox; their swipe/long-press actions
-/// live as visible controls inside each tab.
+/// Shows the welcome page on first launch, afterwards the main tab bar.
 struct RootView: View {
     @State private var state = AppState()
+    @AppStorage(StorageKey.onboardingCompleted) private var onboardingCompleted = false
 
     var body: some View {
+        Group {
+            if onboardingCompleted {
+                tabs
+            } else {
+                WelcomeView { withAnimation { onboardingCompleted = true } }
+            }
+        }
+        .tint(.cachebox)
+        .environment(state)
+    }
+
+    /// Main tab bar. Replaces the five gesture buttons of Cachebox; their swipe/long-press actions
+    /// live as visible controls inside each tab.
+    private var tabs: some View {
         TabView(selection: $state.tab) {
             CacheListView()
                 .tabItem { Label("Caches", systemImage: "list.bullet") }
@@ -24,8 +38,6 @@ struct RootView: View {
                 .tabItem { Label("Mehr", systemImage: "ellipsis") }
                 .tag(MainTab.more)
         }
-        .tint(.cachebox)
-        .environment(state)
     }
 }
 

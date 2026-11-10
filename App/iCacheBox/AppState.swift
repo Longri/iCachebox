@@ -56,6 +56,7 @@ final class AppState {
     var tab: MainTab = .caches
     var caches: [Cache] = Cache.samples
     var selectedCache: Cache?
+    let account = GeocachingAccount()
 
     func select(_ cache: Cache, show tab: MainTab = .cache) {
         selectedCache = cache
@@ -63,7 +64,19 @@ final class AppState {
     }
 }
 
+/// `UserDefaults` keys used with `@AppStorage`.
+enum StorageKey {
+    /// The welcome page was finished (signed in or started without an account).
+    static let onboardingCompleted = "onboardingCompleted"
+}
+
 extension Color {
-    /// Cachebox green, used as the app tint.
-    static let cachebox = Color(red: 0.24, green: 0.48, blue: 0.13)
+    /// Cachebox green, used as the app tint. Light: 5.2:1 against white (also white text on green).
+    /// Dark: lighter, 4.5:1 on grouped list cells (#1C1C1E) and 5.6:1 on black; white text on it is ~3.8:1,
+    /// the same trade-off as the system tint colors in dark mode.
+    static let cachebox = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.30, green: 0.58, blue: 0.18, alpha: 1)
+            : UIColor(red: 0.24, green: 0.48, blue: 0.13, alpha: 1)
+    })
 }
