@@ -18,6 +18,21 @@ Produktions-Build (lädt Node.js bei Bedarf automatisch nach `~/.vaadin`):
 cd Website && mvn clean package -Pproduction && java -jar target/cachebox-website-1.0-SNAPSHOT.jar
 ```
 
+## Auf den Server bringen
+
+```bash
+Website/deploy.sh            # bauen, hochladen, Cachebox.service neu starten
+Website/deploy.sh --dry-run  # nur bauen und den Server prüfen, nichts ändern
+```
+
+Baut die Produktions-Jar, benennt sie in `target/cachebox-website.jar` um, lädt sie per SSH nach
+`root@167.235.237.115:/Vaadin/iCacheboxWeb` (erst als `.upload`, der Dienst läuft so lange weiter), stoppt
+`Cachebox.service`, sichert die alte Jar als `cachebox-website.jar.bak`, setzt die neue ein und startet den Dienst.
+Ziel, Verzeichnis und Dienst lassen sich über `DEPLOY_SSH`, `DEPLOY_DIR`, `DEPLOY_SERVICE` ändern (`deploy.sh --help`).
+
+Die Startseite zeigt unten „Stand: …“ – die Build-Zeit aus `META-INF/build-info.properties` (Maven-Goal
+`build-info`). Da `deploy.sh` direkt vor dem Upload baut, ist das der Zeitpunkt des letzten Uploads.
+
 ## Aufbau
 
 - `src/main/java/de/cachebox/website/MainLayout.java` – Kopfzeile, Navigation, Fußzeile
