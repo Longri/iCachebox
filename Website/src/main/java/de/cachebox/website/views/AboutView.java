@@ -15,8 +15,9 @@ public class AboutView extends Page {
                         + "als Open-Source-Projekt. Die Android-App gibt es seit Jahren.");
 
         card("cb-ios.png", "iCachebox für iOS",
-                "In Entwicklung: Die Kartenanzeige mit Mapsforge-Karten und Themes läuft als Prototyp, "
-                        + "Cacheliste, Cache-Details und Log-Entwürfe sind im Aufbau. Noch nicht im App Store.",
+                "In Entwicklung: Als Prototyp laufen die Kartenanzeige mit Mapsforge-Karten und Themes, der "
+                        + "Kartendownload, der GPX-Import mit mehreren Listen, die Cacheliste und die Cache-Details. "
+                        + "Log-Entwürfe sind im Aufbau. Noch nicht im App Store.",
                 link("iCachebox auf GitHub", MainLayout.GITHUB_URL));
         card("cb.png", "Cachebox für Android",
                 "Das Original auf Basis von libGDX, erhältlich im Play Store.",

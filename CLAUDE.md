@@ -14,7 +14,16 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
   - `mfdump` – Entwickler-CLI: `info`, `dump` (Tags einer Kachel), `render`, `grid` (Kachelraster, zufällige
     Reihenfolge), `bench`; Theme-Argument `pfad.xml#stil,+overlay,-overlay` wählt Stil/Overlays
   - `Resources/themes/` – interne Themes (default, osmarender) + Symbole/Patterns aus Cachebox
+- `Packages/CacheboxCore/` – Swift Package (Apache-2.0, neu geschrieben; Cachebox nur als Funktionsvorlage, GPL!)
+  - `Model.swift` (Geocache, Waypoint, CacheLog, Typen), `GPXParser.swift` (Groundspeak 1.0/1.0.1/1.0.2 in GPX 1.0/1.1,
+    GSAK-Erweiterung, Wegpunkt-Zuordnung über `gsak:Parent` oder Präfix), `GPXImporter.swift` (GPX/ZIP, Wegpunktdateien
+    zuletzt, Abbruch), `CacheDatabase.swift` (eine SQLite-Datei je Liste, Upsert behält Notiz/Favorit/Fund/korrigierte
+    Koordinaten), `CacheListStore.swift` (Listen anlegen/umbenennen/löschen), `ZipArchive.swift`, `SQLite.swift`
+  - Tests mit erfundenen Testdaten unter `Tests/CacheboxCoreTests/Resources` (PQ-GPX, -wpts, ZIP, GPX 1.1)
 - `App/` – iOS-App (Xcode-Projekt, synchronisierter Ordner `App/iCacheBox/`), `MKTileOverlay` mit Mapsforge-Kacheln
+  - Caches: `CacheListModel.swift` (Listen in `Documents/Lists`, Sortierung, Filter, Import), `CacheListView.swift`,
+    `CacheListsView.swift`, `CacheFilterView.swift`, `ImportView.swift`, `CacheDetailView.swift`, `HTMLView.swift`
+    (WKWebView ohne JavaScript), `LocationModel.swift`, `CachePresentation.swift` (SF-Symbole statt Cachebox-Icons)
   - Kartendownload: `MapCatalog.swift` (Freizeitkarte-Repository-XML), `MapLibrary.swift` (Hintergrund-`URLSession`,
     MD5-Prüfung, Entpacken nach `Documents/Maps` bzw. `Documents/Themes`), `ZipArchive.swift`, `MapDownloadView.swift`
   - `App/iCacheBox-Info.plist` wird mit der generierten Info.plist zusammengeführt (ATS-Ausnahme nur für
@@ -25,6 +34,7 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
   - `Hamburg_oam.osm.map` – OpenAndroMaps V5 (ftp.gwdg.de/pub/misc/openstreetmap/openandromaps/mapsV5/germany/Hamburg.zip)
   - `elevate/` – Elevate 5.7 (openandromaps.org/wp-content/users/tobias/Elevate.zip); Tests dazu laufen nur, wenn vorhanden
   - `freizeitkarte-v5/` – Freizeitkarte-Theme (download.freizeitkarte-osm.de/android/2609/freizeitkarte-v5.zip), ebenso
+- `docs/anleitung/README.md` – Anleitung (Markdown + `bilder/`), wird auch von der Website unter `/anleitung` gezeigt
 - `App/BundledMaps/` – Ordnerreferenz, wird komplett ins App-Bundle kopiert; die App bietet alle `*.map` und
   Theme-XMLs in Unterordnern zur Auswahl an (Inhalt außer README nicht im Git)
 
@@ -32,6 +42,7 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
 
 ```bash
 cd Packages/Mapsforge && swift test                     # Leser-Referenztests + Rendertests
+cd Packages/CacheboxCore && swift test                  # GPX-Parser, Import, Listen
 cd Packages/Mapsforge && swift build -c release && .build/release/mfdump grid ../../TestData/bremen.map 17 68740 42648 4 3 /tmp/grid.png 1
 cd App && xcodebuild -project iCacheBox.xcodeproj -scheme iCacheBox -configuration Release \
   -destination "platform=iOS Simulator,name=iPhone 17 Pro" -derivedDataPath ../.build/DerivedData build
@@ -62,8 +73,14 @@ Kachel ihre Labels, das Ergebnis hängt also von der Render-Reihenfolge ab. Them
 
 Kartendownload (Mehr → Karten und Themes): Freizeitkarte-Katalog wie Cachebox `FZKDownload`, mit der ersten Karte
 wird das Standard-Design geladen; Karten mit „FZK“ im Header-Kommentar wählen dieses Design automatisch.
-Getestet im Simulator mit Bremen (10 MB). Nicht getestet: Pause/Fortsetzen, Löschen, Neustart durch das System
+Getestet im Simulator mit Bremen (10 MB). Nicht getestet: Pause/Fortsetzen, Neustart durch das System
 bei Hintergrund-Downloads, ZIP64 (aktuelle Freizeitkarte-ZIPs sind < 4 GB).
+
+GPX-Import und Listen (Caches-Tab): Import über Dateiauswahl, „Teilen › iCacheBox“ (Document Types in
+`iCacheBox-Info.plist`) oder Mehr › GPX importieren; Fortschritt als Karte über den Tabs. Liste = SQLite-Datei wie eine
+Cachebox-Datenbank (eigenes Schema, nicht Cachebox-kompatibel). Sortierung nach Entfernung (Standort, sonst gewählter
+Cache), Name, Code, D, T, Datum, Favoritenpunkte; Filter: Status dreistufig, Typen, D/T. Im Simulator geprüft mit einer
+erfundenen 300-Cache-Pocket-Query. Nicht geprüft: große PQs (> 1000 Caches), echte geocaching.com-Dateien, iPad.
 
 Lizenz-Hinweis: Elevate ist CC BY-NC-SA 4.0 (kommerziell nur BY-ND) – nicht ungefragt in eine verteilte App packen;
 OAM-Karten und Themes lädt in Cachebox der Nutzer selbst.

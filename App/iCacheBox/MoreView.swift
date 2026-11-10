@@ -20,7 +20,11 @@ struct MoreView: View {
                     }
                 }
                 Section {
-                    row("Import", "square.and.arrow.down")
+                    NavigationLink {
+                        ImportView()
+                    } label: {
+                        Label("GPX importieren", systemImage: "square.and.arrow.down")
+                    }
                     NavigationLink {
                         MapDownloadView()
                     } label: {

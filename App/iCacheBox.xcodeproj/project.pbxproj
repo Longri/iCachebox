@@ -10,6 +10,7 @@
 		1C0000000000000000000001 /* MapsforgeCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1C0000000000000000000011 /* MapsforgeCore */; };
 		1C0000000000000000000002 /* MapsforgeRender in Frameworks */ = {isa = PBXBuildFile; productRef = 1C0000000000000000000012 /* MapsforgeRender */; };
 		1C0000000000000000000003 /* BundledMaps in Resources */ = {isa = PBXBuildFile; fileRef = 1C0000000000000000000021 /* BundledMaps */; };
+		1C0000000000000000000004 /* CacheboxCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1C0000000000000000000013 /* CacheboxCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 			files = (
 				1C0000000000000000000001 /* MapsforgeCore in Frameworks */,
 				1C0000000000000000000002 /* MapsforgeRender in Frameworks */,
+				1C0000000000000000000004 /* CacheboxCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,6 +79,7 @@
 			packageProductDependencies = (
 				1C0000000000000000000011 /* MapsforgeCore */,
 				1C0000000000000000000012 /* MapsforgeRender */,
+				1C0000000000000000000013 /* CacheboxCore */,
 			);
 			productName = iCacheBox;
 			productReference = 1C0000000000000000000020 /* iCacheBox.app */;
@@ -109,6 +112,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				1C0000000000000000000090 /* XCLocalSwiftPackageReference "../Packages/Mapsforge" */,
+				1C0000000000000000000091 /* XCLocalSwiftPackageReference "../Packages/CacheboxCore" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1C0000000000000000000051 /* Products */;
@@ -268,6 +272,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/Mapsforge;
 		};
+		1C0000000000000000000091 /* XCLocalSwiftPackageReference "../Packages/CacheboxCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Packages/CacheboxCore;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -278,6 +286,11 @@
 		1C0000000000000000000012 /* MapsforgeRender */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MapsforgeRender;
+		};
+		1C0000000000000000000013 /* CacheboxCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1C0000000000000000000091 /* XCLocalSwiftPackageReference "../Packages/CacheboxCore" */;
+			productName = CacheboxCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

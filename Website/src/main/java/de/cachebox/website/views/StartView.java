@@ -29,7 +29,9 @@ public class StartView extends Div {
         features.addClassNames("button", "button-primary");
         RouterLink maps = new RouterLink("Offline-Karten", MapsView.class);
         maps.addClassName("button");
-        Div actions = new Div(features, maps);
+        RouterLink manual = new RouterLink("Anleitung", ManualView.class);
+        manual.addClassName("button");
+        Div actions = new Div(features, maps, manual);
         actions.addClassName("start-actions");
 
         Div types = new Div(

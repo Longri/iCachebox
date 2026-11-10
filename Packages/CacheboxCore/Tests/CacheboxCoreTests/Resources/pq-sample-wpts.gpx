@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test data: additional waypoints of pq-sample.gpx (pocket query "-wpts" file) -->
+<gpx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0" creator="Groundspeak, Inc. All Rights Reserved. http://www.groundspeak.com" xmlns="http://www.topografix.com/GPX/1/0">
+  <name>Waypoints for Cache Listings Generated from Geocaching.com</name>
+  <wpt lat="53.0705" lon="8.8121">
+    <time>2008-11-30T00:00:00</time>
+    <name>PKTEST3</name>
+    <cmt>Parken am Deich.</cmt>
+    <desc>Parkplatz</desc>
+    <url>https://coord.info/PKTEST3</url>
+    <urlname>Parkplatz</urlname>
+    <sym>Parking Area</sym>
+    <type>Waypoint|Parking Area</type>
+  </wpt>
+  <wpt lat="53.0712" lon="8.8133">
+    <time>2008-11-30T00:00:00</time>
+    <name>S1TEST3</name>
+    <cmt>Zähle die Laternen = A</cmt>
+    <desc>Station 1</desc>
+    <sym>Physical Stage</sym>
+    <type>Waypoint|Physical Stage</type>
+  </wpt>
+  <wpt lat="0" lon="0">
+    <name>FNTEST3</name>
+    <cmt>Final: N 53° 04.ABC</cmt>
+    <desc>Final</desc>
+    <sym>Final Location</sym>
+    <type>Waypoint|Final Location</type>
+  </wpt>
+  <wpt lat="53.1" lon="8.9">
+    <name>PKNOCACHE</name>
+    <desc>Parkplatz eines Caches, der nicht in der Datei ist</desc>
+    <sym>Parking Area</sym>
+    <type>Waypoint|Parking Area</type>
+  </wpt>
+</gpx>

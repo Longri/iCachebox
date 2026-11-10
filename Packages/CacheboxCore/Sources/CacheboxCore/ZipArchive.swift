@@ -4,21 +4,21 @@ import Foundation
 
 /// Minimal ZIP reader for downloaded map and theme archives: central directory (with ZIP64),
 /// entries stored or deflated, extracted in streaming fashion so multi-GB maps need little memory.
-struct ZipArchive {
-    struct Entry {
-        let path: String
-        let method: UInt16
-        let flags: UInt16
-        let compressedSize: UInt64
-        let uncompressedSize: UInt64
-        let localHeaderOffset: UInt64
-        var isDirectory: Bool { path.hasSuffix("/") }
+public struct ZipArchive: Sendable {
+    public struct Entry: Sendable {
+        public let path: String
+        public let method: UInt16
+        public let flags: UInt16
+        public let compressedSize: UInt64
+        public let uncompressedSize: UInt64
+        public let localHeaderOffset: UInt64
+        public var isDirectory: Bool { path.hasSuffix("/") }
     }
 
-    let url: URL
-    let entries: [Entry]
+    public let url: URL
+    public let entries: [Entry]
 
-    init(url: URL) throws {
+    public init(url: URL) throws {
         self.url = url
         let file = try FileHandle(forReadingFrom: url)
         defer { try? file.close() }
@@ -26,7 +26,7 @@ struct ZipArchive {
     }
 
     /// Extracts `entry` to `destination` (overwritten). `progress` receives the uncompressed bytes written so far.
-    func extract(_ entry: Entry, to destination: URL, progress: @escaping (UInt64) -> Void = { _ in }) throws {
+    public func extract(_ entry: Entry, to destination: URL, progress: @escaping (UInt64) -> Void = { _ in }) throws {
         guard entry.flags & 1 == 0 else { throw ZipError("Verschlüsselte ZIP-Einträge werden nicht unterstützt") }
         guard entry.method == 0 || entry.method == 8 else { throw ZipError("ZIP-Methode \(entry.method) nicht unterstützt") }
         let input = try FileHandle(forReadingFrom: url)
@@ -70,7 +70,7 @@ struct ZipArchive {
     }
 
     /// MD5 of a file as lower-case hex (the Freizeitkarte catalog lists MD5 checksums).
-    static func md5(of url: URL) throws -> String {
+    public static func md5(of url: URL) throws -> String {
         let file = try FileHandle(forReadingFrom: url)
         defer { try? file.close() }
         var hash = Insecure.MD5()
@@ -156,10 +156,10 @@ struct ZipArchive {
     }
 }
 
-struct ZipError: LocalizedError {
-    let message: String
-    init(_ message: String) { self.message = message }
-    var errorDescription: String? { message }
+public struct ZipError: LocalizedError, Sendable {
+    public let message: String
+    public init(_ message: String) { self.message = message }
+    public var errorDescription: String? { message }
 }
 
 private extension Data {

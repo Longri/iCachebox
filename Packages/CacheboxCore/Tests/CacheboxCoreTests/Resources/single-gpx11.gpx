@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test data: one invented cache in GPX 1.1 with the Groundspeak extension inside <extensions> -->
+<gpx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.1" creator="Geocaching.com" xmlns="http://www.topografix.com/GPX/1/1" xmlns:groundspeak="http://www.groundspeak.com/cache/1/0/2">
+  <metadata>
+    <name>GCTEST4</name>
+  </metadata>
+  <wpt lat="53.08" lon="8.79">
+    <time>2023-04-15T12:00:00Z</time>
+    <name>GCTEST4</name>
+    <desc>Erdgeschichte by Geologin, Earthcache (2.5/3)</desc>
+    <link href="https://www.geocaching.com/geocache/GCTEST4">
+      <text>Erdgeschichte</text>
+    </link>
+    <sym>Geocache</sym>
+    <type>Geocache|Earthcache</type>
+    <extensions>
+      <groundspeak:cache id="1000004" available="True" archived="False">
+        <groundspeak:name>Erdgeschichte</groundspeak:name>
+        <groundspeak:placed_by>Geologin</groundspeak:placed_by>
+        <groundspeak:owner id="45">Geologin</groundspeak:owner>
+        <groundspeak:type>Earthcache</groundspeak:type>
+        <groundspeak:container>Virtual</groundspeak:container>
+        <groundspeak:difficulty>2.5</groundspeak:difficulty>
+        <groundspeak:terrain>3</groundspeak:terrain>
+        <groundspeak:short_description html="False">Gesteine am Ufer.</groundspeak:short_description>
+        <groundspeak:long_description html="False">Beantworte die Fragen.</groundspeak:long_description>
+        <groundspeak:encoded_hints />
+      </groundspeak:cache>
+    </extensions>
+  </wpt>
+</gpx>

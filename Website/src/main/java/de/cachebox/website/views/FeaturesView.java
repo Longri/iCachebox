@@ -2,6 +2,7 @@ package de.cachebox.website.views;
 
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 import de.cachebox.website.MainLayout;
 
 @Route(value = "funktionen", layout = MainLayout.class)
@@ -14,10 +15,13 @@ public class FeaturesView extends Page {
                         + "liegt auf dem Gerät – auch dort, wo es kein Netz gibt.");
 
         comingSoon(card("cacheListIcon.png", "Cacheliste",
-                "Deine Caches in einer eigenen Datenbank: sortieren, filtern, durchsuchen. "
-                        + "Der gewählte Cache bleibt in allen Ansichten im Blick."));
+                "GPX-Dateien und Pocket Queries importieren, in mehreren Listen verwalten, nach Entfernung "
+                        + "sortieren, filtern und durchsuchen. Der gewählte Cache bleibt in allen Ansichten im Blick.",
+                manual()));
         comingSoon(card("map.png", "Offline-Karte",
-                "Mapsforge-Vektorkarten mit frei wählbarem Theme. Caches und Wegpunkte liegen direkt auf der Karte."));
+                "Mapsforge-Vektorkarten mit frei wählbarem Theme, Freizeitkarten für ganz Europa direkt in der App "
+                        + "laden. Caches und Wegpunkte liegen bald direkt auf der Karte.",
+                manual()));
         comingSoon(card("compass.png", "Kompass & Navigation",
                 "Richtung und Entfernung zum Ziel – zum Cache, zum nächsten Wegpunkt oder zum geparkten Auto."));
         comingSoon(card("fieldnoteListIcon.png", "Loggen unterwegs",
@@ -30,5 +34,9 @@ public class FeaturesView extends Page {
                 "Wege aufzeichnen, GPX-Tracks laden und auf der Karte anzeigen."));
         comingSoon(card("tb.png", "Trackables",
                 "Travelbugs und Coins verwalten: entdecken, mitnehmen, ablegen."));
+    }
+
+    private static RouterLink manual() {
+        return new RouterLink("Zur Anleitung", ManualView.class);
     }
 }

@@ -234,3 +234,38 @@ a:focus-visible { outline: 3px solid var(--cb-orange); outline-offset: 2px; }
   text-align: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
+
+/* Anleitung (ManualView): Markdown aus docs/anleitung/README.md auf einer lesbaren Karte */
+.manual-text {
+  display: block;
+  max-width: 760px;
+  padding: 8px 32px 28px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 24px rgba(40, 50, 90, 0.10);
+}
+
+.manual-text h1 { font-size: clamp(1.9rem, 4.5vw, 2.6rem); line-height: 1.15; }
+.manual-text h2 { margin-top: 2em; padding-top: 0.6em; border-top: 1px solid var(--cb-line); }
+.manual-text a { color: var(--cb-green-dark); }
+
+.manual-text img {
+  display: block;
+  width: min(300px, 80%);
+  height: auto;
+  margin: 18px auto;
+  border-radius: 28px;
+  border: 1px solid var(--cb-line);
+  box-shadow: 0 8px 28px rgba(40, 50, 90, 0.18);
+}
+
+.manual-text table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.95rem; }
+.manual-text th, .manual-text td { padding: 8px 10px; border-bottom: 1px solid var(--cb-line); text-align: left; vertical-align: top; }
+.manual-text code { font-size: 0.9em; background: rgba(29, 36, 51, 0.06); padding: 1px 5px; border-radius: 5px; }
+
+@media (max-width: 560px) {
+  .manual-text { padding: 4px 16px 20px; }
+}

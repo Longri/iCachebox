@@ -1,3 +1,4 @@
+import CacheboxCore
 import SwiftUI
 
 /// Shows the welcome page on first launch, afterwards the main tab bar.
@@ -15,6 +16,12 @@ struct RootView: View {
         }
         .tint(.cachebox)
         .environment(state)
+        // GPX/ZIP opened with "Share › iCacheBox" from Files, Mail or Safari: import into the open list
+        .onOpenURL { url in
+            let fromInbox = url.path.contains("/Inbox/")
+            state.lists.importFiles([url], into: state.lists.currentName, removeAfterImport: fromInbox)
+            state.tab = .caches
+        }
     }
 
     /// Main tab bar. Replaces the five gesture buttons of Cachebox; their swipe/long-press actions
@@ -38,6 +45,13 @@ struct RootView: View {
                 .tabItem { Label("Mehr", systemImage: "ellipsis") }
                 .tag(MainTab.more)
         }
+        .overlay(alignment: .top) {
+            ImportStatusCard()
+                .animation(.default, value: state.lists.importStatus)
+        }
+        .task {
+            await state.openList(state.lists.currentName)
+        }
     }
 }
 
@@ -51,10 +65,11 @@ struct SelectedCacheBar: View {
                 state.tab = .cache
             } label: {
                 HStack {
-                    Image(systemName: cache.kind.symbol)
+                    Image(systemName: cache.type.symbol)
+                        .foregroundStyle(cache.type.color)
                     Text(cache.name).lineLimit(1)
                     Spacer()
-                    Text(cache.id).foregroundStyle(.secondary)
+                    Text(cache.code).foregroundStyle(.secondary)
                 }
                 .font(.subheadline)
                 .padding(.horizontal, 14)

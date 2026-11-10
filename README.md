@@ -14,8 +14,11 @@ Swift-Port von Mapsforge.
 - RenderTheme v6 inklusive Stylemenü (Stile und Overlays), SVG-Symbole, Label-Kollision über Kachelgrenzen
 - OpenAndroMaps mit Elevate-Theme (Stile Wandern, Stadt, Rad, MTB)
 - iOS-App mit Karten-, Theme-, Stil- und Overlay-Auswahl
+- Kartendownload (Freizeitkarte-OSM) mit Löschen
+- GPX-Import (GPX 1.0/1.1, Pocket-Query-ZIPs) in mehrere Listen, Cacheliste mit Sortierung, Suche und Filter,
+  Cache-Details mit Beschreibung, Wegpunkten und Logs
 
-Im Aufbau: Cacheliste, Cache-Details, Log-Entwürfe.
+Im Aufbau: Caches auf der Karte, Log-Entwürfe. Die [Anleitung](docs/anleitung/README.md) beschreibt den Stand.
 
 ## Aufbau
 
@@ -23,12 +26,18 @@ Im Aufbau: Cacheliste, Cache-Details, Log-Entwürfe.
 | --- | --- |
 | [`App/`](App) | iOS-App (Xcode-Projekt, SwiftUI) |
 | [`Packages/Mapsforge/`](Packages/Mapsforge) | Swift-Port von Mapsforge (LGPL-3.0): Kartenleser, Renderer, Entwickler-CLI `mfdump` |
+| [`Packages/CacheboxCore/`](Packages/CacheboxCore) | Cache-Datenmodell, SQLite-Listen, GPX-Import (Apache-2.0) |
+| [`docs/anleitung/`](docs/anleitung) | Anleitung der App (auch auf der Website) |
 | [`Website/`](Website) | Promotion-Website (Java, Vaadin) |
 
 ## Bauen
 
 ```bash
 cd Packages/Mapsforge && swift test
+```
+
+```bash
+cd Packages/CacheboxCore && swift test
 ```
 
 ```bash
