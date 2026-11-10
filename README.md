@@ -1,2 +1,2 @@
-# iCaschebox
-Caschebox native for iOS
+# iCachebox
+Cachebox native for iOS
