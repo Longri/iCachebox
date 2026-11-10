@@ -15,11 +15,16 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     Reihenfolge), `bench`; Theme-Argument `pfad.xml#stil,+overlay,-overlay` wählt Stil/Overlays
   - `Resources/themes/` – interne Themes (default, osmarender) + Symbole/Patterns aus Cachebox
 - `App/` – iOS-App (Xcode-Projekt, synchronisierter Ordner `App/iCacheBox/`), `MKTileOverlay` mit Mapsforge-Kacheln
+  - Kartendownload: `MapCatalog.swift` (Freizeitkarte-Repository-XML), `MapLibrary.swift` (Hintergrund-`URLSession`,
+    MD5-Prüfung, Entpacken nach `Documents/Maps` bzw. `Documents/Themes`), `ZipArchive.swift`, `MapDownloadView.swift`
+  - `App/iCacheBox-Info.plist` wird mit der generierten Info.plist zusammengeführt (ATS-Ausnahme nur für
+    `repository.freizeitkarte-osm.de`, der Katalog gibt es nur per HTTP; Dateien kommen per HTTPS)
 - `TestData/` – Testdaten (nicht im Git):
   - `bremen.map`, `expected-bremen-tiles.json` aus `/Users/Shared/LongriShare/@Work/MapsforgeKit/resources/`
     (erzeugt mit mapsforge 0.21.0, Java-Referenz dort)
   - `Hamburg_oam.osm.map` – OpenAndroMaps V5 (ftp.gwdg.de/pub/misc/openstreetmap/openandromaps/mapsV5/germany/Hamburg.zip)
   - `elevate/` – Elevate 5.7 (openandromaps.org/wp-content/users/tobias/Elevate.zip); Tests dazu laufen nur, wenn vorhanden
+  - `freizeitkarte-v5/` – Freizeitkarte-Theme (download.freizeitkarte-osm.de/android/2609/freizeitkarte-v5.zip), ebenso
 - `App/BundledMaps/` – Ordnerreferenz, wird komplett ins App-Bundle kopiert; die App bietet alle `*.map` und
   Theme-XMLs in Unterordnern zur Auswahl an (Inhalt außer README nicht im Git)
 
@@ -52,7 +57,13 @@ sichtbar getrennt, Mac @3x 10–41 ms/Kachel, Simulator @3x inkl. PNG ca. 70 ms.
 
 Bewusste Abweichung: ohne Menü-Callback nimmt `RenderTheme.load` den Default-Stil des Stylemenüs
 (mapsforge würde alle Kategorien zeichnen). An Kachelgrenzen behält – wie im Original – die zuerst gerenderte
-Kachel ihre Labels, das Ergebnis hängt also von der Render-Reihenfolge ab.
+Kachel ihre Labels, das Ergebnis hängt also von der Render-Reihenfolge ab. Theme-XML mit doppelten Attributen
+(Freizeitkarte V5) lehnt `XMLParser` ab; `RenderTheme.load` versucht es dann ohne sie (`DuplicateAttributeRepair`).
+
+Kartendownload (Mehr → Karten und Themes): Freizeitkarte-Katalog wie Cachebox `FZKDownload`, mit der ersten Karte
+wird das Standard-Design geladen; Karten mit „FZK“ im Header-Kommentar wählen dieses Design automatisch.
+Getestet im Simulator mit Bremen (10 MB). Nicht getestet: Pause/Fortsetzen, Löschen, Neustart durch das System
+bei Hintergrund-Downloads, ZIP64 (aktuelle Freizeitkarte-ZIPs sind < 4 GB).
 
 Lizenz-Hinweis: Elevate ist CC BY-NC-SA 4.0 (kommerziell nur BY-ND) – nicht ungefragt in eine verteilte App packen;
 OAM-Karten und Themes lädt in Cachebox der Nutzer selbst.

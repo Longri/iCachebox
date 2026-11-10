@@ -193,6 +193,7 @@
 				DEVELOPMENT_TEAM = 86A7XH3P54;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iCacheBox-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = iCacheBox;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -220,6 +221,7 @@
 				DEVELOPMENT_TEAM = 86A7XH3P54;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iCacheBox-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = iCacheBox;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

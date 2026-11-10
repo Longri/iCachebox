@@ -21,7 +21,11 @@ struct MoreView: View {
                 }
                 Section {
                     row("Import", "square.and.arrow.down")
-                    row("Karten und Themes", "map")
+                    NavigationLink {
+                        MapDownloadView()
+                    } label: {
+                        Label("Karten und Themes", systemImage: "map")
+                    }
                     row("Schnellzugriffe", "rectangle.grid.1x2")
                     row("Einstellungen", "gearshape")
                 }

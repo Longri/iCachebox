@@ -7,7 +7,7 @@ import SwiftUI
 /// with map/theme/style selection and a small performance HUD.
 ///
 /// Maps (`*.map`) and external themes (`*.xml` in sub-folders) are taken from the `BundledMaps`
-/// folder of the app bundle (`App/BundledMaps`, not in git).
+/// folder of the app bundle (`App/BundledMaps`, not in git) and from the downloads (`MapLibrary`).
 struct ContentView: View {
     @State private var model = MapModel()
 
@@ -29,6 +29,8 @@ struct ContentView: View {
                 .padding(.top, 56)
         }
         .task { await model.reload() }
+        // pick up maps and themes downloaded meanwhile; a changed selection reloads through MapMenu
+        .onAppear { model.refreshSources() }
     }
 }
 
@@ -101,8 +103,8 @@ final class MapModel {
     var loading = false
     let stats = RenderStats()
 
-    let maps: [URL]
-    let themes: [ThemeChoice]
+    private(set) var maps: [URL] = []
+    private(set) var themes: [ThemeChoice] = []
     var selectedMap: URL?
     var selectedTheme: ThemeChoice
     var selectedStyle: String?
@@ -115,19 +117,45 @@ final class MapModel {
     let language = Locale.current.language.languageCode?.identifier ?? "en"
     private var generation = 0
 
+    private static let builtInThemes = [ThemeChoice(name: "Default", source: .builtIn("default")),
+                                        ThemeChoice(name: "Osmarender", source: .builtIn("osmarender"))]
+
     init() {
-        let fm = FileManager.default
-        let folder = Bundle.main.url(forResource: "BundledMaps", withExtension: nil)
-        let files = folder.flatMap { fm.enumerator(at: $0, includingPropertiesForKeys: nil)?.allObjects as? [URL] } ?? []
-        maps = files.filter { $0.pathExtension == "map" }.sorted { $0.lastPathComponent < $1.lastPathComponent }
-        let external = files.filter { $0.pathExtension == "xml" }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
-            .map { ThemeChoice(name: $0.deletingPathExtension().lastPathComponent, source: .file($0)) }
-        themes = [ThemeChoice(name: "Default", source: .builtIn("default")),
-                  ThemeChoice(name: "Osmarender", source: .builtIn("osmarender"))] + external
+        selectedTheme = Self.builtInThemes[0]
+        refreshSources()
         selectedMap = maps.first { $0.lastPathComponent.hasPrefix("bremen") } ?? maps.first
-        selectedTheme = themes[0]
-        if maps.isEmpty { error = "Keine .map-Datei in BundledMaps" }
+    }
+
+    /// Scans `BundledMaps` and the download folders for maps and themes. A selection whose file is gone
+    /// (deleted download) falls back to the first map or the default theme.
+    func refreshSources() {
+        let fm = FileManager.default
+        var folders = [MapLibrary.mapsFolder, MapLibrary.themesFolder]
+        if let bundled = Bundle.main.url(forResource: "BundledMaps", withExtension: nil) { folders.insert(bundled, at: 0) }
+        let files = folders.flatMap {
+            fm.enumerator(at: $0, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)?.allObjects as? [URL] ?? []
+        }
+        func byName(_ a: URL, _ b: URL) -> Bool {
+            a.lastPathComponent.localizedStandardCompare(b.lastPathComponent) == .orderedAscending
+        }
+        maps = files.filter { $0.pathExtension == "map" }.sorted(by: byName)
+        themes = Self.builtInThemes + files.filter { $0.pathExtension == "xml" }.sorted(by: byName)
+            .map { ThemeChoice(name: $0.deletingPathExtension().lastPathComponent, source: .file($0)) }
+
+        if selectedMap.map({ !maps.contains($0) }) ?? true { selectedMap = maps.first }
+        if !themes.contains(selectedTheme) { selectedTheme = themes[0] }
+        if maps.isEmpty { error = "Keine Karte vorhanden. Karten gibt es unter Mehr → Karten und Themes." }
+    }
+
+    /// Freizeitkarte maps need their own design; Cachebox detects them by "FZK" in the map comment
+    /// (`MapsForgeLayer.prepareLayer`).
+    private var freizeitkarteTheme: ThemeChoice? {
+        let candidates = themes.filter {
+            guard case .file(let url) = $0.source else { return false }
+            let name = url.deletingPathExtension().lastPathComponent.lowercased()
+            return name.hasPrefix("freizeitkarte") || name.hasPrefix("fzk")
+        }
+        return candidates.first { $0.name == "freizeitkarte-v5" } ?? candidates.first
     }
 
     func overlayBinding(_ overlay: RenderThemeStyleLayer) -> Binding<Bool> {
@@ -159,6 +187,10 @@ final class MapModel {
         loading = false
         switch result {
         case .success(let (renderer, map)):
+            if recenter || self.renderer == nil, map.info.comment?.contains("FZK") == true,
+               case .builtIn = selectedTheme.source, let theme = freizeitkarteTheme {
+                selectedTheme = theme   // MapMenu reloads with the matching design
+            }
             if recenter || self.renderer == nil {
                 // Bremen market square for the test map, otherwise the map's own start position
                 center = mapURL.lastPathComponent.hasPrefix("bremen")

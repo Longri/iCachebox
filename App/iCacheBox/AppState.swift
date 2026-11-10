@@ -57,6 +57,7 @@ final class AppState {
     var caches: [Cache] = Cache.samples
     var selectedCache: Cache?
     let account = GeocachingAccount()
+    let mapLibrary = MapLibrary.shared
 
     func select(_ cache: Cache, show tab: MainTab = .cache) {
         selectedCache = cache

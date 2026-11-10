@@ -8,7 +8,12 @@ import MapsforgeCore
 
 public struct RenderThemeError: Error, CustomStringConvertible {
     public let description: String
-    init(_ d: String) { description = d }
+    /// The XML is not well-formed (as opposed to a semantic error in a well-formed theme).
+    let isXMLSyntax: Bool
+    init(_ d: String, isXMLSyntax: Bool = false) {
+        description = d
+        self.isXMLSyntax = isXMLSyntax
+    }
 }
 
 enum ElementType {
@@ -160,8 +165,15 @@ public final class RenderTheme: @unchecked Sendable {
         let data = try Data(contentsOf: url)
         let resources = ThemeResources(baseDirectories: [url.deletingLastPathComponent(),
                                                          url.deletingLastPathComponent().deletingLastPathComponent()])
-        return try RenderThemeParser(data: data, resources: resources,
-                                     menuCallback: menuCallback ?? { $0.categories() }).parse()
+        let callback = menuCallback ?? { $0.categories() }
+        do {
+            return try RenderThemeParser(data: data, resources: resources, menuCallback: callback).parse()
+        } catch let error as RenderThemeError where error.isXMLSyntax {
+            // Deviation: XMLParser (libxml2) rejects repeated attributes, Android's XmlPullParser accepts them
+            // (Freizeitkarte V5: `<layer enabled="true" id="hillshading" enabled="false">`). Retry once without them.
+            guard let repaired = DuplicateAttributeRepair.repair(data) else { throw error }
+            return try RenderThemeParser(data: repaired, resources: resources, menuCallback: callback).parse()
+        }
     }
 
     /// The `<stylemenu>` of a theme, e.g. for a style chooser (parses the whole theme; symbols load lazily).
@@ -248,7 +260,11 @@ final class RenderThemeParser: NSObject, XMLParserDelegate {
         let ok = parser.parse()
         if let error { throw error }
         guard ok, let theme else {
-            throw RenderThemeError("XML parse error: \(parser.parserError?.localizedDescription ?? "missing rendertheme element")")
+            if let syntax = parser.parserError {
+                throw RenderThemeError("XML parse error in line \(parser.lineNumber): \(syntax.localizedDescription)",
+                                       isXMLSyntax: true)
+            }
+            throw RenderThemeError("XML parse error: missing rendertheme element")
         }
         theme.setLevels(level)
         return theme

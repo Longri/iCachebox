@@ -120,6 +120,45 @@ struct RenderTests {
         #expect(stats.ways > 1000 && stats.labels > 10)
     }
 
+    /// Repeated attributes (Freizeitkarte V5) are rejected by XMLParser; `load` retries without them.
+    @Test func duplicateAttributesAreRepaired() throws {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!-- <layer enabled="1" enabled="2"> inside a comment stays untouched -->
+        <rendertheme xmlns="http://mapsforge.org/renderTheme" version="5">
+          <stylemenu id="m" defaultvalue="base" defaultlang="en">
+            <layer id="routes" enabled="true" visible="false" enabled="false"><cat id="routes"/></layer>
+            <layer id="base" visible="true"><cat id="common"/><overlay id="routes"/></layer>
+          </stylemenu>
+          <rule e="way" k="highway" v="*"><line stroke="#000000" stroke-width="1" stroke-width = '3'/></rule>
+          <rule cat="routes" e="way" k="route" v="*"><line stroke="#111111"/></rule>
+        </rendertheme>
+        """
+        let repaired = String(decoding: try #require(DuplicateAttributeRepair.repair(Data(xml.utf8))), as: UTF8.self)
+        // stylemenu: first value wins (getStringAttribute), rule instructions: last value wins
+        #expect(repaired.contains(#"<layer id="routes" enabled="true" visible="false">"#))
+        #expect(repaired.contains(##"<line stroke="#000000" stroke-width = '3'/>"##))
+        #expect(repaired.contains(#"<layer enabled="1" enabled="2">"#))
+        #expect(DuplicateAttributeRepair.repair(Data(repaired.utf8)) == nil)
+
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("dup-\(UUID().uuidString).xml")
+        try Data(xml.utf8).write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let theme = try RenderTheme.load(url: file)
+        #expect(theme.enabledCategories == ["common", "routes"])
+        #expect(theme.rules.count == 2)
+    }
+
+    /// Freizeitkarte V5 theme – only if TestData/freizeitkarte-v5 is present (not in git).
+    @Test(.enabled(if: TestData.url("freizeitkarte-v5/freizeitkarte-v5.xml") != nil))
+    func freizeitkarteThemeLoads() throws {
+        let url = try #require(TestData.url("freizeitkarte-v5/freizeitkarte-v5.xml"))
+        let theme = try RenderTheme.load(url: url)
+        #expect(theme.styleMenu != nil)
+        let missing = Self.unloadableResources(theme)
+        #expect(missing.isEmpty, "unloadable resources: \(missing.sorted())")
+    }
+
     @Test func rendersReferenceTiles() throws {
         let map = try MapFile(url: try #require(TestData.url("bremen.map")))
         let renderer = TileRenderer(mapFile: map, theme: try RenderTheme.builtIn())
