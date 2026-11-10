@@ -25,10 +25,12 @@ Website/deploy.sh            # bauen, hochladen, Cachebox.service neu starten
 Website/deploy.sh --dry-run  # nur bauen und den Server prüfen, nichts ändern
 ```
 
-Baut die Produktions-Jar, benennt sie in `target/cachebox-website.jar` um, lädt sie per SSH nach
-`root@167.235.237.115:/Vaadin/iCacheboxWeb` (erst als `.upload`, der Dienst läuft so lange weiter), stoppt
-`Cachebox.service`, sichert die alte Jar als `cachebox-website.jar.bak`, setzt die neue ein und startet den Dienst.
-Ziel, Verzeichnis und Dienst lassen sich über `DEPLOY_SSH`, `DEPLOY_DIR`, `DEPLOY_SERVICE` ändern (`deploy.sh --help`).
+Baut die Produktions-Jar, benennt sie in `target/cachebox-website.jar` um und lädt sie per SSH als `matrix-admin`
+auf `167.235.237.115` hoch (erst ins Home als `cachebox-website.jar.upload`, der Dienst läuft so lange weiter).
+Dann stoppt es `Cachebox.service`, sichert die alte Jar in `/Vaadin/iCacheboxWeb` als `cachebox-website.jar.bak`,
+setzt die neue ein und startet den Dienst; `systemctl` und das Tauschen laufen über `sudo` (fragt ggf. einmal nach
+dem Passwort). Benutzer, Server, Verzeichnis und Dienst lassen sich über `DEPLOY_USER`, `DEPLOY_HOST`, `DEPLOY_DIR`,
+`DEPLOY_SERVICE` ändern (`deploy.sh --help`).
 
 Die Startseite zeigt unten „Stand: …“ – die Build-Zeit aus `META-INF/build-info.properties` (Maven-Goal
 `build-info`). Da `deploy.sh` direkt vor dem Upload baut, ist das der Zeitpunkt des letzten Uploads.
