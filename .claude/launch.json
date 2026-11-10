@@ -6,6 +6,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "cd Website && mvn -o spring-boot:run"],
       "port": 8082
+    },
+    {
+      "name": "website-jar",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd Website && java -jar target/cachebox-website.jar"],
+      "port": 8082
     }
   ]
 }

@@ -8,13 +8,24 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 import de.cachebox.website.MainLayout;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.info.BuildProperties;
 
 /** Startseite: das Logo „Cachebox – too many secrets." vor den Bäumen, wie der Splash-Screen der App. */
 @Route(value = "", layout = MainLayout.class)
 @PageTitle("iCachebox – Cachebox für iOS")
 public class StartView extends Div {
 
-    public StartView() {
+    private static final DateTimeFormatter UPDATED_FORMAT =
+            DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm 'Uhr'").withZone(ZoneId.of("Europe/Berlin"));
+
+    /**
+     * @param buildProperties aus META-INF/build-info.properties (Maven-Goal {@code build-info});
+     *                        fehlt beim Start aus der IDE ohne Maven, dann entfällt die Zeile „Stand“
+     */
+    public StartView(ObjectProvider<BuildProperties> buildProperties) {
         addClassName("start");
 
         Image logo = new Image("images/cachebox-logo.png", "Cachebox – too many secrets.");
@@ -42,6 +53,14 @@ public class StartView extends Div {
         types.addClassName("start-types");
 
         add(heading, claim, actions, types);
+
+        // Zeitpunkt des Builds = letzter Upload, denn deploy.sh baut direkt vor dem Hochladen
+        BuildProperties build = buildProperties.getIfAvailable();
+        if (build != null && build.getTime() != null) {
+            Paragraph updated = new Paragraph("Stand: " + UPDATED_FORMAT.format(build.getTime()));
+            updated.addClassName("start-updated");
+            add(updated);
+        }
     }
 
     private Image cacheType(String file, String alt) {
