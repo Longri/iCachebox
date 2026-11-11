@@ -21,6 +21,13 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     Koordinaten), `CacheListStore.swift` (Listen anlegen/umbenennen/löschen), `ZipArchive.swift`, `SQLite.swift`
   - Tests mit erfundenen Testdaten unter `Tests/CacheboxCoreTests/Resources` (PQ-GPX, -wpts, ZIP, GPX 1.1)
 - `App/` – iOS-App (Xcode-Projekt, synchronisierter Ordner `App/iCacheBox/`), `MKTileOverlay` mit Mapsforge-Kacheln
+  - Kacheln zeichnen: `MapsforgeOverlayRenderer.swift` – eigener `MKOverlayRenderer` statt `MKTileOverlayRenderer`
+    (der ließ Kacheln bis zum Laden leer/schwarz): Kachel erst auf den Schirm, wenn gerendert, bis dahin die passende
+    gecachte Kachel anderer Zoomstufen (nächste darüber vergrößert, bis 3 Stufen darunter verkleinert), sonst
+    Theme-Hintergrund; Rendern im Hintergrund, neueste Anfrage zuerst, dann `setNeedsDisplay`. `TileCache` =
+    LRU in zwei Stufen (volle Auflösung, verdrängte Kacheln halb aufgelöst nur als Ersatz). Beim Karten-/Theme-/
+    Stilwechsel zeigt der neue Renderer die Kacheln des alten, bis die eigenen fertig sind. Kein PNG mehr.
+    `overrideUserInterfaceStyle = .light` am `MKMapView`: MapKits Platzhalter-Raster ist im Dunkelmodus schwarz
   - Caches: `CacheListModel.swift` (Listen in `Documents/Lists`, Sortierung, Filter, Import), `CacheListView.swift`,
     `CacheListsView.swift`, `CacheFilterView.swift`, `ImportView.swift`, `CacheDetailView.swift`, `HTMLView.swift`
     (WKWebView ohne JavaScript), `LocationModel.swift`, `CachePresentation.swift` (Cachetyp-/Wegpunkt-Icons
@@ -117,7 +124,11 @@ den Symbolen, Distanzkreis, Wegpunkt-Auswahl.
 Lizenz-Hinweis: Elevate ist CC BY-NC-SA 4.0 (kommerziell nur BY-ND) – nicht ungefragt in eine verteilte App packen;
 OAM-Karten und Themes lädt in Cachebox der Nutzer selbst.
 
+Zoomen ohne schwarze Kacheln (seit 11.11.2026, wie Cachebox): im Simulator geprüft mit künstlich auf 1,5 s
+verlangsamtem Rendern (rein/raus über 3 Stufen, Theme-Wechsel, Dunkelmodus). Nicht geprüft: Speicher und
+Flüssigkeit auf echtem Gerät (Cache bis ca. 150 MB bei @3x), iPad.
+
 Offen (Phase 2): Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
-Nachtmodus, Kachel-Cache auf Platte, PNG-Kodierung vermeiden (eigener MKOverlayRenderer), Kartenrotation mit
+Nachtmodus, Kachel-Cache auf Platte, Kartenrotation mit
 aufrechten Labels, Pixel-Vergleich gegen Java-AWT-Rendering, SVG `<use>`/Gradienten/`<pattern>` (betrifft z. B.
 Elevates `s_mall.svg`), Test auf echtem Gerät.

@@ -67,6 +67,9 @@ struct MapsforgeMapView: UIViewRepresentable {
         mapView.showsCompass = true
         mapView.showsScale = true
         mapView.pointOfInterestFilter = .excludingAll
+        // where MapKit has not drawn the overlay yet it shows a grid, black in dark mode; the Mapsforge themes are
+        // light, so a light grid flashes far less (also gives compass, scale and info bubble the light look)
+        mapView.overrideUserInterfaceStyle = .light
         context.coordinator.installTapRecognizer(on: mapView)
         updateUIView(mapView, context: context)
         return mapView
@@ -80,6 +83,11 @@ struct MapsforgeMapView: UIViewRepresentable {
         if c.overlay?.renderer !== renderer {
             // new map/theme/style: replace the tile overlay (MapKit has no API to flush its tile cache)
             let overlay = MapsforgeTileOverlay(renderer: renderer, stats: stats)
+            if let old = c.overlay, let oldTiles = mapView.renderer(for: old) as? MapsforgeOverlayRenderer {
+                // the old map stays visible until the new tiles are rendered
+                oldTiles.cancel()
+                overlay.previousTiles = oldTiles.cache
+            }
             mapView.addOverlay(overlay, level: .aboveLabels)
             if let old = c.overlay { mapView.removeOverlay(old) }
             c.overlay = overlay
@@ -299,8 +307,9 @@ struct MapsforgeMapView: UIViewRepresentable {
         // MARK: Tiles
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-            if let tiles = overlay as? MKTileOverlay {
-                return MKTileOverlayRenderer(tileOverlay: tiles)
+            if let tiles = overlay as? MapsforgeTileOverlay {
+                let screen = mapView.window?.windowScene?.screen.bounds.size ?? mapView.bounds.size
+                return MapsforgeOverlayRenderer(overlay: tiles, cache: TileCache(screen: screen))
             }
             return MKOverlayRenderer(overlay: overlay)
         }
@@ -380,46 +389,5 @@ final class MarkerAnnotation: NSObject, MKAnnotation {
         if marker.title != title { title = marker.title }
         if marker.subtitle != subtitle { subtitle = marker.subtitle }
         self.marker = marker
-    }
-}
-
-/// Renders tiles on demand with the Swift Mapsforge renderer.
-final class MapsforgeTileOverlay: MKTileOverlay, @unchecked Sendable {
-    let renderer: TileRenderer
-    private let stats: RenderStats
-    private let queue: OperationQueue = {
-        let q = OperationQueue()
-        q.name = "mapsforge.render"
-        q.maxConcurrentOperationCount = max(2, ProcessInfo.processInfo.activeProcessorCount - 1)
-        q.qualityOfService = .userInitiated
-        return q
-    }()
-
-    init(renderer: TileRenderer, stats: RenderStats) {
-        self.renderer = renderer
-        self.stats = stats
-        super.init(urlTemplate: nil)
-        canReplaceMapContent = true
-        minimumZ = 6
-        maximumZ = 21
-        tileSize = CGSize(width: 256, height: 256)
-    }
-
-    override func loadTile(at path: MKTileOverlayPath, result: @escaping (Data?, Error?) -> Void) {
-        let renderer = self.renderer
-        let stats = self.stats
-        nonisolated(unsafe) let result = result   // MapKit's completion handler may be called from any thread
-        queue.addOperation {
-            let start = CFAbsoluteTimeGetCurrent()
-            let tile = Tile(tileX: path.x, tileY: path.y, zoomLevel: path.z, tileSize: 256)
-            guard let image = renderer.renderTile(tile, scale: path.contentScaleFactor) else {
-                result(nil, nil)
-                return
-            }
-            let data = UIImage(cgImage: image).pngData()
-            let ms = (CFAbsoluteTimeGetCurrent() - start) * 1000
-            Task { @MainActor in stats.record(ms: ms, zoom: path.z) }
-            result(data, nil)
-        }
     }
 }
