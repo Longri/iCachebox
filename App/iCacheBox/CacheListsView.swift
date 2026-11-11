@@ -88,8 +88,7 @@ struct CacheListsView: View {
             Button("Löschen", role: .destructive) {
                 Task {
                     do {
-                        try await lists.delete(list.name)
-                        state.restoreSelection()
+                        try await lists.delete(list.name)   // opens another list if it was the open one
                     } catch {
                         errorMessage = error.localizedDescription
                     }
@@ -98,7 +97,7 @@ struct CacheListsView: View {
             Button("Abbrechen", role: .cancel) {}
         } message: { list in
             Text(list.cacheCount == 0 ? "Die Liste ist leer."
-                 : "Die Liste enthält \(list.cacheCount) Caches mit Notizen und Markierungen. "
+                 : "Die Liste enthält \(Format.count(list.cacheCount, "Cache", "Caches")) mit Notizen und Markierungen. "
                    + "Das lässt sich nicht rückgängig machen.")
         }
         .alert("Fehler", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
@@ -128,7 +127,7 @@ struct CacheListsView: View {
 
     /// "123 Caches · 4,5 MB · Import 10.11.2026" (Cachebox: "N Caches X MB last use").
     private func details(_ list: CacheListInfo) -> String {
-        var parts = ["\(list.cacheCount) Caches", Format.bytes(list.fileSize)]
+        var parts = [Format.count(list.cacheCount, "Cache", "Caches"), Format.bytes(list.fileSize)]
         if let date = list.lastImport {
             parts.append("Import " + date.formatted(date: .numeric, time: .omitted))
         }

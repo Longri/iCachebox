@@ -25,6 +25,9 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `CacheListsView.swift`, `CacheFilterView.swift`, `ImportView.swift`, `CacheDetailView.swift`, `HTMLView.swift`
     (WKWebView ohne JavaScript), `LocationModel.swift`, `CachePresentation.swift` (Cachetyp-/Wegpunkt-Icons
     aus Cachebox, `Assets.xcassets/Cachebox`, Namen wie die Sprites dort; Rechte noch ungeklärt, siehe UI-KONZEPT.md)
+  - Gewählter Cache: `AppState` (Auswahl je Liste, `mapFocus`; `CacheListModel.onOpen` stellt die Auswahl nach jedem
+    Öffnen/Import wieder her), `SelectedCacheBar` in `RootView.swift`, Marker und Zentrieren in `ContentView.swift`
+    (`MapModel.focus`, wählt eine Karte, die den Ort abdeckt) und `MapsforgeMapView.swift` (`MapMarker`, `MapCenterRequest`)
   - Kartendownload: `MapCatalog.swift` (Freizeitkarte-Repository-XML), `MapLibrary.swift` (Hintergrund-`URLSession`,
     MD5-Prüfung, Entpacken nach `Documents/Maps` bzw. `Documents/Themes`), `ZipArchive.swift`, `MapDownloadView.swift`
   - `App/iCacheBox-Info.plist` wird mit der generierten Info.plist zusammengeführt (ATS-Ausnahme nur für
@@ -80,8 +83,15 @@ bei Hintergrund-Downloads, ZIP64 (aktuelle Freizeitkarte-ZIPs sind < 4 GB).
 GPX-Import und Listen (Caches-Tab): Import über Dateiauswahl, „Teilen › iCacheBox“ (Document Types in
 `iCacheBox-Info.plist`) oder Mehr › GPX importieren; Fortschritt als Karte über den Tabs. Liste = SQLite-Datei wie eine
 Cachebox-Datenbank (eigenes Schema, nicht Cachebox-kompatibel). Sortierung nach Entfernung (Standort, sonst gewählter
-Cache), Name, Code, D, T, Datum, Favoritenpunkte; Filter: Status dreistufig, Typen, D/T. Im Simulator geprüft mit einer
-erfundenen 300-Cache-Pocket-Query. Nicht geprüft: große PQs (> 1000 Caches), echte geocaching.com-Dateien, iPad.
+Cache), Name, Code, D, T, Datum, Favoritenpunkte; Filter: Status dreistufig, Typen (alle), D/T; Suche nach Name, Code,
+Owner. Gewählter Cache (wie Cachebox-Slider): Leiste über Caches/Karte/Loggen/Mehr mit D/T/Größe, Entfernung und
+Richtung, Kontextmenü Details/Auf der Karte; auf der Karte Marker für Cache und Wegpunkte mit Koordinaten, die Karte
+springt bei neuer Auswahl dorthin (ohne Animation, sonst verwirft MapKit Kachelanfragen) und wechselt bei Bedarf auf
+eine Karte, die den Ort abdeckt; ohne passende Karte Hinweis. Website-Kachel „Cacheliste“ ist seit 11.11.2026 kein
+„Coming Soon“ mehr. Im Simulator geprüft mit einer erfundenen 300-Cache-Pocket-Query und Testcaches in Hamburg/Harz;
+Import-Benchmark (Mac, Release): 1000 Caches mit 5000 Logs 0,46 s, 5000 Caches 2,2 s, Liste laden 6 ms.
+Nicht geprüft: echte geocaching.com-Dateien, Import auf echtem Gerät (Dateien in iCloud Drive), iPad.
+Offen: alle Caches der Liste auf der Karte und Auswahl per Tipp auf der Karte (Kachel „Offline-Karte“).
 
 Lizenz-Hinweis: Elevate ist CC BY-NC-SA 4.0 (kommerziell nur BY-ND) – nicht ungefragt in eine verteilte App packen;
 OAM-Karten und Themes lädt in Cachebox der Nutzer selbst.

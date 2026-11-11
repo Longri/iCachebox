@@ -20,6 +20,8 @@ struct CacheDetailView: View {
     @Environment(AppState.self) private var state
     @State private var section = Part.description
     @State private var details: Details?
+    /// Code whose details could not be read (e.g. deleted meanwhile).
+    @State private var missingCode: String?
     @State private var showHint = false
     @State private var editingNote = false
     @State private var confirmDelete = false
@@ -34,7 +36,7 @@ struct CacheDetailView: View {
                     ContentUnavailableView {
                         Label("Kein Cache gewählt", systemImage: "doc.text")
                     } description: {
-                        Text("Wähle einen Cache in der Liste oder auf der Karte.")
+                        Text("Wähle einen Cache in der Cacheliste.")
                     } actions: {
                         Button("Zur Cacheliste") { state.tab = .caches }
                     }
@@ -60,6 +62,7 @@ struct CacheDetailView: View {
         }.value
         guard code == state.selectedCache?.code else { return }
         details = loaded
+        missingCode = loaded == nil ? code : nil
     }
 
     @ViewBuilder
@@ -80,6 +83,10 @@ struct CacheDetailView: View {
                     ContentUnavailableView("Spoiler", systemImage: "photo",
                                            description: Text("Spoilerbilder werden noch nicht geladen."))
                 }
+            } else if missingCode == summary.code {
+                ContentUnavailableView("Cache nicht gefunden", systemImage: "exclamationmark.triangle",
+                                       description: Text("\(summary.code) ist nicht mehr in der Liste "
+                                                         + "„\(state.lists.currentName ?? "")“."))
             } else {
                 ProgressView().frame(maxHeight: .infinity)
             }
@@ -117,7 +124,7 @@ struct CacheDetailView: View {
 
     private func actions(_ summary: CacheSummary) -> some View {
         Menu("Aktionen", systemImage: "ellipsis.circle") {
-            Button("Auf Karte zeigen", systemImage: "map") { state.tab = .map }
+            Button("Auf Karte zeigen", systemImage: "map") { state.select(summary, show: .map) }
             Button(summary.isFound ? "Als nicht gefunden markieren" : "Als gefunden markieren",
                    systemImage: summary.isFound ? "xmark.circle" : "checkmark.circle") {
                 state.lists.setFound(!summary.isFound, code: summary.code)

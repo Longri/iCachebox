@@ -14,10 +14,10 @@ public class FeaturesView extends Page {
                 "iCachebox ist dein Werkzeugkasten für die Dosensuche: Alles, was du unterwegs brauchst, "
                         + "liegt auf dem Gerät – auch dort, wo es kein Netz gibt.");
 
-        comingSoon(card("cacheListIcon.png", "Cacheliste",
+        card("cacheListIcon.png", "Cacheliste",
                 "GPX-Dateien und Pocket Queries importieren, in mehreren Listen verwalten, nach Entfernung "
                         + "sortieren, filtern und durchsuchen. Der gewählte Cache bleibt in allen Ansichten im Blick.",
-                manual()));
+                manual());
         comingSoon(card("map.png", "Offline-Karte",
                 "Mapsforge-Vektorkarten mit frei wählbarem Theme, Freizeitkarten für ganz Europa direkt in der App "
                         + "laden. Caches und Wegpunkte liegen bald direkt auf der Karte.",

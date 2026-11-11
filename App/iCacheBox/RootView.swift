@@ -55,7 +55,9 @@ struct RootView: View {
     }
 }
 
-/// Bar above the tab bar showing the selected cache (Cachebox: cache info line below the quick buttons).
+/// Bar above the tab bar showing the selected cache (Cachebox: the `Slider` with the cache info line, shown above
+/// every view): type with status marks, name, code, D/T/size and, with a position, distance and direction.
+/// Tapping opens the details; the context menu also offers the map.
 struct SelectedCacheBar: View {
     @Environment(AppState.self) private var state
 
@@ -64,22 +66,60 @@ struct SelectedCacheBar: View {
             Button {
                 state.tab = .cache
             } label: {
-                HStack {
-                    CacheboxIcon(name: cache.type.iconName(solved: cache.hasCorrectedCoordinate), size: 26)
-                    Text(cache.name).lineLimit(1)
-                    Spacer()
-                    Text(cache.code).foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    CacheTypeIcon(type: cache.type, isFound: cache.isFound, isFavorite: cache.isFavorite,
+                                  isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
+                                  isSolved: cache.hasCorrectedCoordinate, size: 30)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(cache.name)
+                            .font(.subheadline)
+                            .strikethrough(cache.isArchived)
+                            .lineLimit(1)
+                        Text("\(cache.code) · \(cache.ratingText)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                    if let here = state.location.coordinate {
+                        let bearing = here.bearing(to: cache.coordinate) - (state.location.heading ?? 0)
+                        HStack(spacing: 4) {
+                            Image(systemName: "location.north.fill")
+                                .rotationEffect(.degrees(bearing))
+                                .foregroundStyle(.tint)
+                            Text(Format.distance(here.distance(to: cache.coordinate)))
+                                .font(.caption.monospacedDigit())
+                        }
+                    }
                 }
-                .font(.subheadline)
-                .padding(.horizontal, 14)
+                .padding(.leading, 10)
+                .padding(.trailing, 14)
+                .padding(.vertical, 5)
                 .frame(minHeight: 44)
-                .background(.regularMaterial, in: Capsule())
+                .background {
+                    // floats like the tab bar, also on grouped (grey) backgrounds
+                    Capsule().fill(.regularMaterial).shadow(color: .black.opacity(0.15), radius: 5, y: 1)
+                }
+                .contentShape(Capsule())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(accessibilityText(cache))
+            .accessibilityHint("Öffnet die Details")
+            .contextMenu {
+                Button("Details", systemImage: "doc.text") { state.tab = .cache }
+                Button("Auf der Karte", systemImage: "map") { state.select(cache, show: .map) }
+            }
             .padding(.horizontal)
             .padding(.bottom, 6)
-            .accessibilityLabel("Gewählter Cache: \(cache.name)")
         }
+    }
+
+    private func accessibilityText(_ cache: CacheSummary) -> String {
+        var text = "Gewählter Cache: \(cache.name), \(cache.code)"
+        if let here = state.location.coordinate {
+            text += ", Entfernung \(Format.distance(here.distance(to: cache.coordinate)))"
+        }
+        return text
     }
 }
 

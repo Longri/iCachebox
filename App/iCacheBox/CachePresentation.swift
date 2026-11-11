@@ -67,8 +67,10 @@ extension CacheType {
     }
 
     /// Types offered in the filter, in a stable order.
+    /// All types, so that a type filter can show every cache of the list.
     static let filterChoices: [CacheType] = [.traditional, .multi, .mystery, .letterbox, .wherigo, .earth, .virtual,
-                                             .webcam, .event, .megaEvent, .gigaEvent, .cito, .lab, .other]
+                                             .webcam, .event, .megaEvent, .gigaEvent, .cito, .communityCelebration,
+                                             .hq, .lab, .locationless, .ape, .gpsAdventures, .other]
 }
 
 extension ContainerSize {
@@ -191,6 +193,11 @@ enum Format {
         case ..<10_000: (metres / 1000).formatted(.number.precision(.fractionLength(1))) + " km"
         default: "\(Int((metres / 1000).rounded())) km"
         }
+    }
+
+    /// "1 Cache", "2 Caches": the number with the singular or plural noun.
+    static func count(_ count: Int, _ singular: String, _ plural: String) -> String {
+        "\(count) \(count == 1 ? singular : plural)"
     }
 
     static func bytes(_ count: Int64) -> String {

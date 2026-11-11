@@ -123,7 +123,8 @@ struct ImportStatusCard: View {
                         .font(.headline)
                     if let progress = status.progress, progress.total > 0 {
                         ProgressView(value: Double(min(progress.done, progress.total)), total: Double(progress.total))
-                        Text("\(progress.file): \(progress.done) von \(progress.total) · \(progress.caches) Caches")
+                        Text("\(progress.file): \(progress.done) von \(progress.total) · "
+                             + Format.count(progress.caches, "Cache", "Caches"))
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                     } else {
@@ -150,13 +151,15 @@ struct ImportStatusCard: View {
 
     /// "3 neue Caches, 2 aktualisiert, 5 Wegpunkte, 40 Logs" (Cachebox: toast "N Caches / M Logs").
     private func summary(_ result: GPXImportResult) -> String {
-        var parts = ["\(result.newCaches) neue Caches"]
+        var parts = [Format.count(result.newCaches, "neuer Cache", "neue Caches")]
         if result.updatedCaches > 0 { parts.append("\(result.updatedCaches) aktualisiert") }
-        if result.waypoints > 0 { parts.append("\(result.waypoints) Wegpunkte") }
-        if result.logs > 0 { parts.append("\(result.logs) Logs") }
+        if result.waypoints > 0 { parts.append(Format.count(result.waypoints, "Wegpunkt", "Wegpunkte")) }
+        if result.logs > 0 { parts.append(Format.count(result.logs, "Log", "Logs")) }
         var text = parts.joined(separator: ", ")
         if result.orphanWaypoints > 0 {
-            text += ". \(result.orphanWaypoints) Wegpunkte ohne passenden Cache wurden übersprungen."
+            text += result.orphanWaypoints == 1
+                ? ". 1 Wegpunkt ohne passenden Cache wurde übersprungen."
+                : ". \(result.orphanWaypoints) Wegpunkte ohne passenden Cache wurden übersprungen."
         }
         if result.caches == 0 && result.waypoints == 0 {
             text = "Die Datei enthielt keine Geocaches."

@@ -6,6 +6,13 @@ enum MainTab: Hashable {
     case caches, cache, map, log, more
 }
 
+/// Request to center the map on a position. Every request has its own `id`, so showing the same cache again
+/// re-centers a map the user has moved meanwhile.
+struct MapFocus: Equatable {
+    let coordinate: Coordinate
+    let id = UUID()
+}
+
 /// App-wide UI state: active tab and the selected cache (Cachebox: `GlobalCore.getSelectedCache`).
 @MainActor
 @Observable
@@ -13,27 +20,38 @@ final class AppState {
     var tab: MainTab = .caches
     /// The cache selected in the list; kept per cache list and selected again when the list is opened.
     private(set) var selectedCache: CacheSummary?
+    /// Where the map should go: set when the selection changes and by "Auf der Karte" (Cachebox `MapView`
+    /// centers on a newly selected cache, too).
+    private(set) var mapFocus: MapFocus?
     let account = GeocachingAccount()
     let mapLibrary = MapLibrary.shared
     let lists = CacheListModel()
     let location = LocationModel()
 
+    init() {
+        // whenever a list is (re)opened, also after an import, its remembered cache becomes the selection
+        lists.onOpen = { [weak self] in self?.restoreSelection() }
+    }
+
+    /// Selects a cache and switches to `tab`; with `.map` the map centers on the cache.
     func select(_ cache: CacheSummary, show tab: MainTab = .cache) {
+        if cache.code != selectedCache?.code || tab == .map { mapFocus = MapFocus(coordinate: cache.coordinate) }
         selectedCache = cache
         lists.rememberSelection(cache.code)
         self.tab = tab
     }
 
-    /// Opens a cache list and selects its last selected cache (Cachebox: `ShowSelectDB`).
+    /// Opens a cache list; its last selected cache is selected again (Cachebox: `ShowSelectDB`).
     func openList(_ name: String?) async {
         await lists.open(name)
-        restoreSelection()
     }
 
-    /// Takes the selection from the loaded list: the remembered cache, or keeps none.
+    /// Takes the selection from the loaded list: the remembered cache, or none.
     func restoreSelection() {
         let code = lists.lastSelectedCode()
-        selectedCache = lists.caches.first { $0.code == code }
+        let cache = lists.caches.first { $0.code == code }
+        if let cache, cache.code != selectedCache?.code { mapFocus = MapFocus(coordinate: cache.coordinate) }
+        selectedCache = cache
     }
 
     /// Updates the selected cache after its flags changed in the list.

@@ -11,11 +11,11 @@ Die App hat unten fünf Bereiche:
 | --- | --- |
 | **Caches** | Die Caches der geöffneten Liste, sortiert nach Entfernung. Hier importierst du GPX-Dateien und verwaltest deine Listen. |
 | **Cache** | Alles zum gewählten Cache: Beschreibung, Wegpunkte, Logs, Hinweis und deine Notiz. |
-| **Karte** | Die Offline-Karte mit frei wählbarem Design. |
+| **Karte** | Die Offline-Karte mit frei wählbarem Design, darauf der gewählte Cache mit seinen Wegpunkten. |
 | **Loggen** | Log-Entwürfe (noch im Aufbau). |
 | **Mehr** | Geocaching-Konto, GPX-Import, Karten und Themes, Einstellungen. |
 
-Der gewählte Cache steht als Leiste über den Bereichen. Ein Tipp darauf öffnet seine Details.
+Der gewählte Cache steht als Leiste über den Bereichen (mehr dazu im Abschnitt „Der gewählte Cache“).
 
 ## Erste Schritte
 
@@ -42,7 +42,7 @@ So importierst du:
 
 Oben erscheint dann eine Anzeige mit dem Fortschritt, am Ende mit einer Zusammenfassung, zum Beispiel
 „301 neue Caches, 159 Wegpunkte, 780 Logs“. Mit **Abbrechen** hältst du einen langen Import an; was bis dahin
-gelesen ist, bleibt in der Liste.
+gelesen ist, bleibt in der Liste. Nach dem Import ist die Zielliste geöffnet.
 
 **Schneller Weg:** Eine GPX- oder ZIP-Datei lässt sich auch direkt aus Dateien, Mail oder Safari öffnen:
 **Teilen › iCacheBox**. Sie landet dann in der geöffneten Liste.
@@ -84,7 +84,7 @@ Jede Zeile zeigt:
 - GC-Code, Schwierigkeit (D), Gelände (T) und Größe (M = Micro, S = Small, R = Regular, L = Large, V = virtuell,
   O = andere);
 - falls vorhanden Trackables, Favoritenpunkte und zusätzliche Wegpunkte;
-- rechts die Entfernung und einen Pfeil in Richtung des Caches.
+- rechts die Entfernung und einen Pfeil in Richtung des Caches, beim gewählten Cache zusätzlich einen Haken.
 
 Über der Liste steht, wie viele Caches du siehst, zum Beispiel „200 von 301 Caches · nach Entfernung“.
 
@@ -108,6 +108,21 @@ dann grau.
 
 **Aufräumen:** Unter **⋯ › Caches löschen** entfernst du alle gefundenen, alle archivierten oder alle gerade
 angezeigten Caches aus der Liste. Ein erneuter Import holt sie zurück.
+
+## Der gewählte Cache
+
+Wie in Cachebox gibt es immer einen gewählten Cache, mit dem du gerade unterwegs bist. Er steht als Leiste über den
+Bereichen **Caches**, **Karte**, **Loggen** und **Mehr**: Typ-Symbol, Name, GC-Code, Schwierigkeit, Gelände und
+Größe, mit Standort auch Entfernung und ein Pfeil in seine Richtung.
+
+- **Antippen** öffnet seine Details.
+- **Lange drücken** bietet **Details** und **Auf der Karte**.
+- **Auf der Karte** ist der gewählte Cache immer eingezeichnet; wählst du einen anderen, springt die Karte zu ihm
+  (siehe „Offline-Karten“).
+
+iCacheBox merkt sich je Liste den zuletzt gewählten Cache, auch nach einem Neustart. Wechselst du die Liste, ist
+deren zuletzt gewählter Cache wieder gewählt; in einer neuen Liste ist zunächst keiner gewählt und die Leiste
+verschwindet.
 
 ## Cache-Details
 
@@ -140,6 +155,19 @@ Abspielsymbol setzt ihn fort. Mit der ersten Karte lädt iCacheBox das passende 
 **Karte anzeigen:** Im Bereich **Karte** wählst du über das Ebenen-Symbol oben rechts die Karte, das Theme und
 den Stil. Freizeitkarten bekommen automatisch ihr Design.
 
+![Gewählter Cache auf der Karte](bilder/karte-cache.jpg)
+
+**Gewählter Cache auf der Karte:** Der gewählte Cache und seine zusätzlichen Wegpunkte (Parkplatz, Stationen,
+Final), soweit sie Koordinaten haben, stehen mit ihren Cachebox-Symbolen auf der Karte. Ein Tipp auf das
+Cache-Symbol zeigt Name und Wertung, der Info-Knopf daneben öffnet die Details. Mit Standort-Freigabe ist auch
+deine Position als grüner Punkt zu sehen.
+
+Die Karte springt zum Cache, wenn du einen anderen Cache wählst oder **Auf der Karte** nutzt: in der Liste nach
+rechts wischen, lange auf einen Cache oder die Leiste drücken oder im Cache-Menü **⋯ › Auf Karte zeigen**. Deckt
+die eingestellte Karte den Ort nicht ab, nimmt iCacheBox von selbst eine andere vorhandene Karte, die ihn abdeckt.
+Gibt es keine, steht der Cache auf leerem Grund und ein Hinweis erscheint; die passende Karte lädst du dann unter
+**Mehr › Karten und Themes**.
+
 **Löschen:** Unter **Auf diesem Gerät** hat jede Karte und jedes Design einen roten Mülleimer. Vor dem Löschen
 fragt die App nach und zeigt, wie viel Speicher frei wird.
 
@@ -167,4 +195,5 @@ keine Caches. Ist die Datei beschädigt, nennt die Fehlermeldung die Zeile, an d
 ## Noch nicht enthalten
 
 Im Vergleich zu Cachebox für Android fehlen noch: Laden und Aktualisieren über die Geocaching-API, Spoilerbilder,
-Caches auf der Karte, Kompass und Navigation, Feldnotizen hochladen, Solver, Tracks und Trackables.
+alle Caches der Liste auf der Karte (bisher nur der gewählte mit seinen Wegpunkten), einen Cache auf der Karte
+antippen, um ihn zu wählen, Kompass und Navigation, Feldnotizen hochladen, Solver, Tracks und Trackables.

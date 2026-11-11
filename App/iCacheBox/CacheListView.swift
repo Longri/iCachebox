@@ -52,8 +52,10 @@ struct CacheListView: View {
                     Button("Löschen", role: .destructive) { delete(choice) }
                     Button("Abbrechen", role: .cancel) {}
                 } message: { choice in
-                    Text("\(codes(for: choice).count) Caches werden mit Wegpunkten und Logs aus der Liste "
-                         + "„\(lists.currentName ?? "")“ entfernt. Ein erneuter Import holt sie zurück.")
+                    let count = codes(for: choice).count
+                    Text((count == 1 ? "1 Cache wird" : "\(count) Caches werden")
+                         + " mit Wegpunkten und Logs aus der Liste „\(lists.currentName ?? "")“ entfernt. "
+                         + "Ein erneuter Import holt \(count == 1 ? "ihn" : "sie") zurück.")
                 }
                 .selectedCacheBar()
         }
@@ -136,7 +138,7 @@ struct CacheListView: View {
     private var countText: String {
         let total = lists.caches.count
         let count = shown.count
-        let caches = count == total ? "\(total) Caches" : "\(count) von \(total) Caches"
+        let caches = count == total ? Format.count(total, "Cache", "Caches") : "\(count) von \(total) Caches"
         let order = lists.sortOrder == .distance && lists.reference == nil ? "nach Name" : "nach \(lists.sortOrder.title)"
         let reference = lists.sortOrder == .distance && lists.reference != nil && !lists.referenceIsDevice
             ? " (vom gewählten Cache)" : ""

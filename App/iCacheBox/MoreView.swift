@@ -44,6 +44,7 @@ struct MoreView: View {
                 }
             }
             .navigationTitle("Mehr")
+            .selectedCacheBar()
         }
     }
 

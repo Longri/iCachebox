@@ -112,6 +112,9 @@ final class CacheListModel {
     private(set) var reference: Coordinate?
     private(set) var referenceIsDevice = false
 
+    /// Called after a list was opened and its caches are loaded (also after an import and after deleting the
+    /// open list); `AppState` restores the selection of that list.
+    @ObservationIgnored var onOpen: (() -> Void)?
     @ObservationIgnored private var importTask: Task<Void, Never>?
     @ObservationIgnored private var importWork: Task<Result<GPXImportResult, Error>, Never>?
 
@@ -145,6 +148,7 @@ final class CacheListModel {
         currentName = name
         UserDefaults.standard.set(name, forKey: "cacheList.current")
         await loadCaches()
+        if currentName == name { onOpen?() }   // not if another list was opened meanwhile
     }
 
     func loadCaches() async {

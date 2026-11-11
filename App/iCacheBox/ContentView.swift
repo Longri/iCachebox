@@ -1,21 +1,29 @@
+import CacheboxCore
 import MapKit
 import MapsforgeCore
 import MapsforgeRender
 import SwiftUI
 
-/// Prototype screen: Mapsforge offline map rendered by the Swift port and shown through MapKit,
-/// with map/theme/style selection and a small performance HUD.
+/// Tab 3: Mapsforge offline map rendered by the Swift port and shown through MapKit, with map/theme/style
+/// selection and a small performance HUD. The selected cache and its waypoints are drawn on the map, and the map
+/// centers on the cache when it is selected or shown with "Auf der Karte" (Cachebox `MapView.setSelectedCache`).
 ///
 /// Maps (`*.map`) and external themes (`*.xml` in sub-folders) are taken from the `BundledMaps`
 /// folder of the app bundle (`App/BundledMaps`, not in git) and from the downloads (`MapLibrary`).
 struct ContentView: View {
+    @Environment(AppState.self) private var state
     @State private var model = MapModel()
+    /// Additional waypoints of the selected cache.
+    @State private var waypoints: [Waypoint] = []
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            if let renderer = model.renderer, let map = model.loadedMap {
-                MapsforgeMapView(renderer: renderer, stats: model.stats, mapID: map, center: model.center)
-                    .ignoresSafeArea()
+            if let renderer = model.renderer {
+                MapsforgeMapView(renderer: renderer, stats: model.stats, center: model.center, markers: markers,
+                                 showsUserLocation: state.location.coordinate != nil) {
+                    state.tab = .cache
+                }
+                .ignoresSafeArea()
             } else {
                 ContentUnavailableView("Karte nicht geladen", systemImage: "map",
                                        description: Text(model.error ?? "Lade Karte …"))
@@ -28,9 +36,65 @@ struct ContentView: View {
                 .padding(.trailing, 12)
                 .padding(.top, 56)
         }
+        .overlay(alignment: .top) {
+            if let notice = model.notice {
+                Text(notice)
+                    .font(.footnote)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .padding(.top, 8)
+                    .padding(.horizontal, 64)   // keep the map menu free
+                    .transition(.opacity)
+            }
+        }
+        .animation(.default, value: model.notice)
         .task { await model.reload() }
         // pick up maps and themes downloaded meanwhile; a changed selection reloads through MapMenu
         .onAppear { model.refreshSources() }
+        .onChange(of: state.mapFocus, initial: true) {
+            if let focus = state.mapFocus { model.focus(on: focus.coordinate) }
+        }
+        .task(id: waypointKey) { await loadWaypoints() }
+        .task(id: model.notice) {
+            guard model.notice != nil else { return }
+            try? await Task.sleep(for: .seconds(6))
+            if !Task.isCancelled { model.notice = nil }
+        }
+    }
+
+    /// The selected cache and its waypoints with coordinates.
+    private var markers: [MapMarker] {
+        guard let cache = state.selectedCache else { return [] }
+        var markers: [MapMarker] = waypoints.filter { $0.cacheCode == cache.code }.compactMap { waypoint in
+            guard let coordinate = waypoint.coordinate else { return nil }
+            return MapMarker(id: waypoint.id, latitude: coordinate.latitude, longitude: coordinate.longitude,
+                             iconName: waypoint.type.iconName,
+                             title: waypoint.title.isEmpty ? waypoint.type.title : waypoint.title,
+                             subtitle: "\(waypoint.code) · \(waypoint.type.title)", isCache: false)
+        }
+        markers.append(MapMarker(id: cache.code, latitude: cache.coordinate.latitude,
+                                 longitude: cache.coordinate.longitude,
+                                 iconName: cache.type.iconName(solved: cache.hasCorrectedCoordinate),
+                                 title: cache.name, subtitle: "\(cache.code) · \(cache.ratingText)", isCache: true))
+        return markers
+    }
+
+    /// Reloads the waypoints for another cache, another list and after an import.
+    private var waypointKey: [String?] {
+        [state.selectedCache?.code, state.lists.currentName, state.lists.current?.lastImport?.description]
+    }
+
+    private func loadWaypoints() async {
+        guard let code = state.selectedCache?.code, let name = state.lists.currentName else {
+            waypoints = []
+            return
+        }
+        let url = state.lists.store.url(of: name)
+        waypoints = await Task.detached(priority: .userInitiated) {
+            (try? CacheDatabase(url: url).waypoints(cacheCode: code)) ?? []
+        }.value
     }
 }
 
@@ -112,10 +176,18 @@ final class MapModel {
     private(set) var styleMenu: RenderThemeStyleMenu?
     /// Map file of the current renderer (the selection may already point to the next one).
     private(set) var loadedMap: URL?
-    private(set) var center = CLLocationCoordinate2D(latitude: 53.0758, longitude: 8.8072)
+    private(set) var center = MapCenterRequest(latitude: 53.0758, longitude: 8.8072, resetZoom: true)
+    /// Short message over the map, e.g. when no map covers the selected cache; hidden after a few seconds.
+    var notice: String?
 
     let language = Locale.current.language.languageCode?.identifier ?? "en"
     private var generation = 0
+    /// Area of each map file, read from its header.
+    private var bounds: [URL: BoundingBox] = [:]
+    /// Last place asked for with `focus(on:)` (the selected cache); a map chosen later starts there if it covers it.
+    private var focusTarget: LatLong?
+    /// A place asked for while no map was loaded or another one was loading; that load starts there.
+    private var pendingFocus: LatLong?
 
     private static let builtInThemes = [ThemeChoice(name: "Default", source: .builtIn("default")),
                                         ThemeChoice(name: "Osmarender", source: .builtIn("osmarender"))]
@@ -139,6 +211,9 @@ final class MapModel {
             a.lastPathComponent.localizedStandardCompare(b.lastPathComponent) == .orderedAscending
         }
         maps = files.filter { $0.pathExtension == "map" }.sorted(by: byName)
+        for map in maps where bounds[map] == nil {
+            bounds[map] = (try? MapFile(url: map))?.boundingBox   // reads only the header
+        }
         themes = Self.builtInThemes + files.filter { $0.pathExtension == "xml" }.sorted(by: byName)
             .map { ThemeChoice(name: $0.deletingPathExtension().lastPathComponent, source: .file($0)) }
 
@@ -156,6 +231,25 @@ final class MapModel {
             return name.hasPrefix("freizeitkarte") || name.hasPrefix("fzk")
         }
         return candidates.first { $0.name == "freizeitkarte-v5" } ?? candidates.first
+    }
+
+    /// Centers the map on a place (the selected cache). If the chosen map does not cover it, another map that does
+    /// is chosen; if none does, the map still moves there (the marker shows the place) and says that a map is missing.
+    func focus(on coordinate: Coordinate) {
+        let point = LatLong(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        focusTarget = point
+        let covers = { (map: URL) in self.bounds[map]?.contains(point) == true }
+        let covering = selectedMap.flatMap { covers($0) ? $0 : nil } ?? maps.first(where: covers)
+        notice = covering == nil && !maps.isEmpty
+            ? "Keine Karte für diesen Ort. Karten gibt es unter Mehr › Karten und Themes." : nil
+        if let covering, covering != selectedMap {
+            pendingFocus = point
+            selectedMap = covering   // MapMenu reloads the map, which then starts at the place
+        } else if renderer == nil || loadedMap != selectedMap {
+            pendingFocus = point     // the first or the running load starts there
+        } else {
+            center = MapCenterRequest(latitude: point.latitude, longitude: point.longitude, resetZoom: false)
+        }
     }
 
     func overlayBinding(_ overlay: RenderThemeStyleLayer) -> Binding<Bool> {
@@ -191,11 +285,20 @@ final class MapModel {
                case .builtIn = selectedTheme.source, let theme = freizeitkarteTheme {
                 selectedTheme = theme   // MapMenu reloads with the matching design
             }
-            if recenter || self.renderer == nil {
-                // Bremen market square for the test map, otherwise the map's own start position
-                center = mapURL.lastPathComponent.hasPrefix("bremen")
-                    ? CLLocationCoordinate2D(latitude: 53.0758, longitude: 8.8072)
-                    : CLLocationCoordinate2D(latitude: map.startPosition.latitude, longitude: map.startPosition.longitude)
+            if recenter || self.renderer == nil || pendingFocus != nil {
+                // a place asked for meanwhile; the selected cache if the map covers it; else Bremen market square
+                // for the test map, otherwise the map's own start position
+                let start = if let pending = pendingFocus {
+                    pending
+                } else if let target = focusTarget, map.boundingBox.contains(target) {
+                    target
+                } else if mapURL.lastPathComponent.hasPrefix("bremen") {
+                    LatLong(latitude: 53.0758, longitude: 8.8072)
+                } else {
+                    map.startPosition
+                }
+                center = MapCenterRequest(latitude: start.latitude, longitude: start.longitude, resetZoom: true)
+                pendingFocus = nil
             }
             styleMenu = renderer.theme.styleMenu
             if let menu = styleMenu, selectedStyle == nil { selectedStyle = menu.defaultValue }
