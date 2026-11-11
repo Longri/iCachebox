@@ -58,7 +58,9 @@ Teile waren nicht lesbar oder nur sekundär belegt; das ist unten markiert. Kein
   BeanShell-Layer, GCVote-Login per HTTP-GET, Tokens im Log.
 - **GPL:** Cachebox-Dateien tragen GPL-Header ohne Version, keine LICENSE-Datei. Ein Zeile-für-Zeile-Port wäre ein
   abgeleitetes Werk; FSF sieht GPL und App Store als unvereinbar. Nur Funktionen und Aussehen als Vorlage nutzen und
-  selbst neu schreiben, oder Zustimmung aller Urheber einholen. Icons und `micross.ttf` nicht übernehmen, solange Rechte ungeklärt.
+  selbst neu schreiben, oder Zustimmung aller Urheber einholen. `micross.ttf` nicht übernehmen, solange Rechte ungeklärt.
+  Die Cachetyp-, Wegpunkt- und Status-Icons (`SkinPacker/Icons/default/day/UI_IconPack`) sind seit Nov. 2026 auf
+  Wunsch übernommen (`App/iCacheBox/Assets.xcassets/Cachebox`); ihre Rechte vor einer Veröffentlichung klären.
 - **mapsforge:** LGPL-3.0 mit Verzicht auf Relink-Pflicht (§4d/e). Der Swift-Port bleibt LGPL-3.0, Quelltext veröffentlichen.
   Ob der Fork im Cachebox-Repo denselben Verzicht trägt, ist nicht geprüft.
 - **Empfohlene Lizenzaufteilung:** `Packages/Mapsforge/` LGPL-3.0; App (`App/`) Apache-2.0 oder MIT (MPL-2.0 als Mittelweg).

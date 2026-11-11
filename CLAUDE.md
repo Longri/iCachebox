@@ -23,7 +23,8 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
 - `App/` – iOS-App (Xcode-Projekt, synchronisierter Ordner `App/iCacheBox/`), `MKTileOverlay` mit Mapsforge-Kacheln
   - Caches: `CacheListModel.swift` (Listen in `Documents/Lists`, Sortierung, Filter, Import), `CacheListView.swift`,
     `CacheListsView.swift`, `CacheFilterView.swift`, `ImportView.swift`, `CacheDetailView.swift`, `HTMLView.swift`
-    (WKWebView ohne JavaScript), `LocationModel.swift`, `CachePresentation.swift` (SF-Symbole statt Cachebox-Icons)
+    (WKWebView ohne JavaScript), `LocationModel.swift`, `CachePresentation.swift` (Cachetyp-/Wegpunkt-Icons
+    aus Cachebox, `Assets.xcassets/Cachebox`, Namen wie die Sprites dort; Rechte noch ungeklärt, siehe UI-KONZEPT.md)
   - Kartendownload: `MapCatalog.swift` (Freizeitkarte-Repository-XML), `MapLibrary.swift` (Hintergrund-`URLSession`,
     MD5-Prüfung, Entpacken nach `Documents/Maps` bzw. `Documents/Themes`), `ZipArchive.swift`, `MapDownloadView.swift`
   - `App/iCacheBox-Info.plist` wird mit der generierten Info.plist zusammengeführt (ATS-Ausnahme nur für

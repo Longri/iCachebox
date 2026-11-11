@@ -1,8 +1,9 @@
 import CacheboxCore
 import SwiftUI
 
-// Names, symbols and colours of the cache model for the UI. Symbols are SF Symbols: the Cachebox icon set is
-// not used until its rights are clear (UI-KONZEPT.md).
+// Names, icons and colours of the cache model for the UI. Cache and waypoint types use the icons of the Android
+// app: `Assets.xcassets/Cachebox` holds copies of `SkinPacker/Icons/default/day/UI_IconPack` from the Cachebox
+// repository, named like the sprites there (`"big" + GeoCacheType.name()`). Rights: see UI-KONZEPT.md.
 
 extension CacheType {
     var title: String {
@@ -29,35 +30,39 @@ extension CacheType {
         }
     }
 
-    var symbol: String {
+    /// Asset name of the Cachebox icon (`GeoCacheType` names; Cachebox has no Locationless type and shows it as
+    /// `Undefined`, the three HQ types share `bigHQ` here because the model does not tell them apart).
+    var iconName: String {
         switch self {
-        case .traditional: "shippingbox.fill"
-        case .multi: "square.stack.3d.up.fill"
-        case .mystery: "questionmark.square.fill"
-        case .letterbox: "envelope.fill"
-        case .wherigo: "iphone.gen1"
-        case .event, .megaEvent, .gigaEvent, .communityCelebration, .hq: "calendar"
-        case .cito: "trash.fill"
-        case .earth: "globe.europe.africa.fill"
-        case .virtual: "eye.fill"
-        case .webcam: "web.camera.fill"
-        case .lab: "flask.fill"
-        case .locationless, .ape, .gpsAdventures, .other: "mappin.circle.fill"
+        case .traditional: "bigTraditional"
+        case .multi: "bigMulti"
+        case .mystery: "bigMystery"
+        case .letterbox: "bigLetterbox"
+        case .wherigo: "bigWherigo"
+        case .event: "bigEvent"
+        case .megaEvent: "bigMegaEvent"
+        case .gigaEvent: "bigGiga"
+        case .cito: "bigCITO"
+        case .communityCelebration: "bigCelebrationEvent"
+        case .earth: "bigEarth"
+        case .virtual: "bigVirtual"
+        case .webcam: "bigCamera"
+        case .lab: "bigLab"
+        case .ape: "bigAPE"
+        case .hq: "bigHQ"
+        case .gpsAdventures: "bigAdventuresExhibit"
+        case .locationless, .other: "bigUndefined"
         }
     }
 
-    var color: Color {
+    /// The icon with corrected coordinates (Cachebox `CacheInfo`: `"big" + type + "Solved"`). Cachebox has this
+    /// variant only for the types below; the others keep their normal icon.
+    func iconName(solved: Bool) -> String {
         switch self {
-        case .traditional: .green
-        case .multi: .orange
-        case .mystery, .wherigo: .blue
-        case .letterbox: .teal
-        case .event, .megaEvent, .gigaEvent, .communityCelebration, .hq: .red
-        case .cito: .mint
-        case .earth: .brown
-        case .virtual, .webcam, .locationless: .purple
-        case .lab: .cyan
-        case .ape, .gpsAdventures, .other: .gray
+        case .traditional, .multi, .mystery, .letterbox, .wherigo, .earth, .virtual, .webcam:
+            solved ? iconName + "Solved" : iconName
+        default:
+            iconName
         }
     }
 
@@ -105,15 +110,16 @@ extension WaypointType {
         }
     }
 
-    var symbol: String {
+    /// Asset name of the Cachebox icon; waypoints are `GeoCacheType` values there, too.
+    var iconName: String {
         switch self {
-        case .parking: "parkingsign.circle.fill"
-        case .stage: "flag.fill"
-        case .question: "questionmark.circle.fill"
-        case .final: "flag.checkered"
-        case .trailhead: "figure.walk"
-        case .reference: "scope"
-        case .other: "mappin"
+        case .parking: "bigParkingArea"
+        case .stage: "bigMultiStage"
+        case .question: "bigMultiQuestion"
+        case .final: "bigFinal"
+        case .trailhead: "bigTrailhead"
+        case .reference: "bigReferencePoint"
+        case .other: "bigUndefined"
         }
     }
 }
@@ -192,45 +198,54 @@ enum Format {
     }
 }
 
-/// The type symbol of a cache with small status marks (found, favourite, unavailable), like the Cachebox list icon.
+/// A Cachebox bitmap icon fitted into a square of `size` points (keeps the aspect ratio, `bigFinal` is 80 × 96 px).
+struct CacheboxIcon: View {
+    let name: String
+    var size: CGFloat = 28
+
+    var body: some View {
+        Image(name)
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+}
+
+/// The type icon of a cache with the status marks of the Cachebox list (`CacheInfo`, half the icon size each):
+/// smiley for found at the bottom left, heart for favourite at the top right, traffic cone for archived or stop sign
+/// for disabled at the bottom right. Corrected coordinates switch to the "Solved" icon.
 struct CacheTypeIcon: View {
     let type: CacheType
     var isFound = false
     var isFavorite = false
+    var isArchived = false
     var isUnavailable = false
     var isSolved = false
+    var size: CGFloat = 36
 
     var body: some View {
-        Image(systemName: type.symbol)
-            .font(.title2)
-            .foregroundStyle(type.color)
-            .frame(width: 34, height: 34)
+        CacheboxIcon(name: type.iconName(solved: isSolved), size: size)
             .overlay(alignment: .bottomLeading) {
-                if isFound {
-                    badge("checkmark.circle.fill", .green)
-                }
+                if isFound { mark("log0icon") }
             }
             .overlay(alignment: .topTrailing) {
-                if isFavorite {
-                    badge("star.fill", .yellow)
-                } else if isSolved {
-                    badge("pencil.circle.fill", .blue)
-                }
+                if isFavorite { mark("favorit") }
             }
             .overlay(alignment: .bottomTrailing) {
-                if isUnavailable {
-                    badge("nosign", .red)
+                if isArchived {
+                    mark("log11icon")
+                } else if isUnavailable {
+                    mark("disabled")
                 }
             }
             .accessibilityElement()
             .accessibilityLabel(accessibilityText)
     }
 
-    private func badge(_ symbol: String, _ color: Color) -> some View {
-        Image(systemName: symbol)
-            .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(color)
-            .background(Circle().fill(Color(.systemBackground)).padding(-1))
+    private func mark(_ name: String) -> some View {
+        CacheboxIcon(name: name, size: size / 2)
     }
 
     private var accessibilityText: String {
@@ -238,7 +253,11 @@ struct CacheTypeIcon: View {
         if isFound { parts.append("gefunden") }
         if isFavorite { parts.append("Favorit") }
         if isSolved { parts.append("korrigierte Koordinaten") }
-        if isUnavailable { parts.append("nicht verfügbar") }
+        if isArchived {
+            parts.append("archiviert")
+        } else if isUnavailable {
+            parts.append("nicht verfügbar")
+        }
         return parts.joined(separator: ", ")
     }
 }

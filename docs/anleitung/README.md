@@ -77,8 +77,9 @@ Wie in Cachebox ist jede Liste eine eigene Datenbank, zum Beispiel eine für zu 
 
 Jede Zeile zeigt:
 
-- links das Symbol des Cache-Typs, darauf ein grüner Haken für gefunden, ein Stern für Favorit, ein Stift für
-  korrigierte Koordinaten und ein Verbotszeichen, wenn der Cache deaktiviert oder archiviert ist;
+- links das Symbol des Cache-Typs wie in Cachebox (bei korrigierten Koordinaten in der „gelösten“ Variante),
+  darauf ein Smiley für gefunden, ein Herz für Favorit und ein Verbotszeichen, wenn der Cache deaktiviert ist, bzw.
+  ein Leitkegel, wenn er archiviert ist;
 - den Namen (rot, wenn der Cache nicht verfügbar ist, durchgestrichen, wenn er archiviert ist);
 - GC-Code, Schwierigkeit (D), Gelände (T) und Größe (M = Micro, S = Small, R = Regular, L = Large, V = virtuell,
   O = andere);

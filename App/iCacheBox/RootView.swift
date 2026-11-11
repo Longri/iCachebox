@@ -65,8 +65,7 @@ struct SelectedCacheBar: View {
                 state.tab = .cache
             } label: {
                 HStack {
-                    Image(systemName: cache.type.symbol)
-                        .foregroundStyle(cache.type.color)
+                    CacheboxIcon(name: cache.type.iconName(solved: cache.hasCorrectedCoordinate), size: 26)
                     Text(cache.name).lineLimit(1)
                     Spacer()
                     Text(cache.code).foregroundStyle(.secondary)

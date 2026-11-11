@@ -255,7 +255,8 @@ struct CacheRowView: View {
     var body: some View {
         HStack(spacing: 12) {
             CacheTypeIcon(type: cache.type, isFound: cache.isFound, isFavorite: cache.isFavorite,
-                          isUnavailable: !cache.isAvailable || cache.isArchived, isSolved: cache.hasCorrectedCoordinate)
+                          isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
+                          isSolved: cache.hasCorrectedCoordinate)
             VStack(alignment: .leading, spacing: 2) {
                 Text(cache.name)
                     .strikethrough(cache.isArchived)

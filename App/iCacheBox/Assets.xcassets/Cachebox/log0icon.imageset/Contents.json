@@ -1,0 +1,13 @@
+{
+  "images" : [
+    {
+      "filename" : "log0icon.png",
+      "idiom" : "universal",
+      "scale" : "2x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

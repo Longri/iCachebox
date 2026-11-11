@@ -37,7 +37,7 @@ struct CacheFilterView: View {
                         Label {
                             Text(type.title)
                         } icon: {
-                            Image(systemName: type.symbol).foregroundStyle(type.color)
+                            CacheboxIcon(name: type.iconName)
                         }
                     }
                 }

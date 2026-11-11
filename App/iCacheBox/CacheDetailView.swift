@@ -153,7 +153,7 @@ struct CacheDetailView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 12) {
                     CacheTypeIcon(type: cache.type, isFound: summary.isFound, isFavorite: summary.isFavorite,
-                                  isUnavailable: !cache.isAvailable || cache.isArchived,
+                                  isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
                                   isSolved: cache.correctedCoordinate != nil)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(cache.name).font(.headline)
@@ -275,12 +275,12 @@ struct CacheDetailView: View {
     private func waypoints(_ details: Details) -> some View {
         List {
             Section {
-                waypointRow(symbol: details.cache.type.symbol, color: details.cache.type.color, title: "Cache",
-                            code: details.cache.code, coordinate: details.cache.target, comment: "")
+                waypointRow(icon: details.cache.type.iconName(solved: details.cache.correctedCoordinate != nil),
+                            title: "Cache", code: details.cache.code, coordinate: details.cache.target, comment: "")
             }
             Section {
                 ForEach(details.waypoints) { waypoint in
-                    waypointRow(symbol: waypoint.type.symbol, color: .accentColor,
+                    waypointRow(icon: waypoint.type.iconName,
                                 title: waypoint.title.isEmpty ? waypoint.type.title : waypoint.title,
                                 code: "\(waypoint.code) · \(waypoint.type.title)",
                                 coordinate: waypoint.coordinate, comment: waypoint.comment)
@@ -291,10 +291,10 @@ struct CacheDetailView: View {
         }
     }
 
-    private func waypointRow(symbol: String, color: Color, title: String, code: String, coordinate: Coordinate?,
+    private func waypointRow(icon: String, title: String, code: String, coordinate: Coordinate?,
                              comment: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: symbol).foregroundStyle(color).frame(width: 28)
+            CacheboxIcon(name: icon, size: 32)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                 Text(code).font(.caption).foregroundStyle(.secondary)
