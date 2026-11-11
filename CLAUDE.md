@@ -46,7 +46,18 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     (korrigiert, sonst Final mit Koordinaten – `summaries()` holt `finalCoordinate`), auch für Listen-Entfernungen
   - Letzte Karte: `MapModel` merkt Karte/Theme/Stil/Overlays (Pfad relativ zum Quellordner, UserDefaults `map.*`),
     `MapCamera` Mitte + Kachel-Zoom; `CacheMapView.setCenter(_:zoomLevel:)` korrigiert, weil MapKit
-    `setVisibleMapRect` in die Safe Area einpasst
+    `setVisibleMapRect` in die Safe Area einpasst (auch `centerCoordinate`/`setCenter` meinen die Mitte der Safe Area)
+  - Eigene Position und Kartenmodus (wie Cachebox `MapView`/`MapViewBase`): `LocationModel.swift` (Position, Tempo,
+    Richtung wie `Locator`: unter 5 km/h Kompass = roter Pfeil, sonst GPS-Kurs = türkis; `headingOrientation` folgt
+    dem Gerät), `MapPosition.swift` (`MapState` Free/GPS wie `btnMapState`, UserDefaults `map.state`;
+    `OwnPositionView` = Pfeil + Genauigkeitskreis wie `renderPositionMarker`; `EdgeArrowsView` = Pfeile am Kartenrand,
+    rot zum gewählten Cache wie `renderTargetArrow`, blau zur eigenen Position – nicht in Cachebox), `MapControls.swift`
+    (`MapInfoPanel` wie Cachebox `MapInfoPanel`, `MapStateButton` mit LED, `MapFormat` = Cachebox-Zahlenformate),
+    `CacheboxArrows.swift` (Pfeile der Skin als Vektoren nachgezeichnet), `Assets.xcassets/CacheboxUI` (Satellit,
+    Karte, Kompassrose aus der Skin). Der Coordinator beobachtet `LocationModel` selbst (`withObservationTracking`),
+    damit Kompass-Updates nicht `ContentView` samt tausender Marker neu berechnen; GPS zentriert ohne Animation,
+    Pan mit einem Finger → Free, Zoomen/Drehen holt die Position zurück in die Mitte. Kompass und Maßstab platziert
+    `CacheMapView` selbst (`MKCompassButton`/`MKScaleView`), sonst lägen sie unter dem Infofeld
   - Kartendownload: `MapCatalog.swift` (Freizeitkarte-Repository-XML), `MapLibrary.swift` (Hintergrund-`URLSession`,
     MD5-Prüfung, Entpacken nach `Documents/Maps` bzw. `Documents/Themes`), `ZipArchive.swift`, `MapDownloadView.swift`
   - `App/iCacheBox-Info.plist` wird mit der generierten Info.plist zusammengeführt (ATS-Ausnahme nur für
@@ -120,6 +131,15 @@ Im Simulator geprüft (301 Caches, Lasttest 5117 Caches bei z9 alle sichtbar). N
 tausenden sichtbaren Annotationen auf echtem Gerät. Nicht übernommen: Startwegpunkt von Multi/Mystery (Modell hat
 keinen), Cachebox-Optionen „eigene Funde ausblenden“, „alle Wegpunkte“, „Originalposition“, Namen/D/T-Sterne an
 den Symbolen, Distanzkreis, Wegpunkt-Auswahl.
+
+Eigene Position, GPS/Free und Infofeld (seit 11.11.2026, wie Cachebox): Pfeil in Blickrichtung, Knopf GPS (grüne
+LED, Karte folgt) / Free (LED aus, nach Verschieben mit einem Finger; Tipp springt zur Position), Infofeld mit
+Kompass, Entfernung zum gewählten Cache, Tempo und Koordinaten der Kartenmitte, Pfeile am Rand zur Position und
+zum Cache. Abweichungen: nur Free/GPS (WP, Lock, Car fehlen), Wählen eines Caches im GPS-Modus bewegt die Karte nicht,
+„Auf der Karte“ schaltet auf Free; ohne Standort-Freigabe Free. Im Simulator geprüft (fester Ort und simulierte
+Route, Zoomen/Drehen im GPS-Modus, Start im GPS-Modus, Hoch-/Querformat, Dunkelmodus, ohne Freigabe). Nicht geprüft:
+echter Kompass (roter Pfeil, `headingOrientation` im Querformat), echtes Gerät, Akkuverbrauch mit
+`kCLDistanceFilterNone`, VoiceOver.
 
 Lizenz-Hinweis: Elevate ist CC BY-NC-SA 4.0 (kommerziell nur BY-ND) – nicht ungefragt in eine verteilte App packen;
 OAM-Karten und Themes lädt in Cachebox der Nutzer selbst.

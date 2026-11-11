@@ -17,15 +17,29 @@ struct ContentView: View {
     @State private var model = MapModel()
     /// Additional waypoints of the selected cache.
     @State private var waypoints: [Waypoint] = []
+    /// GPS/Free button (Cachebox `btnMapState`), kept across launches.
+    @State private var mapState = MapState.saved
+    @State private var viewport = MapViewport()
+    /// Safe area of the map tab: status bar, tab bar and the bar of the selected cache.
+    @State private var safeInsets = EdgeInsets()
 
     var body: some View {
         ZStack(alignment: .bottom) {
             if let renderer = model.renderer {
                 MapsforgeMapView(renderer: renderer, stats: model.stats, center: model.center, markers: markers,
-                                 showsUserLocation: state.location.coordinate != nil,
-                                 onSelect: { state.select($0, show: .map) },
+                                 location: state.location, target: state.selectedCache?.target,
+                                 followsPosition: mapState == .gps, chromeInsets: chromeInsets,
+                                 onSelect: { state.select($0, show: .map, onMap: true) },
                                  onShowDetails: { state.select($0, show: .cache) },
-                                 onCameraChange: { model.cameraChanged($0) })
+                                 onCameraChange: { model.cameraChanged($0) },
+                                 onCenterChange: { viewport.center = $0 },
+                                 onUserPan: { mapState = .free },
+                                 onPositionChange: { here in
+                                     // walking off the map in GPS mode: change to a map that covers the position
+                                     if mapState == .gps { model.follow(here) }
+                                 },
+                                 onPositionArrow: showOwnPosition,
+                                 onTargetArrow: showSelectedCache)
                 .ignoresSafeArea()
             } else {
                 ContentUnavailableView("Karte nicht geladen", systemImage: "map",
@@ -34,11 +48,8 @@ struct ContentView: View {
             StatsView(stats: model.stats, loading: model.loading)
                 .padding()
         }
-        .overlay(alignment: .topTrailing) {
-            MapMenu(model: model)
-                .padding(.trailing, 12)
-                .padding(.top, 56)
-        }
+        .onGeometryChange(for: EdgeInsets.self) { $0.safeAreaInsets } action: { safeInsets = $0 }
+        .overlay(alignment: .top) { controls }
         .overlay(alignment: .top) {
             if let notice = model.notice {
                 Text(notice)
@@ -47,17 +58,31 @@ struct ContentView: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-                    .padding(.top, 8)
-                    .padding(.horizontal, 64)   // keep the map menu free
+                    .padding(.top, MapLayout.panelHeight + 2 * MapLayout.margin)   // under the info panel
+                    .padding(.horizontal, 64)   // keep the buttons free
                     .transition(.opacity)
             }
         }
         .animation(.default, value: model.notice)
         .task { await model.reload() }
         // pick up maps and themes downloaded meanwhile; a changed selection reloads through MapMenu
-        .onAppear { model.refreshSources() }
+        .onAppear {
+            model.refreshSources()
+            state.location.start()
+        }
         .onChange(of: state.mapFocus, initial: true) {
-            if let focus = state.mapFocus { model.focus(on: focus.coordinate) }
+            guard let focus = state.mapFocus else { return }
+            if mapState == .gps {
+                // Cachebox keeps a map in GPS mode at the own position when the selection changes
+                guard focus.isExplicit else { return }
+                mapState = .free
+            }
+            model.focus(on: focus.coordinate)
+        }
+        .onChange(of: mapState) { mapState.save() }
+        // without location access there is nothing to follow
+        .onChange(of: state.location.isDenied, initial: true) {
+            if state.location.isDenied, mapState == .gps { mapState = .free }
         }
         .task(id: waypointKey) { await loadWaypoints() }
         .task(id: model.notice) {
@@ -65,6 +90,56 @@ struct ContentView: View {
             try? await Task.sleep(for: .seconds(6))
             if !Task.isCancelled { model.notice = nil }
         }
+    }
+
+    /// Info panel at the top, GPS/Free button to its right and the map menu below the button (Cachebox
+    /// `MapView.requestLayout`: info panel and toggle button in the top corners).
+    private var controls: some View {
+        HStack(alignment: .top, spacing: MapLayout.margin) {
+            MapInfoPanel(location: state.location, viewport: viewport, target: state.selectedCache?.target,
+                         state: mapState)
+                .layoutPriority(1)
+            Spacer(minLength: 0)
+            VStack(spacing: MapLayout.margin) {
+                MapStateButton(state: mapState, action: showOwnPosition)
+                MapMenu(model: model)
+            }
+        }
+        .padding(.horizontal, MapLayout.margin)
+        .padding(.top, MapLayout.margin)
+        .environment(\.colorScheme, .light)   // the Cachebox colors are light, also in dark mode
+    }
+
+    /// Area of the map covered by the controls and bars, for the edge arrows, compass and scale.
+    private var chromeInsets: UIEdgeInsets {
+        UIEdgeInsets(top: safeInsets.top + MapLayout.panelHeight + 2 * MapLayout.margin,
+                     left: safeInsets.leading,
+                     bottom: safeInsets.bottom + 46,   // the render statistics at the bottom
+                     right: safeInsets.trailing)
+    }
+
+    /// GPS/Free button and the edge arrow of the own position: the map jumps to the own position and follows it
+    /// (Cachebox: the button goes to GPS, `setMapState` centers on `Locator.getMyPosition`).
+    private func showOwnPosition() {
+        let location = state.location
+        if location.isDenied {
+            model.notice = "Kein Zugriff auf den Standort. Erlauben unter Einstellungen › iCacheBox › Standort."
+            return
+        }
+        location.start()
+        mapState = .gps
+        if let here = location.coordinate {
+            model.focus(on: here)
+        } else {
+            model.notice = "Warte auf den Standort …"
+        }
+    }
+
+    /// Edge arrow of the selected cache: the map goes there (Cachebox `MapView` click on `targetArrow`).
+    private func showSelectedCache() {
+        guard let target = state.selectedCache?.target else { return }
+        mapState = .free
+        model.focus(on: target)
     }
 
     /// The caches of the list as filtered there (Cachebox draws the filtered `CacheList`), each at its target
@@ -140,9 +215,10 @@ struct MapMenu: View {
         } label: {
             Image(systemName: "square.3.layers.3d")
                 .font(.title3)
-                .padding(10)
+                .frame(width: MapLayout.menuSize, height: MapLayout.menuSize)
                 .background(.regularMaterial, in: Circle())
         }
+        .accessibilityLabel("Karte und Design")
         .onChange(of: model.selectedMap) { Task { await model.reload(recenter: true) } }
         .onChange(of: model.selectedTheme) {
             model.selectedStyle = nil
@@ -241,6 +317,14 @@ final class MapModel {
         case .builtIn(let name): "builtin:" + name
         case .file(let url): "file:" + sourceKey(url)
         }
+    }
+
+    /// GPS mode: when the own position leaves the shown map and another map covers it, that map is loaded.
+    func follow(_ coordinate: Coordinate) {
+        let point = LatLong(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        guard renderer != nil, let loadedMap, loadedMap == selectedMap, bounds[loadedMap]?.contains(point) == false,
+              maps.contains(where: { bounds[$0]?.contains(point) == true }) else { return }
+        focus(on: coordinate)
     }
 
     /// Remembers where the map is for the next launch.

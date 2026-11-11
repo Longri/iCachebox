@@ -62,7 +62,10 @@ Teile waren nicht lesbar oder nur sekundär belegt; das ist unten markiert. Kein
   Die Cachetyp-, Wegpunkt- und Status-Icons (`SkinPacker/Icons/default/day/UI_IconPack`) sind seit Nov. 2026 auf
   Wunsch übernommen (`App/iCacheBox/Assets.xcassets/Cachebox`, die kleinen Kartensymbole `small1…7` und `star` in
   `Assets.xcassets/CacheboxMap`), ebenso die Attribut-Icons
-  (`CB_Android/assets/data/attributes` → `Assets.xcassets/Attributes`); ihre Rechte vor einer Veröffentlichung klären.
+  (`CB_Android/assets/data/attributes` → `Assets.xcassets/Attributes`) und für das Karten-Infofeld Satellit, Karte und
+  Kompassrose (`satellite`, `map`, `compass-frame-small`, `compass-scale-small` → `Assets.xcassets/CacheboxUI`); die
+  Positions- und Zielpfeile (`arrow-Compass`, `arrow-GPS`, `target-arrow`) und der Toggle-Knopf sind als Vektoren
+  nachgezeichnet (`CacheboxArrows.swift`, `MapControls.swift`). Rechte vor einer Veröffentlichung klären.
   Die Attribut-Texte sind selbst formuliert (nicht aus den Cachebox-`strings.ini`).
 - **mapsforge:** LGPL-3.0 mit Verzicht auf Relink-Pflicht (§4d/e). Der Swift-Port bleibt LGPL-3.0, Quelltext veröffentlichen.
   Ob der Fork im Cachebox-Repo denselben Verzicht trägt, ist nicht geprüft.

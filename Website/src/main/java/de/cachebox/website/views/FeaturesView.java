@@ -20,7 +20,8 @@ public class FeaturesView extends Page {
                 manual());
         card("map.png", "Offline-Karte",
                 "Mapsforge-Vektorkarten mit frei wählbarem Theme, Freizeitkarten für ganz Europa direkt in der App "
-                        + "laden. Alle Caches der Liste liegen auf der Karte, ein Tipp öffnet ihre Info-Blase.",
+                        + "laden. Alle Caches der Liste liegen auf der Karte, ein Tipp öffnet ihre Info-Blase. "
+                        + "Dein Standort als Pfeil in Blickrichtung, im GPS-Modus folgt dir die Karte.",
                 manual());
         comingSoon(card("compass.png", "Kompass & Navigation",
                 "Richtung und Entfernung zum Ziel – zum Cache, zum nächsten Wegpunkt oder zum geparkten Auto."));

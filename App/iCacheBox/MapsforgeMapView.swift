@@ -53,24 +53,53 @@ struct MapsforgeMapView: UIViewRepresentable {
     let stats: RenderStats
     let center: MapCenterRequest
     var markers: [MapMarker] = []
-    var showsUserLocation = false
+    /// Source of the own position, drawn as an arrow in the direction the user looks. Observed by the coordinator
+    /// itself, so that a new heading does not rebuild the whole map view with its thousands of markers.
+    var location: LocationModel?
+    /// Target of the selected cache; an arrow at the map edge points to it while it is off the screen.
+    var target: Coordinate?
+    /// GPS mode: the map keeps the own position in the middle.
+    var followsPosition = false
+    /// Parts of the view covered by the info panel, the buttons and the bars; the edge arrows, the compass and
+    /// the scale stay inside the rest.
+    var chromeInsets = UIEdgeInsets.zero
     /// "Auswählen" in the info bubble of a cache.
     var onSelect: (CacheSummary) -> Void = { _ in }
     /// The details button in the info bubble of a cache.
     var onShowDetails: (CacheSummary) -> Void = { _ in }
     /// The map came to rest at a new position (after panning, zooming or a jump).
     var onCameraChange: (MapCamera) -> Void = { _ in }
+    /// The map center moved (also while panning); for the coordinates in the info panel.
+    var onCenterChange: (Coordinate) -> Void = { _ in }
+    /// The user started to move the map with one finger (Cachebox switches GPS to Free then).
+    var onUserPan: () -> Void = {}
+    /// The own position changed (GPS mode: the map may need another map file).
+    var onPositionChange: (Coordinate) -> Void = { _ in }
+    /// The arrow at the map edge pointing to the own position was tapped.
+    var onPositionArrow: () -> Void = {}
+    /// The arrow at the map edge pointing to the selected cache was tapped.
+    var onTargetArrow: () -> Void = {}
 
     func makeUIView(context: Context) -> CacheMapView {
         let mapView = CacheMapView()
         mapView.delegate = context.coordinator
-        mapView.showsCompass = true
-        mapView.showsScale = true
+        // compass and scale are placed by `CacheMapView` so they do not end up under the info panel
+        mapView.showsCompass = false
+        mapView.showsScale = false
         mapView.pointOfInterestFilter = .excludingAll
         // where MapKit has not drawn the overlay yet it shows a grid, black in dark mode; the Mapsforge themes are
         // light, so a light grid flashes far less (also gives compass, scale and info bubble the light look)
         mapView.overrideUserInterfaceStyle = .light
         context.coordinator.installTapRecognizer(on: mapView)
+        context.coordinator.installPanRecognizer(on: mapView)
+        mapView.onCameraApplied = { [weak coordinator = context.coordinator, weak mapView] in
+            if let coordinator, let mapView { coordinator.cameraApplied(on: mapView) }
+        }
+        let arrows = mapView.edgeArrows
+        arrows.positionArrow.addTarget(context.coordinator, action: #selector(Coordinator.positionArrowTapped),
+                                       for: .touchUpInside)
+        arrows.targetArrow.addTarget(context.coordinator, action: #selector(Coordinator.targetArrowTapped),
+                                     for: .touchUpInside)
         updateUIView(mapView, context: context)
         return mapView
     }
@@ -80,6 +109,14 @@ struct MapsforgeMapView: UIViewRepresentable {
         c.onSelect = onSelect
         c.onShowDetails = onShowDetails
         c.onCameraChange = onCameraChange
+        c.onCenterChange = onCenterChange
+        c.onUserPan = onUserPan
+        c.onPositionChange = onPositionChange
+        c.onPositionArrow = onPositionArrow
+        c.onTargetArrow = onTargetArrow
+        // before the moves below: a jump caused by them must not be taken back by the GPS mode just left
+        c.setFollowing(followsPosition)
+        if mapView.chromeInsets != chromeInsets { mapView.chromeInsets = chromeInsets }
         if c.overlay?.renderer !== renderer {
             // new map/theme/style: replace the tile overlay (MapKit has no API to flush its tile cache)
             let overlay = MapsforgeTileOverlay(renderer: renderer, stats: stats)
@@ -108,7 +145,10 @@ struct MapsforgeMapView: UIViewRepresentable {
             }
         }
         c.update(markers, on: mapView)
-        if mapView.showsUserLocation != showsUserLocation { mapView.showsUserLocation = showsUserLocation }
+        c.observe(location, on: mapView)
+        c.target = target
+        c.followPosition(on: mapView)
+        c.refreshPositionViews(on: mapView)
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -120,6 +160,19 @@ struct MapsforgeMapView: UIViewRepresentable {
         var onSelect: (CacheSummary) -> Void = { _ in }
         var onShowDetails: (CacheSummary) -> Void = { _ in }
         var onCameraChange: (MapCamera) -> Void = { _ in }
+        var onCenterChange: (Coordinate) -> Void = { _ in }
+        var onUserPan: () -> Void = {}
+        var onPositionChange: (Coordinate) -> Void = { _ in }
+        var onPositionArrow: () -> Void = {}
+        var onTargetArrow: () -> Void = {}
+        var target: Coordinate?
+        private weak var location: LocationModel?
+        private var position: OwnPosition?
+        private var positionAnnotation: OwnPositionAnnotation?
+        private var followsPosition = false
+        /// Position the map was last centered on in GPS mode.
+        private var followed: Coordinate?
+        private var lastCenter: CLLocationCoordinate2D?
         /// Annotations on the map by marker id; kept across updates so that a changed selection only touches the
         /// markers that changed instead of replacing thousands of annotations.
         private var annotations: [String: MarkerAnnotation] = [:]
@@ -161,7 +214,16 @@ struct MapsforgeMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-            guard let annotation = annotation as? MarkerAnnotation else { return nil }   // user location: default
+            if annotation is OwnPositionAnnotation {
+                let id = "position"
+                let view = mapView.dequeueReusableAnnotationView(withIdentifier: id) as? OwnPositionView
+                    ?? OwnPositionView(annotation: annotation, reuseIdentifier: id)
+                view.annotation = annotation
+                if let position { view.update(position: position, mapHeading: mapView.camera.heading,
+                                              accuracyRadius: accuracyRadius(of: position, on: mapView)) }
+                return view
+            }
+            guard let annotation = annotation as? MarkerAnnotation else { return nil }
             let id = "marker"
             let view = mapView.dequeueReusableAnnotationView(withIdentifier: id)
                 ?? MKAnnotationView(annotation: annotation, reuseIdentifier: id)
@@ -178,14 +240,22 @@ struct MapsforgeMapView: UIViewRepresentable {
             view.image = images.image(for: marker, size: markerSize)
             // the selected cache on top, then its waypoints, then the other caches (Cachebox draws the selected last)
             view.zPriority = switch marker.content {
-            case .cache: marker.isSelected ? .max : .defaultUnselected
+            case .cache: marker.isSelected ? MKAnnotationViewZPriority(rawValue: 999) : .defaultUnselected
             case .waypoint: MKAnnotationViewZPriority(rawValue: 750)
             }
             view.accessibilityLabel = marker.accessibilityLabel
         }
 
-        /// Marker icons change size at zoom 13 and 15 like in Cachebox.
+        /// Marker icons change size at zoom 13 and 15 like in Cachebox. The own position, the edge arrows and the
+        /// coordinates in the info panel move with the map.
         func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
+            refreshPositionViews(on: mapView)
+            let center = mapView.centerCoordinate
+            if mapView.bounds.width > 0,
+               center.latitude != lastCenter?.latitude || center.longitude != lastCenter?.longitude {
+                lastCenter = center
+                onCenterChange(Coordinate(latitude: center.latitude, longitude: center.longitude))
+            }
             let size = MarkerSize(zoom: mapView.zoomLevel)
             guard size != markerSize else { return }
             markerSize = size
@@ -199,7 +269,125 @@ struct MapsforgeMapView: UIViewRepresentable {
                   mapView.bounds.width > 0 else { return }
             let center = mapView.centerCoordinate
             onCameraChange(MapCamera(latitude: center.latitude, longitude: center.longitude, zoom: mapView.zoomLevel))
+            // GPS mode: zooming with two fingers or a double tap moves the middle; bring the position back
+            if followsPosition, let position {
+                // MapKit's middle is the middle of the safe area, not of the view
+                let p = mapView.convert(position.clCoordinate, toPointTo: mapView)
+                let c = mapView.convert(center, toPointTo: mapView)
+                if hypot(p.x - c.x, p.y - c.y) > 1 {
+                    mapView.setCenter(position.clCoordinate, animated: true)
+                }
+            }
         }
+
+        // MARK: Own position
+
+        /// Starts following `location` (once); every change moves the arrow and, in GPS mode, the map.
+        func observe(_ location: LocationModel?, on mapView: CacheMapView) {
+            guard location !== self.location else { return }
+            self.location = location
+            locationChanged(on: mapView)
+        }
+
+        /// Reads the position and registers for the next change (Observation calls `onChange` once, before the
+        /// value is set, so the new value is read on the next turn of the main queue).
+        private func locationChanged(on mapView: CacheMapView) {
+            guard let location else {
+                updatePosition(nil, on: mapView)
+                return
+            }
+            let next = withObservationTracking {
+                location.coordinate.map {
+                    OwnPosition(coordinate: $0, accuracy: location.accuracy, heading: location.heading,
+                                isCompass: location.isCompassHeading)
+                }
+            } onChange: { [weak self, weak mapView] in
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated {
+                        guard let self, let mapView, self.location === location else { return }
+                        self.locationChanged(on: mapView)
+                    }
+                }
+            }
+            let moved = next?.coordinate != position?.coordinate
+            updatePosition(next, on: mapView)
+            followPosition(on: mapView)
+            refreshPositionViews(on: mapView)
+            if moved, let coordinate = next?.coordinate { onPositionChange(coordinate) }
+        }
+
+        /// Shows, moves or removes the arrow of the own position.
+        private func updatePosition(_ newPosition: OwnPosition?, on mapView: MKMapView) {
+            position = newPosition
+            guard let newPosition else {
+                if let positionAnnotation { mapView.removeAnnotation(positionAnnotation) }
+                positionAnnotation = nil
+                return
+            }
+            if let positionAnnotation {
+                let coordinate = newPosition.clCoordinate
+                if positionAnnotation.coordinate.latitude != coordinate.latitude
+                    || positionAnnotation.coordinate.longitude != coordinate.longitude {
+                    positionAnnotation.coordinate = coordinate
+                }
+            } else {
+                let annotation = OwnPositionAnnotation(newPosition.clCoordinate)
+                positionAnnotation = annotation
+                mapView.addAnnotation(annotation)
+            }
+        }
+
+        func setFollowing(_ follows: Bool) {
+            followsPosition = follows
+            if !follows { followed = nil }
+        }
+
+        /// A position set with `setCenter(_:zoomLevel:)` (the last session, a map change) has been applied; in GPS
+        /// mode the own position goes back to the middle.
+        func cameraApplied(on mapView: CacheMapView) {
+            followed = nil
+            followPosition(on: mapView)
+        }
+
+        /// GPS mode (Cachebox `MapState.GPS`): the map centers on every new position, keeping the zoom. Without
+        /// animation: MapKit dropped tile requests during animated moves, and the steps are small.
+        func followPosition(on mapView: CacheMapView) {
+            guard followsPosition, let position, position.coordinate != followed, mapView.bounds.width > 0,
+                  !mapView.isSettingCamera else { return }
+            followed = position.coordinate
+            mapView.setCenter(position.clCoordinate, animated: false)
+        }
+
+        /// Accuracy circle radius in points (Cachebox `pixelsPerMeter * accuracy`).
+        private func accuracyRadius(of position: OwnPosition, on mapView: MKMapView) -> CGFloat {
+            guard let accuracy = position.accuracy, mapView.bounds.width > 0 else { return 0 }
+            let mapPointsPerPoint = mapView.visibleMapRect.width / mapView.bounds.width
+            guard mapPointsPerPoint > 0 else { return 0 }
+            let mapPointsPerMeter = MKMapPointsPerMeterAtLatitude(position.coordinate.latitude)
+            return CGFloat(accuracy * mapPointsPerMeter / mapPointsPerPoint)
+        }
+
+        /// Turns the position arrow with heading and map rotation, sizes the accuracy circle and places the arrows at
+        /// the map edge.
+        func refreshPositionViews(on mapView: MKMapView) {
+            if let position, let positionAnnotation,
+               let view = mapView.view(for: positionAnnotation) as? OwnPositionView {
+                view.update(position: position, mapHeading: mapView.camera.heading,
+                            accuracyRadius: accuracyRadius(of: position, on: mapView))
+            }
+            guard let mapView = mapView as? CacheMapView else { return }
+            let arrows = mapView.edgeArrows
+            let point = { (coordinate: Coordinate) in
+                mapView.convert(CLLocationCoordinate2D(latitude: coordinate.latitude, longitude: coordinate.longitude),
+                                toPointTo: arrows)
+            }
+            arrows.update(area: mapView.freeArea, position: position.map { point($0.coordinate) },
+                          target: target.map(point))
+        }
+
+        @objc func positionArrowTapped() { onPositionArrow() }
+
+        @objc func targetArrowTapped() { onTargetArrow() }
 
         // MARK: Info bubble
 
@@ -211,9 +399,7 @@ struct MapsforgeMapView: UIViewRepresentable {
                 view.rightCalloutAccessoryView = nil
                 return
             }
-            let here = mapView.showsUserLocation ? mapView.userLocation.location.map {
-                Coordinate(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude)
-            } : nil
+            let here = position?.coordinate
             let content = CacheBubble(cache: cache, isSelected: annotation.marker.isSelected, here: here) {
                 [weak self, weak mapView] in
                 mapView?.deselectAnnotation(annotation, animated: true)
@@ -267,6 +453,27 @@ struct MapsforgeMapView: UIViewRepresentable {
             mapView.addGestureRecognizer(tap)
         }
 
+        /// Moving the map with one finger ends the GPS mode (Cachebox `MapViewBase.onTouchDragged`: Pan with one
+        /// finger sets `MapState.FREE`); zooming with two fingers keeps it.
+        func installPanRecognizer(on mapView: MKMapView) {
+            let pan = UIPanGestureRecognizer(target: self, action: #selector(panned(_:)))
+            pan.maximumNumberOfTouches = 1
+            pan.cancelsTouchesInView = false
+            pan.delaysTouchesBegan = false
+            pan.delaysTouchesEnded = false
+            pan.delegate = self
+            panRecognizer = pan
+            mapView.addGestureRecognizer(pan)
+        }
+
+        private weak var panRecognizer: UIPanGestureRecognizer?
+
+        @objc private func panned(_ recognizer: UIPanGestureRecognizer) {
+            guard recognizer.state == .began, followsPosition else { return }
+            followsPosition = false   // before SwiftUI has passed on the new state
+            onUserPan()
+        }
+
         private let tapRadius: CGFloat = 30
 
         @objc private func tapped(_ recognizer: UITapGestureRecognizer) {
@@ -288,10 +495,12 @@ struct MapsforgeMapView: UIViewRepresentable {
         }
 
         func gestureRecognizer(_ recognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-            // markers and open bubbles handle their own touches
+            // markers and open bubbles handle their own touches; the map also pans when dragged on a marker
+            let isPan = recognizer === panRecognizer
             var view = touch.view
             while let v = view, !(v is MKMapView) {
-                if v is MKAnnotationView || v is UIControl || NSStringFromClass(type(of: v)).contains("Callout") {
+                if (v is MKAnnotationView && !isPan) || v is UIControl
+                    || NSStringFromClass(type(of: v)).contains("Callout") {
                     return false
                 }
                 view = v.superview
@@ -317,9 +526,34 @@ struct MapsforgeMapView: UIViewRepresentable {
 }
 
 /// MKMapView that can be put on a zoom level before it has a size (the first position is set in `makeUIView`).
+/// Also holds the compass and scale (placed outside the info panel) and the arrows at the map edge.
 final class CacheMapView: MKMapView {
     private var pending: (center: CLLocationCoordinate2D, zoom: Double)?
     private var isApplying = false
+    let edgeArrows = EdgeArrowsView()
+    private lazy var compassButton = MKCompassButton(mapView: self)
+    private lazy var scaleView = MKScaleView(mapView: self)
+    /// Called after a position set with `setCenter(_:zoomLevel:)` has been applied.
+    var onCameraApplied: () -> Void = {}
+    /// Parts covered by SwiftUI controls and bars.
+    var chromeInsets = UIEdgeInsets.zero {
+        didSet { setNeedsLayout() }
+    }
+
+    /// The part of the map not covered by controls or bars.
+    var freeArea: CGRect { bounds.inset(by: chromeInsets) }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        compassButton.compassVisibility = .adaptive   // only while the map is rotated, like MapKit's own
+        scaleView.scaleVisibility = .adaptive         // while zooming, like before
+        scaleView.legendAlignment = .leading
+        addSubview(compassButton)
+        addSubview(scaleView)
+        addSubview(edgeArrows)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     /// A position set with `setCenter(_:zoomLevel:)` waits for the first layout or is being applied; MapKit reports
     /// the intermediate regions as changes, which must not be remembered.
     var isSettingCamera: Bool { pending != nil || isApplying }
@@ -347,11 +581,28 @@ final class CacheMapView: MKMapView {
         }
         setCenter(center, animated: false)
         isApplying = false
+        onCameraApplied()
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
         if let pending, bounds.width > 0, bounds.height > 0 { setCenter(pending.center, zoomLevel: pending.zoom) }
+        let free = freeArea
+        // compass under the button column at the top right, scale at the bottom left (Cachebox `MapScale`)
+        let compass = compassButton.sizeThatFits(CGSize(width: 100, height: 100))   // no intrinsic size (44 × 44)
+        compassButton.frame = CGRect(x: free.maxX - MapLayout.margin - MapLayout.buttonSize / 2 - compass.width / 2,
+                                     y: free.minY + MapLayout.menuSize + MapLayout.margin,
+                                     width: compass.width, height: compass.height)
+        let scale = scaleView.sizeThatFits(CGSize(width: free.width / 2, height: 40))
+        scaleView.frame = CGRect(x: free.minX + MapLayout.margin, y: free.maxY - scale.height,
+                                 width: max(scale.width, free.width / 2), height: scale.height)
+        edgeArrows.frame = bounds
+        // MapKit inserts its own views (annotations, callouts) later; keep the controls on top
+        if subviews.last !== edgeArrows {
+            bringSubviewToFront(scaleView)
+            bringSubviewToFront(compassButton)
+            bringSubviewToFront(edgeArrows)
+        }
     }
 }
 

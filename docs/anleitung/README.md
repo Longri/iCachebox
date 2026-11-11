@@ -153,8 +153,8 @@ ganz Europa. Tippe auf den Pfeil neben einer Region. Große Karten (ab 100 MB) f
 nötigen Speicherplatz. Der Download läuft weiter, wenn du die App verlässt; der Stopp-Knopf hält ihn an, das
 Abspielsymbol setzt ihn fort. Mit der ersten Karte lädt iCacheBox das passende Design „Standard-Design V5“ mit.
 
-**Karte anzeigen:** Im Bereich **Karte** wählst du über das Ebenen-Symbol oben rechts die Karte, das Theme und
-den Stil. Freizeitkarten bekommen automatisch ihr Design.
+**Karte anzeigen:** Im Bereich **Karte** wählst du über das Ebenen-Symbol unter dem GPS-Knopf die Karte, das
+Theme und den Stil. Freizeitkarten bekommen automatisch ihr Design.
 
 Beim nächsten Start zeigt die Karte wieder dieselbe Karte mit demselben Design, Stil und Ausschnitt wie beim
 letzten Mal.
@@ -169,18 +169,47 @@ mit Koordinaten (etwa einen gelösten Mystery), steht er dort und bekommt das �
 Liste zählt dann ebenfalls bis dorthin.
 
 **Gewählter Cache:** Er hat einen roten Rahmen, ist immer groß und liegt obenauf. Dazu kommen seine zusätzlichen
-Wegpunkte (Parkplatz, Stationen, Final), soweit sie Koordinaten haben. Mit Standort-Freigabe ist auch deine
-Position als Punkt zu sehen.
+Wegpunkte (Parkplatz, Stationen, Final), soweit sie Koordinaten haben.
 
 **Info-Blase:** Ein Tipp auf einen Cache – oder knapp daneben – öffnet seine Info-Blase: Art, GC-Code,
 Schwierigkeit, Gelände und Größe, Owner (bei Events auch das Datum), Koordinaten und mit Standort die Entfernung.
 **Auswählen** macht ihn zum gewählten Cache, der Info-Knopf öffnet seine Details.
 
 Die Karte springt zum Cache, wenn du einen anderen Cache wählst oder **Auf der Karte** nutzt: in der Liste nach
-rechts wischen, lange auf einen Cache oder die Leiste drücken oder im Cache-Menü **⋯ › Auf Karte zeigen**. Deckt
-die eingestellte Karte den Ort nicht ab, nimmt iCacheBox von selbst eine andere vorhandene Karte, die ihn abdeckt.
-Gibt es keine, steht der Cache auf leerem Grund und ein Hinweis erscheint; die passende Karte lädst du dann unter
-**Mehr › Karten und Themes**.
+rechts wischen, lange auf einen Cache oder die Leiste drücken oder im Cache-Menü **⋯ › Auf Karte zeigen**. Im
+GPS-Modus (siehe unten) bleibt die Karte beim Wählen bei dir; nur **Auf der Karte** schaltet auf Free und zeigt den
+Cache. Deckt die eingestellte Karte den Ort nicht ab, nimmt iCacheBox von selbst eine andere vorhandene Karte, die
+ihn abdeckt. Gibt es keine, steht der Cache auf leerem Grund und ein Hinweis erscheint; die passende Karte lädst du
+dann unter **Mehr › Karten und Themes**.
+
+### Eigene Position, GPS und Free
+
+![Karte im GPS-Modus mit Infofeld](bilder/karte-gps.jpg)
+
+**Eigene Position:** Ein Pfeil zeigt, wo du bist und wohin du schaust. Rot heißt: die Richtung kommt vom Kompass
+(im Stehen und unter 5 km/h). Türkis heißt: sie kommt von GPS, also aus deiner Bewegungsrichtung. Ist die Ortung
+ungenau, liegt ein blauer Kreis um den Pfeil, so groß wie die Ungenauigkeit.
+
+**GPS und Free:** Der grüne Knopf oben rechts zeigt, ob die Karte dir folgt.
+
+- **GPS** mit grüner Leuchte: Die Karte hält deine Position in der Mitte, auch beim Zoomen und Drehen.
+- **Free** ohne Leuchte: Die Karte bleibt, wo du sie hinschiebst. Sobald du die Karte im GPS-Modus mit einem Finger
+  verschiebst, schaltet der Knopf auf Free.
+- **Free antippen** springt zu deiner Position und schaltet wieder auf GPS.
+
+Beim nächsten Start ist der zuletzt gewählte Modus wieder eingestellt. Ohne Standort-Freigabe bleibt der Knopf auf
+Free; ein Tipp darauf sagt, wo du die Freigabe erteilst.
+
+**Infofeld:** Links neben dem Knopf stehen wie in Cachebox die wichtigsten Werte:
+
+- ein **Kompass**, dessen Pfeil zum gewählten Cache zeigt (gedreht wie das iPhone in deiner Hand),
+- die **Entfernung** zum gewählten Cache und darunter deine **Geschwindigkeit**,
+- die **Koordinaten** der Kartenmitte. Das Symbol daneben sagt, woher sie kommen: Satellit für deine Position (GPS),
+  Karte für die Mitte des Ausschnitts (Free).
+
+**Pfeile am Kartenrand:** Liegt deine Position außerhalb des sichtbaren Ausschnitts, zeigt ein **blauer Pfeil** am
+Rand in ihre Richtung; ein Tipp darauf springt zu dir und schaltet auf GPS. Ein **roter Pfeil** zeigt wie in
+Cachebox zum gewählten Cache, wenn er nicht zu sehen ist; ein Tipp darauf zeigt den Cache.
 
 **Löschen:** Unter **Auf diesem Gerät** hat jede Karte und jedes Design einen roten Mülleimer. Vor dem Löschen
 fragt die App nach und zeigt, wie viel Speicher frei wird.
@@ -209,4 +238,4 @@ keine Caches. Ist die Datei beschädigt, nennt die Fehlermeldung die Zeile, an d
 ## Noch nicht enthalten
 
 Im Vergleich zu Cachebox für Android fehlen noch: Laden und Aktualisieren über die Geocaching-API, Spoilerbilder,
-Kompass und Navigation, Feldnotizen hochladen, Solver, Tracks und Trackables.
+Kompass und Navigation, die Kartenmodi WP, Lock und Car, Feldnotizen hochladen, Solver, Tracks und Trackables.

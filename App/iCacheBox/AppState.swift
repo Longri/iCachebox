@@ -10,6 +10,9 @@ enum MainTab: Hashable {
 /// re-centers a map the user has moved meanwhile.
 struct MapFocus: Equatable {
     let coordinate: Coordinate
+    /// Asked for with "Auf der Karte": the map leaves the GPS mode for it. A focus that only comes from a changed
+    /// selection leaves a map in GPS mode at the own position (Cachebox `MapView.setSelectedCache`).
+    var isExplicit = false
     let id = UUID()
 }
 
@@ -36,9 +39,11 @@ final class AppState {
     }
 
     /// Selects a cache and switches to `tab`; with `.map` the map centers on the cache (on its target: corrected
-    /// coordinates or a final, where the map draws it).
-    func select(_ cache: CacheSummary, show tab: MainTab = .cache) {
-        if cache.code != selectedCache?.code || tab == .map { mapFocus = MapFocus(coordinate: cache.target) }
+    /// coordinates or a final, where the map draws it), also in GPS mode unless the cache was chosen on the map.
+    func select(_ cache: CacheSummary, show tab: MainTab = .cache, onMap: Bool = false) {
+        if cache.code != selectedCache?.code || tab == .map {
+            mapFocus = MapFocus(coordinate: cache.target, isExplicit: tab == .map && !onMap)
+        }
         selectedCache = cache
         lists.rememberSelection(cache.code)
         self.tab = tab
