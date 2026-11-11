@@ -244,8 +244,9 @@ final class CacheListModel {
     func refreshRows() {
         let reference = reference
         var rows = caches.filter(filter.matches).map { cache in
-            CacheRow(cache: cache, distance: reference.map { $0.distance(to: cache.coordinate) },
-                     bearing: reference.map { $0.bearing(to: cache.coordinate) })
+            // to the target like Cachebox `CacheList.resortList` (a final with coordinates counts)
+            CacheRow(cache: cache, distance: reference.map { $0.distance(to: cache.target) },
+                     bearing: reference.map { $0.bearing(to: cache.target) })
         }
         let byName: (CacheRow, CacheRow) -> Bool = {
             $0.cache.name.localizedStandardCompare($1.cache.name) == .orderedAscending

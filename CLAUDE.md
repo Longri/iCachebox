@@ -29,8 +29,17 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     zutreffende, Tipp zeigt Text; `Assets.xcassets/Attributes` = `att_<Cachebox-Ordinal>_1/_0`, GC 71/72 → 68/71;
     fehlt ein `_0`-Icon, wird das `_1`-Icon durchgestrichen, Cachebox lässt es weg)
   - Gewählter Cache: `AppState` (Auswahl je Liste, `mapFocus`; `CacheListModel.onOpen` stellt die Auswahl nach jedem
-    Öffnen/Import wieder her), `SelectedCacheBar` in `RootView.swift`, Marker und Zentrieren in `ContentView.swift`
-    (`MapModel.focus`, wählt eine Karte, die den Ort abdeckt) und `MapsforgeMapView.swift` (`MapMarker`, `MapCenterRequest`)
+    Öffnen/Import wieder her), `SelectedCacheBar` in `RootView.swift`, Zentrieren in `ContentView.swift`
+    (`MapModel.focus`, wählt eine Karte, die den Ort abdeckt) und `MapsforgeMapView.swift` (`MapCenterRequest`)
+  - Caches auf der Karte: `MapMarkers.swift` (`MapMarker` wie Cachebox `WayPointRenderInfo`, `MarkerImages` zeichnet
+    Rahmen/Icon/Herz/`deact` je Zoomklasse wie `MapView.render`, `CacheBubble` = Info-Blase), Symbolwahl
+    `mapIconName`/`smallMapIconName` in `CachePresentation.swift` (Cachebox `getMapIcon`/`getSmallMapIcon`,
+    `Assets.xcassets/CacheboxMap` = `small1…7`, `star`); `MapsforgeMapView.Coordinator` gleicht Annotationen per ID ab,
+    baut die Blase erst bei Auswahl, Tipp neben ein Symbol wählt das nächste (≤ 30 pt). Position: `CacheSummary.target`
+    (korrigiert, sonst Final mit Koordinaten – `summaries()` holt `finalCoordinate`), auch für Listen-Entfernungen
+  - Letzte Karte: `MapModel` merkt Karte/Theme/Stil/Overlays (Pfad relativ zum Quellordner, UserDefaults `map.*`),
+    `MapCamera` Mitte + Kachel-Zoom; `CacheMapView.setCenter(_:zoomLevel:)` korrigiert, weil MapKit
+    `setVisibleMapRect` in die Safe Area einpasst
   - Kartendownload: `MapCatalog.swift` (Freizeitkarte-Repository-XML), `MapLibrary.swift` (Hintergrund-`URLSession`,
     MD5-Prüfung, Entpacken nach `Documents/Maps` bzw. `Documents/Themes`), `ZipArchive.swift`, `MapDownloadView.swift`
   - `App/iCacheBox-Info.plist` wird mit der generierten Info.plist zusammengeführt (ATS-Ausnahme nur für
@@ -88,13 +97,22 @@ GPX-Import und Listen (Caches-Tab): Import über Dateiauswahl, „Teilen › iCa
 Cachebox-Datenbank (eigenes Schema, nicht Cachebox-kompatibel). Sortierung nach Entfernung (Standort, sonst gewählter
 Cache), Name, Code, D, T, Datum, Favoritenpunkte; Filter: Status dreistufig, Typen (alle), D/T; Suche nach Name, Code,
 Owner. Gewählter Cache (wie Cachebox-Slider): Leiste über Caches/Karte/Loggen/Mehr mit D/T/Größe, Entfernung und
-Richtung, Kontextmenü Details/Auf der Karte; auf der Karte Marker für Cache und Wegpunkte mit Koordinaten, die Karte
-springt bei neuer Auswahl dorthin (ohne Animation, sonst verwirft MapKit Kachelanfragen) und wechselt bei Bedarf auf
-eine Karte, die den Ort abdeckt; ohne passende Karte Hinweis. Website-Kachel „Cacheliste“ ist seit 11.11.2026 kein
+Richtung, Kontextmenü Details/Auf der Karte; die Karte springt bei neuer Auswahl dorthin (ohne Animation, sonst
+verwirft MapKit Kachelanfragen) und wechselt bei Bedarf auf eine Karte, die den Ort abdeckt; ohne passende Karte
+Hinweis. Website-Kachel „Cacheliste“ ist seit 11.11.2026 kein
 „Coming Soon“ mehr. Im Simulator geprüft mit einer erfundenen 300-Cache-Pocket-Query und Testcaches in Hamburg/Harz;
 Import-Benchmark (Mac, Release): 1000 Caches mit 5000 Logs 0,46 s, 5000 Caches 2,2 s, Liste laden 6 ms.
 Nicht geprüft: echte geocaching.com-Dateien, Import auf echtem Gerät (Dateien in iCloud Drive), iPad.
-Offen: alle Caches der Liste auf der Karte und Auswahl per Tipp auf der Karte (Kachel „Offline-Karte“).
+
+Caches auf der Karte (seit 11.11.2026, Website-Kachel „Offline-Karte“ kein „Coming Soon“ mehr): alle Caches der
+gefilterten Liste wie Cachebox `MapViewCacheList` – unter z13 kleine Sprites ohne Rahmen, z13–14 Rahmen 20 pt,
+ab z15 32 pt; gewählter Cache immer groß mit rotem Rahmen und obenauf, dazu seine Wegpunkte; Final-/korrigierte
+Position und „Solved“-Icon. Tipp öffnet MapKit-Callout mit `CacheBubble` (Auswählen, Info → Details). Beim Start
+kommen Karte, Theme, Stil, Mitte und Zoom wieder; die gemerkte Auswahl verschiebt die Karte dann nicht.
+Im Simulator geprüft (301 Caches, Lasttest 5117 Caches bei z9 alle sichtbar). Nicht geprüft: Flüssigkeit mit
+tausenden sichtbaren Annotationen auf echtem Gerät. Nicht übernommen: Startwegpunkt von Multi/Mystery (Modell hat
+keinen), Cachebox-Optionen „eigene Funde ausblenden“, „alle Wegpunkte“, „Originalposition“, Namen/D/T-Sterne an
+den Symbolen, Distanzkreis, Wegpunkt-Auswahl.
 
 Lizenz-Hinweis: Elevate ist CC BY-NC-SA 4.0 (kommerziell nur BY-ND) – nicht ungefragt in eine verteilte App packen;
 OAM-Karten und Themes lädt in Cachebox der Nutzer selbst.

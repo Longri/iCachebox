@@ -69,7 +69,7 @@ struct SelectedCacheBar: View {
                 HStack(spacing: 10) {
                     CacheTypeIcon(type: cache.type, isFound: cache.isFound, isFavorite: cache.isFavorite,
                                   isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
-                                  isSolved: cache.hasCorrectedCoordinate, size: 30)
+                                  isSolved: cache.isSolved, size: 30)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(cache.name)
                             .font(.subheadline)
@@ -82,12 +82,12 @@ struct SelectedCacheBar: View {
                     }
                     Spacer(minLength: 4)
                     if let here = state.location.coordinate {
-                        let bearing = here.bearing(to: cache.coordinate) - (state.location.heading ?? 0)
+                        let bearing = here.bearing(to: cache.target) - (state.location.heading ?? 0)
                         HStack(spacing: 4) {
                             Image(systemName: "location.north.fill")
                                 .rotationEffect(.degrees(bearing))
                                 .foregroundStyle(.tint)
-                            Text(Format.distance(here.distance(to: cache.coordinate)))
+                            Text(Format.distance(here.distance(to: cache.target)))
                                 .font(.caption.monospacedDigit())
                         }
                     }
@@ -117,7 +117,7 @@ struct SelectedCacheBar: View {
     private func accessibilityText(_ cache: CacheSummary) -> String {
         var text = "Gewählter Cache: \(cache.name), \(cache.code)"
         if let here = state.location.coordinate {
-            text += ", Entfernung \(Format.distance(here.distance(to: cache.coordinate)))"
+            text += ", Entfernung \(Format.distance(here.distance(to: cache.target)))"
         }
         return text
     }

@@ -68,7 +68,7 @@ struct CacheListView: View {
     }
 
     private func updateReference() {
-        lists.updateReference(device: state.location.coordinate, selected: state.selectedCache?.coordinate)
+        lists.updateReference(device: state.location.coordinate, selected: state.selectedCache?.target)
     }
 
     // MARK: - Content
@@ -258,7 +258,7 @@ struct CacheRowView: View {
         HStack(spacing: 12) {
             CacheTypeIcon(type: cache.type, isFound: cache.isFound, isFavorite: cache.isFavorite,
                           isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
-                          isSolved: cache.hasCorrectedCoordinate)
+                          isSolved: cache.isSolved)
             VStack(alignment: .leading, spacing: 2) {
                 Text(cache.name)
                     .strikethrough(cache.isArchived)

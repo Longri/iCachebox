@@ -99,14 +99,23 @@ public final class CacheDatabase {
                    c.container, c.difficulty, c.terrain, c.owner, c.hidden, c.available, c.archived, c.found,
                    c.favorite, c.favorite_points,
                    (SELECT COUNT(*) FROM waypoints w WHERE w.cache_code = c.code),
-                   (SELECT COUNT(*) FROM trackables t WHERE t.cache_code = c.code)
+                   (SELECT COUNT(*) FROM trackables t WHERE t.cache_code = c.code),
+                   f.latitude, f.longitude
             FROM caches c
+            LEFT JOIN (
+                -- first final with coordinates per cache; SQLite takes the bare columns from the MIN(code) row
+                SELECT cache_code, latitude, longitude, MIN(code) FROM waypoints
+                WHERE type = 'final' AND latitude IS NOT NULL AND longitude IS NOT NULL
+                      AND NOT (latitude = 0 AND longitude = 0)
+                GROUP BY cache_code
+            ) f ON f.cache_code = c.code
             """).rows { r in
             let corrected = r.isNull(4) ? nil : Coordinate(latitude: r.double(4), longitude: r.double(5))
             return CacheSummary(
                 code: r.string(0), name: r.string(1),
                 coordinate: corrected ?? Coordinate(latitude: r.double(2), longitude: r.double(3)),
                 hasCorrectedCoordinate: corrected != nil,
+                finalCoordinate: r.isNull(19) ? nil : Coordinate(latitude: r.double(19), longitude: r.double(20)),
                 type: CacheType(rawValue: r.string(6)) ?? .other,
                 container: ContainerSize(rawValue: r.string(7)) ?? .notChosen,
                 difficulty: r.double(8), terrain: r.double(9), owner: r.string(10), hidden: r.date(11),

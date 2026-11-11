@@ -60,7 +60,8 @@ Teile waren nicht lesbar oder nur sekundär belegt; das ist unten markiert. Kein
   abgeleitetes Werk; FSF sieht GPL und App Store als unvereinbar. Nur Funktionen und Aussehen als Vorlage nutzen und
   selbst neu schreiben, oder Zustimmung aller Urheber einholen. `micross.ttf` nicht übernehmen, solange Rechte ungeklärt.
   Die Cachetyp-, Wegpunkt- und Status-Icons (`SkinPacker/Icons/default/day/UI_IconPack`) sind seit Nov. 2026 auf
-  Wunsch übernommen (`App/iCacheBox/Assets.xcassets/Cachebox`), ebenso die Attribut-Icons
+  Wunsch übernommen (`App/iCacheBox/Assets.xcassets/Cachebox`, die kleinen Kartensymbole `small1…7` und `star` in
+  `Assets.xcassets/CacheboxMap`), ebenso die Attribut-Icons
   (`CB_Android/assets/data/attributes` → `Assets.xcassets/Attributes`); ihre Rechte vor einer Veröffentlichung klären.
   Die Attribut-Texte sind selbst formuliert (nicht aus den Cachebox-`strings.ini`).
 - **mapsforge:** LGPL-3.0 mit Verzicht auf Relink-Pflicht (§4d/e). Der Swift-Port bleibt LGPL-3.0, Quelltext veröffentlichen.

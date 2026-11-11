@@ -11,7 +11,7 @@ Die App hat unten fünf Bereiche:
 | --- | --- |
 | **Caches** | Die Caches der geöffneten Liste, sortiert nach Entfernung. Hier importierst du GPX-Dateien und verwaltest deine Listen. |
 | **Cache** | Alles zum gewählten Cache: Beschreibung, Wegpunkte, Logs, Hinweis und deine Notiz. |
-| **Karte** | Die Offline-Karte mit frei wählbarem Design, darauf der gewählte Cache mit seinen Wegpunkten. |
+| **Karte** | Die Offline-Karte mit frei wählbarem Design, darauf die Caches der Liste und die Wegpunkte des gewählten Caches. |
 | **Loggen** | Log-Entwürfe (noch im Aufbau). |
 | **Mehr** | Geocaching-Konto, GPX-Import, Karten und Themes, Einstellungen. |
 
@@ -156,12 +156,25 @@ Abspielsymbol setzt ihn fort. Mit der ersten Karte lädt iCacheBox das passende 
 **Karte anzeigen:** Im Bereich **Karte** wählst du über das Ebenen-Symbol oben rechts die Karte, das Theme und
 den Stil. Freizeitkarten bekommen automatisch ihr Design.
 
-![Gewählter Cache auf der Karte](bilder/karte-cache.jpg)
+Beim nächsten Start zeigt die Karte wieder dieselbe Karte mit demselben Design, Stil und Ausschnitt wie beim
+letzten Mal.
 
-**Gewählter Cache auf der Karte:** Der gewählte Cache und seine zusätzlichen Wegpunkte (Parkplatz, Stationen,
-Final), soweit sie Koordinaten haben, stehen mit ihren Cachebox-Symbolen auf der Karte. Ein Tipp auf das
-Cache-Symbol zeigt Name und Wertung, der Info-Knopf daneben öffnet die Details. Mit Standort-Freigabe ist auch
-deine Position als grüner Punkt zu sehen.
+![Caches auf der Karte mit Info-Blase](bilder/karte-cache.jpg)
+
+**Caches auf der Karte:** Alle Caches der geöffneten Liste stehen mit ihren Cachebox-Symbolen auf der Karte; ein
+Filter der Liste gilt auch hier. Ab Zoomstufe 15 sind die Symbole groß, bei 13 und 14 kleiner, weiter draußen
+zeigen kleine Symbole nur noch die Art des Caches. Gefundene Caches erscheinen als Smiley, nicht verfügbare und
+archivierte rot durchgestrichen, Favoriten mit Herz. Hat ein Cache korrigierte Koordinaten oder einen Final-Wegpunkt
+mit Koordinaten (etwa einen gelösten Mystery), steht er dort und bekommt das „gelöst“-Symbol; die Entfernung in der
+Liste zählt dann ebenfalls bis dorthin.
+
+**Gewählter Cache:** Er hat einen roten Rahmen, ist immer groß und liegt obenauf. Dazu kommen seine zusätzlichen
+Wegpunkte (Parkplatz, Stationen, Final), soweit sie Koordinaten haben. Mit Standort-Freigabe ist auch deine
+Position als Punkt zu sehen.
+
+**Info-Blase:** Ein Tipp auf einen Cache – oder knapp daneben – öffnet seine Info-Blase: Art, GC-Code,
+Schwierigkeit, Gelände und Größe, Owner (bei Events auch das Datum), Koordinaten und mit Standort die Entfernung.
+**Auswählen** macht ihn zum gewählten Cache, der Info-Knopf öffnet seine Details.
 
 Die Karte springt zum Cache, wenn du einen anderen Cache wählst oder **Auf der Karte** nutzt: in der Liste nach
 rechts wischen, lange auf einen Cache oder die Leiste drücken oder im Cache-Menü **⋯ › Auf Karte zeigen**. Deckt
@@ -196,5 +209,4 @@ keine Caches. Ist die Datei beschädigt, nennt die Fehlermeldung die Zeile, an d
 ## Noch nicht enthalten
 
 Im Vergleich zu Cachebox für Android fehlen noch: Laden und Aktualisieren über die Geocaching-API, Spoilerbilder,
-alle Caches der Liste auf der Karte (bisher nur der gewählte mit seinen Wegpunkten), einen Cache auf der Karte
-antippen, um ihn zu wählen, Kompass und Navigation, Feldnotizen hochladen, Solver, Tracks und Trackables.
+Kompass und Navigation, Feldnotizen hochladen, Solver, Tracks und Trackables.

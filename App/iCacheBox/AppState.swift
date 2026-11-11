@@ -27,15 +27,18 @@ final class AppState {
     let mapLibrary = MapLibrary.shared
     let lists = CacheListModel()
     let location = LocationModel()
+    /// The selection was taken from a list at least once (the first time is the app launch).
+    private var hasRestoredSelection = false
 
     init() {
         // whenever a list is (re)opened, also after an import, its remembered cache becomes the selection
         lists.onOpen = { [weak self] in self?.restoreSelection() }
     }
 
-    /// Selects a cache and switches to `tab`; with `.map` the map centers on the cache.
+    /// Selects a cache and switches to `tab`; with `.map` the map centers on the cache (on its target: corrected
+    /// coordinates or a final, where the map draws it).
     func select(_ cache: CacheSummary, show tab: MainTab = .cache) {
-        if cache.code != selectedCache?.code || tab == .map { mapFocus = MapFocus(coordinate: cache.coordinate) }
+        if cache.code != selectedCache?.code || tab == .map { mapFocus = MapFocus(coordinate: cache.target) }
         selectedCache = cache
         lists.rememberSelection(cache.code)
         self.tab = tab
@@ -46,11 +49,16 @@ final class AppState {
         await lists.open(name)
     }
 
-    /// Takes the selection from the loaded list: the remembered cache, or none.
+    /// Takes the selection from the loaded list: the remembered cache, or none. The map moves to it, except at
+    /// launch when the map has a position from the last session (Cachebox starts at the last map position).
     func restoreSelection() {
         let code = lists.lastSelectedCode()
         let cache = lists.caches.first { $0.code == code }
-        if let cache, cache.code != selectedCache?.code { mapFocus = MapFocus(coordinate: cache.coordinate) }
+        let isLaunch = !hasRestoredSelection
+        hasRestoredSelection = true
+        if let cache, cache.code != selectedCache?.code, !(isLaunch && MapCamera.saved != nil) {
+            mapFocus = MapFocus(coordinate: cache.target)
+        }
         selectedCache = cache
     }
 

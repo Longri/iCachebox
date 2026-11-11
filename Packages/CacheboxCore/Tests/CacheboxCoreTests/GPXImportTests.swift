@@ -128,6 +128,31 @@ struct GPXImporterTests {
         #expect(summaries[2].waypointCount == 3)
     }
 
+    /// The map shows a cache at a final waypoint with coordinates unless the cache has corrected coordinates
+    /// (Cachebox `MapViewCacheList`); a final at 0/0 does not count.
+    @Test func finalWaypointIsTheTarget() throws {
+        let database = try Fixture.database()
+        _ = try GPXImporter(database: database).importFiles([Fixture.url("pq-sample.zip")])
+        var multi = try #require(try database.summaries().first { $0.code == "GCTEST3" })
+        #expect(multi.finalCoordinate == nil && !multi.isSolved)   // FNTEST3 is at 0/0
+        #expect(multi.target == multi.coordinate)
+
+        let final = Coordinate(latitude: 53.0751, longitude: 8.8099)
+        try database.upsert(Waypoint(code: "FNTEST3", cacheCode: "GCTEST3", title: "Final", type: .final,
+                                     coordinate: final, isUserCreated: true))
+        try database.upsert(Waypoint(code: "FZTEST3", cacheCode: "GCTEST3", title: "Zweites Final", type: .final,
+                                     coordinate: Coordinate(latitude: 53.2, longitude: 8.9)))
+        multi = try #require(try database.summaries().first { $0.code == "GCTEST3" })
+        #expect(multi.finalCoordinate == final && multi.isSolved)   // the first final by code
+        #expect(multi.target == final)
+
+        try database.upsert(Waypoint(code: "FNTEST2", cacheCode: "GCTEST2", title: "Final", type: .final,
+                                     coordinate: final))
+        let corrected = try #require(try database.summaries().first { $0.code == "GCTEST2" })
+        #expect(corrected.hasCorrectedCoordinate && corrected.finalCoordinate == final)
+        #expect(corrected.target == corrected.coordinate)   // corrected coordinates win
+    }
+
     @Test func reimportKeepsUserData() throws {
         let database = try Fixture.database()
         let importer = GPXImporter(database: database)

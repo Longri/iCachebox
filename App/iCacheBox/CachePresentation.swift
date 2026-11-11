@@ -3,7 +3,8 @@ import SwiftUI
 
 // Names, icons and colours of the cache model for the UI. Cache and waypoint types use the icons of the Android
 // app: `Assets.xcassets/Cachebox` holds copies of `SkinPacker/Icons/default/day/UI_IconPack` from the Cachebox
-// repository, named like the sprites there (`"big" + GeoCacheType.name()`). Rights: see UI-KONZEPT.md.
+// repository, named like the sprites there (`"big" + GeoCacheType.name()`); `Assets.xcassets/CacheboxMap` holds the
+// small map sprites (`small1` … `small7`) and `star` from the same folder. Rights: see UI-KONZEPT.md.
 
 extension CacheType {
     var title: String {
@@ -175,6 +176,47 @@ extension LogType {
 }
 
 extension CacheSummary {
+    /// Icon on the map from zoom 13 (Cachebox `MapViewCacheList.getMapIcon`): star for own caches, smiley for found
+    /// ones, else the type icon, "Solved" with corrected coordinates or a final. The `big` sprites have the same
+    /// drawings as Cachebox's 32 px `map` sprites but 80 px, which stays sharp at @3x.
+    func mapIconName(isOwn: Bool) -> String {
+        if isOwn { return "star" }
+        if isFound { return "log0icon" }
+        return type.iconName(solved: isSolved)
+    }
+
+    /// Icon on the map below zoom 13 (Cachebox `getSmallMapIcon`): a 15 px sprite per type group, "no" for archived
+    /// or unavailable caches, "Solved" with corrected coordinates or a final. Deviations: Cachebox marks only a
+    /// final or start waypoint as solved here (corrected coordinates count everywhere else), and it would draw
+    /// nothing for the few combinations without a sprite (e.g. a solved event); those use the unsolved sprite.
+    func smallMapIconName(isOwn: Bool) -> String {
+        var icon: String
+        var solved = ""
+        if isFound {
+            icon = "small6"
+        } else if isOwn {
+            icon = "small7"
+        } else {
+            if isSolved { solved = "Solved" }
+            icon = switch type {
+            case .multi: "small2"
+            case .event, .megaEvent, .gigaEvent, .cito, .communityCelebration: "small3"
+            case .virtual, .webcam, .earth: "small4"
+            case .mystery, .wherigo: "small5"
+            default: "small1"
+            }
+        }
+        if isArchived || !isAvailable { icon += "no" }
+        return Self.smallIcons.contains(icon + solved) ? icon + solved : icon
+    }
+
+    /// The small sprites in `Assets.xcassets/CacheboxMap`.
+    private static let smallIcons: Set<String> = [
+        "small1", "small1Solved", "small1no", "small1noSolved", "small2", "small2Solved", "small2no", "small2noSolved",
+        "small3", "small3no", "small4", "small4Solved", "small4no", "small5", "small5Solved", "small5no",
+        "small5noSolved", "small6", "small6no", "small7", "small7no",
+    ]
+
     /// "D 1,5 · T 2 · S", the rating line of the list.
     var ratingText: String {
         "D \(Self.rating(difficulty)) · T \(Self.rating(terrain)) · \(container.letter)"

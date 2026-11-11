@@ -5,8 +5,10 @@ import MapsforgeRender
 import SwiftUI
 
 /// Tab 3: Mapsforge offline map rendered by the Swift port and shown through MapKit, with map/theme/style
-/// selection and a small performance HUD. The selected cache and its waypoints are drawn on the map, and the map
-/// centers on the cache when it is selected or shown with "Auf der Karte" (Cachebox `MapView.setSelectedCache`).
+/// selection and a small performance HUD. The caches of the open list (filtered like the list) and the waypoints
+/// of the selected cache are drawn on the map; tapping a cache opens its info bubble. The map centers on the cache
+/// when it is selected or shown with "Auf der Karte" (Cachebox `MapView.setSelectedCache`). Map, theme, style,
+/// position and zoom of the last session come back on the next launch.
 ///
 /// Maps (`*.map`) and external themes (`*.xml` in sub-folders) are taken from the `BundledMaps`
 /// folder of the app bundle (`App/BundledMaps`, not in git) and from the downloads (`MapLibrary`).
@@ -20,9 +22,10 @@ struct ContentView: View {
         ZStack(alignment: .bottom) {
             if let renderer = model.renderer {
                 MapsforgeMapView(renderer: renderer, stats: model.stats, center: model.center, markers: markers,
-                                 showsUserLocation: state.location.coordinate != nil) {
-                    state.tab = .cache
-                }
+                                 showsUserLocation: state.location.coordinate != nil,
+                                 onSelect: { state.select($0, show: .map) },
+                                 onShowDetails: { state.select($0, show: .cache) },
+                                 onCameraChange: { model.cameraChanged($0) })
                 .ignoresSafeArea()
             } else {
                 ContentUnavailableView("Karte nicht geladen", systemImage: "map",
@@ -64,20 +67,22 @@ struct ContentView: View {
         }
     }
 
-    /// The selected cache and its waypoints with coordinates.
+    /// The caches of the list as filtered there (Cachebox draws the filtered `CacheList`), each at its target
+    /// (corrected coordinates, else a final with coordinates), plus the selected cache even if the filter hides it,
+    /// and the waypoints of the selected cache that have coordinates.
     private var markers: [MapMarker] {
-        guard let cache = state.selectedCache else { return [] }
-        var markers: [MapMarker] = waypoints.filter { $0.cacheCode == cache.code }.compactMap { waypoint in
-            guard let coordinate = waypoint.coordinate else { return nil }
-            return MapMarker(id: waypoint.id, latitude: coordinate.latitude, longitude: coordinate.longitude,
-                             iconName: waypoint.type.iconName,
-                             title: waypoint.title.isEmpty ? waypoint.type.title : waypoint.title,
-                             subtitle: "\(waypoint.code) · \(waypoint.type.title)", isCache: false)
+        let selected = state.selectedCache?.code
+        let own: String? = if case .signedIn(let username, _) = state.account.status { username.lowercased() } else { nil }
+        var markers = state.lists.rows.map { row in
+            MapMarker.cache(row.cache, isSelected: row.cache.code == selected,
+                            isOwn: own != nil && row.cache.owner.lowercased() == own)
         }
-        markers.append(MapMarker(id: cache.code, latitude: cache.coordinate.latitude,
-                                 longitude: cache.coordinate.longitude,
-                                 iconName: cache.type.iconName(solved: cache.hasCorrectedCoordinate),
-                                 title: cache.name, subtitle: "\(cache.code) · \(cache.ratingText)", isCache: true))
+        if let cache = state.selectedCache, !markers.contains(where: { $0.id == cache.code }) {
+            markers.append(.cache(cache, isSelected: true, isOwn: own != nil && cache.owner.lowercased() == own))
+        }
+        for waypoint in waypoints where waypoint.cacheCode == selected {
+            if let coordinate = waypoint.coordinate { markers.append(.waypoint(waypoint, at: coordinate)) }
+        }
         return markers
     }
 
@@ -182,6 +187,12 @@ final class MapModel {
 
     let language = Locale.current.language.languageCode?.identifier ?? "en"
     private var generation = 0
+    /// `BundledMaps` and the download folders; maps and themes are remembered by their path inside them, because
+    /// the app's folders move with every install.
+    private var sourceFolders: [URL] = []
+    /// Position and zoom of the last session, used by the first load if the map shows that place.
+    private var savedCamera = MapCamera.saved
+    private var savedCameraMap = UserDefaults.standard.string(forKey: Keys.map)
     /// Area of each map file, read from its header.
     private var bounds: [URL: BoundingBox] = [:]
     /// Last place asked for with `focus(on:)` (the selected cache); a map chosen later starts there if it covers it.
@@ -192,10 +203,50 @@ final class MapModel {
     private static let builtInThemes = [ThemeChoice(name: "Default", source: .builtIn("default")),
                                         ThemeChoice(name: "Osmarender", source: .builtIn("osmarender"))]
 
+    private enum Keys {
+        static let map = "map.file"
+        static let theme = "map.theme"
+        static let style = "map.style"
+        static let overlays = "map.overlays"
+    }
+
+    /// Starts with the map, theme, style and overlays of the last session (Cachebox `currentMapLayer`, theme and
+    /// style settings), else with the Bremen test map or the first map.
     init() {
         selectedTheme = Self.builtInThemes[0]
         refreshSources()
-        selectedMap = maps.first { $0.lastPathComponent.hasPrefix("bremen") } ?? maps.first
+        let defaults = UserDefaults.standard
+        let lastMap = defaults.string(forKey: Keys.map).flatMap { key in maps.first { sourceKey($0) == key } }
+        selectedMap = lastMap ?? maps.first { $0.lastPathComponent.hasPrefix("bremen") } ?? maps.first
+        if let key = defaults.string(forKey: Keys.theme), let theme = themes.first(where: { themeKey($0) == key }) {
+            selectedTheme = theme
+            selectedStyle = defaults.string(forKey: Keys.style)
+            overlays = defaults.data(forKey: Keys.overlays)
+                .flatMap { try? JSONDecoder().decode([String: Bool].self, from: $0) } ?? [:]
+        }
+    }
+
+    /// Path of a map or theme file inside its source folder, e.g. `Elevate/Elevate.xml`.
+    private func sourceKey(_ url: URL) -> String {
+        let path = url.resolvingSymlinksInPath().path
+        for folder in sourceFolders {
+            let prefix = folder.resolvingSymlinksInPath().path + "/"
+            if path.hasPrefix(prefix) { return String(path.dropFirst(prefix.count)) }
+        }
+        return url.lastPathComponent
+    }
+
+    private func themeKey(_ theme: ThemeChoice) -> String {
+        switch theme.source {
+        case .builtIn(let name): "builtin:" + name
+        case .file(let url): "file:" + sourceKey(url)
+        }
+    }
+
+    /// Remembers where the map is for the next launch.
+    func cameraChanged(_ camera: MapCamera) {
+        guard renderer != nil else { return }
+        camera.save()
     }
 
     /// Scans `BundledMaps` and the download folders for maps and themes. A selection whose file is gone
@@ -204,6 +255,7 @@ final class MapModel {
         let fm = FileManager.default
         var folders = [MapLibrary.mapsFolder, MapLibrary.themesFolder]
         if let bundled = Bundle.main.url(forResource: "BundledMaps", withExtension: nil) { folders.insert(bundled, at: 0) }
+        sourceFolders = folders
         let files = folders.flatMap {
             fm.enumerator(at: $0, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)?.allObjects as? [URL] ?? []
         }
@@ -285,7 +337,17 @@ final class MapModel {
                case .builtIn = selectedTheme.source, let theme = freizeitkarteTheme {
                 selectedTheme = theme   // MapMenu reloads with the matching design
             }
-            if recenter || self.renderer == nil || pendingFocus != nil {
+            let restored = self.renderer == nil && pendingFocus == nil ? savedCamera.flatMap { camera in
+                // the position of the last session, if it was on this map or this map covers it
+                savedCameraMap == sourceKey(mapURL)
+                    || map.boundingBox.contains(LatLong(latitude: camera.latitude, longitude: camera.longitude))
+                    ? camera : nil
+            } : nil
+            savedCamera = nil
+            if let restored {
+                center = MapCenterRequest(latitude: restored.latitude, longitude: restored.longitude,
+                                          resetZoom: false, zoom: restored.zoom)
+            } else if recenter || self.renderer == nil || pendingFocus != nil {
                 // a place asked for meanwhile; the selected cache if the map covers it; else Bremen market square
                 // for the test map, otherwise the map's own start position
                 let start = if let pending = pendingFocus {
@@ -298,10 +360,15 @@ final class MapModel {
                     map.startPosition
                 }
                 center = MapCenterRequest(latitude: start.latitude, longitude: start.longitude, resetZoom: true)
-                pendingFocus = nil
             }
+            pendingFocus = nil
             styleMenu = renderer.theme.styleMenu
             if let menu = styleMenu, selectedStyle == nil { selectedStyle = menu.defaultValue }
+            let defaults = UserDefaults.standard
+            defaults.set(sourceKey(mapURL), forKey: Keys.map)
+            defaults.set(themeKey(theme), forKey: Keys.theme)
+            defaults.set(style ?? styleMenu?.defaultValue, forKey: Keys.style)
+            defaults.set(try? JSONEncoder().encode(overlays), forKey: Keys.overlays)
             stats.reset()
             error = nil
             loadedMap = mapURL

@@ -18,10 +18,10 @@ public class FeaturesView extends Page {
                 "GPX-Dateien und Pocket Queries importieren, in mehreren Listen verwalten, nach Entfernung "
                         + "sortieren, filtern und durchsuchen. Der gewählte Cache bleibt in allen Ansichten im Blick.",
                 manual());
-        comingSoon(card("map.png", "Offline-Karte",
+        card("map.png", "Offline-Karte",
                 "Mapsforge-Vektorkarten mit frei wählbarem Theme, Freizeitkarten für ganz Europa direkt in der App "
-                        + "laden. Caches und Wegpunkte liegen bald direkt auf der Karte.",
-                manual()));
+                        + "laden. Alle Caches der Liste liegen auf der Karte, ein Tipp öffnet ihre Info-Blase.",
+                manual());
         comingSoon(card("compass.png", "Kompass & Navigation",
                 "Richtung und Entfernung zum Ziel – zum Cache, zum nächsten Wegpunkt oder zum geparkten Auto."));
         comingSoon(card("fieldnoteListIcon.png", "Loggen unterwegs",

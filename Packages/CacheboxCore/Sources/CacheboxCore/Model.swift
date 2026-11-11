@@ -271,8 +271,11 @@ public struct CacheSummary: Identifiable, Hashable, Sendable {
     public var code: String
     public var id: String { code }
     public var name: String
+    /// The corrected coordinates if there are any, else the listing coordinates.
     public var coordinate: Coordinate
     public var hasCorrectedCoordinate: Bool
+    /// Coordinates of the first final waypoint that has some (not 0/0), e.g. a solved mystery entered as waypoint.
+    public var finalCoordinate: Coordinate?
     public var type: CacheType
     public var container: ContainerSize
     public var difficulty: Double
@@ -288,13 +291,14 @@ public struct CacheSummary: Identifiable, Hashable, Sendable {
     public var trackableCount: Int
 
     public init(code: String, name: String, coordinate: Coordinate, hasCorrectedCoordinate: Bool = false,
-                type: CacheType, container: ContainerSize, difficulty: Double, terrain: Double, owner: String = "",
+                finalCoordinate: Coordinate? = nil, type: CacheType, container: ContainerSize, difficulty: Double, terrain: Double, owner: String = "",
                 hidden: Date? = nil, isAvailable: Bool = true, isArchived: Bool = false, isFound: Bool = false,
                 isFavorite: Bool = false, favoritePoints: Int? = nil, waypointCount: Int = 0, trackableCount: Int = 0) {
         self.code = code
         self.name = name
         self.coordinate = coordinate
         self.hasCorrectedCoordinate = hasCorrectedCoordinate
+        self.finalCoordinate = finalCoordinate
         self.type = type
         self.container = container
         self.difficulty = difficulty
@@ -309,4 +313,16 @@ public struct CacheSummary: Identifiable, Hashable, Sendable {
         self.waypointCount = waypointCount
         self.trackableCount = trackableCount
     }
+
+    /// Where the cache is searched: the corrected coordinates, else a final waypoint with coordinates, else the
+    /// listing coordinates. Cachebox draws the cache there on the map and measures the list distance to it
+    /// (`MapViewCacheList`, `Cache.getCorrectedFinal`, `CacheList.resortList`). Cachebox also uses a start waypoint of
+    /// multis and mysteries; this model has no start waypoints yet.
+    public var target: Coordinate {
+        hasCorrectedCoordinate ? coordinate : finalCoordinate ?? coordinate
+    }
+
+    /// Corrected coordinates or a final waypoint with coordinates (Cachebox
+    /// `hasCorrectedCoordinatesOrHasCorrectedFinal`, shown with the "Solved" icon).
+    public var isSolved: Bool { hasCorrectedCoordinate || finalCoordinate != nil }
 }

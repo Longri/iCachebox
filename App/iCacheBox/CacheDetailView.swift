@@ -161,7 +161,7 @@ struct CacheDetailView: View {
                 HStack(alignment: .top, spacing: 12) {
                     CacheTypeIcon(type: cache.type, isFound: summary.isFound, isFavorite: summary.isFavorite,
                                   isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
-                                  isSolved: cache.correctedCoordinate != nil)
+                                  isSolved: summary.isSolved)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(cache.name).font(.headline)
                         Text("\(cache.code) · \(cache.type.title) · von \(cache.owner)")
@@ -269,7 +269,11 @@ struct CacheDetailView: View {
     private func waypoints(_ details: Details) -> some View {
         List {
             Section {
-                waypointRow(icon: details.cache.type.iconName(solved: details.cache.correctedCoordinate != nil),
+                // "Solved" also with a final that has coordinates, like `CacheSummary.isSolved`
+                let hasFinal = details.waypoints.contains {
+                    $0.type == .final && $0.coordinate.map { $0.latitude != 0 || $0.longitude != 0 } == true
+                }
+                waypointRow(icon: details.cache.type.iconName(solved: details.cache.correctedCoordinate != nil || hasFinal),
                             title: "Cache", code: details.cache.code, coordinate: details.cache.target, comment: "")
             }
             Section {
