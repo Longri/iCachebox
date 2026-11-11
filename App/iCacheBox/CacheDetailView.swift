@@ -177,7 +177,7 @@ struct CacheDetailView: View {
                     }
                     .onTapGesture { editingNote = true }
                 }
-                if !cache.attributes.isEmpty { attributes(cache.attributes) }
+                if !cache.attributes.isEmpty { CacheAttributeIcons(attributes: cache.attributes) }
                 if !descriptionHTML(cache).isEmpty {
                     Divider()
                     HTMLView(html: descriptionHTML(cache), height: $descriptionHeight)
@@ -251,19 +251,6 @@ struct CacheDetailView: View {
             }
         }
         .font(.subheadline)
-    }
-
-    private func attributes(_ attributes: [CacheAttribute]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Attribute").font(.subheadline.weight(.semibold))
-            ForEach(attributes, id: \.id) { attribute in
-                Label(attribute.name.isEmpty ? "Attribut \(attribute.id)" : attribute.name,
-                      systemImage: attribute.isPositive ? "checkmark.circle" : "xmark.circle")
-                    .font(.caption)
-                    .foregroundStyle(attribute.isPositive ? Color.primary : Color.secondary)
-                    .strikethrough(!attribute.isPositive)
-            }
-        }
     }
 
     /// Short and long description as one HTML text; plain text gets its line breaks kept.

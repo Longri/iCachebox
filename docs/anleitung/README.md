@@ -131,7 +131,8 @@ verschwindet.
 Der Bereich **Cache** zeigt den gewählten Cache. Oben schaltest du um zwischen:
 
 - **Beschreibung:** Typ, Owner, Schwierigkeit und Gelände, Größe, Koordinaten, Versteckdatum, Region,
-  Favoritenpunkte, Trackables, Attribute und die Beschreibung des Owners. Links in der Beschreibung öffnen Safari.
+  Favoritenpunkte, Trackables, die Attribute als Symbole (durchgestrichen = trifft nicht zu, Tippen zeigt den Text)
+  und die Beschreibung des Owners. Links in der Beschreibung öffnen Safari.
 - **Wegpunkte:** Der Cache selbst und alle zusätzlichen Wegpunkte mit Typ, Koordinaten, Kommentar und Entfernung.
   Wegpunkte mit verborgenen Koordinaten sind als solche markiert.
 - **Logs:** Die Logs aus der GPX-Datei, die neuesten zuerst.
