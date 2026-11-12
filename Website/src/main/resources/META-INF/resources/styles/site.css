@@ -304,3 +304,32 @@ a:focus-visible { outline: 3px solid var(--cb-orange); outline-offset: 2px; }
 .analytics-metric h2 { margin: .5rem 0 0; font-size: 2rem; }
 .analytics-breakdowns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 1.5rem; }
 .analytics vaadin-grid { border-radius: 8px; }
+
+/* Offene Android-Funktionslisten innerhalb der Themenkarten */
+.feature-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--cb-line);
+}
+
+.feature-checklist vaadin-checkbox {
+  width: 100%;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  --vaadin-checkbox-label-color: var(--cb-ink);
+}
+
+.feature-checklist vaadin-checkbox::part(label) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.feature-count {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cb-ink-soft);
+}
