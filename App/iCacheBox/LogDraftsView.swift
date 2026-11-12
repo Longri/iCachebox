@@ -19,7 +19,6 @@ struct LogDraftsView: View {
                     Button("Neuer Entwurf", systemImage: "plus") {}.disabled(state.selectedCache == nil)
                 }
             }
-            .selectedCacheBar()
         }
     }
 }

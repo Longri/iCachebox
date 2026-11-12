@@ -274,68 +274,6 @@ private struct TargetDirectionText: View {
     }
 }
 
-/// Cachebox `CacheInfo` with `SHOW_S_D_T`: size letter and bar, D and T stars, trackables and favourite points.
-private struct SizeDifficultyTerrain: View {
-    let cache: CacheSummary
-    @ScaledMetric(relativeTo: .footnote) private var height: CGFloat = 13
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Text(cache.container.letter)
-            Image(sizeImage).resizable().interpolation(.high)
-                .frame(width: height * 45 / 12, height: height)
-            Text("D").padding(.leading, 8)
-            Image(Self.stars(cache.difficulty)).resizable().interpolation(.high)
-                .frame(width: height * 5, height: height)
-            Text("T").padding(.leading, 8)
-            Image(Self.stars(cache.terrain)).resizable().interpolation(.high)
-                .frame(width: height * 5, height: height)
-            if cache.trackableCount > 0 {
-                Image("tb").resizable().interpolation(.high)
-                    .frame(width: height * 1.4, height: height * 1.4)
-                    .rotationEffect(.degrees(90))
-                    .padding(.leading, 10)
-                if cache.trackableCount > 1 { Text("x\(cache.trackableCount)") }
-            }
-            if let points = cache.favoritePoints, points > 0 {
-                Image("FavPoi").resizable().interpolation(.high)
-                    .frame(width: height * 1.2, height: height * 1.2)
-                    .padding(.leading, 10)
-                Text("x\(points)")
-            }
-        }
-        .font(.footnote.weight(.semibold))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityText)
-    }
-
-    /// Cachebox `Sprites.SizesIcons` (`other`, `micro`, `small`, `regular`, `large`).
-    private var sizeImage: String {
-        switch cache.container {
-        case .micro: "size-micro"
-        case .small: "size-small"
-        case .regular: "size-regular"
-        case .large: "size-large"
-        default: "size-other"
-        }
-    }
-
-    /// Cachebox `Sprites.Stars.get((int) (rating * 2))`: `stars0icon`, `stars0-5icon` … `stars5icon`.
-    static func stars(_ rating: Double) -> String {
-        let halves = min(10, max(0, Int(rating * 2)))
-        return halves.isMultiple(of: 2) ? "stars\(halves / 2)icon" : "stars\(halves / 2)-5icon"
-    }
-
-    private var accessibilityText: String {
-        var parts = ["Größe \(cache.container.title)",
-                     "Schwierigkeit \(CacheSummary.rating(cache.difficulty))",
-                     "Gelände \(CacheSummary.rating(cache.terrain))"]
-        if cache.trackableCount > 0 { parts.append("\(cache.trackableCount) Trackables") }
-        if let points = cache.favoritePoints, points > 0 { parts.append("\(points) Favoritenpunkte") }
-        return parts.joined(separator: ", ")
-    }
-}
-
 // MARK: - Compass
 
 /// Cachebox `CompassView.leftBox` without map: distance and accuracy at the top, the compass at the bottom.

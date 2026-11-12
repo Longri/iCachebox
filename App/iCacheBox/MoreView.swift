@@ -43,11 +43,20 @@ struct MoreView: View {
                     Label("Willkommensseite zeigen", systemImage: "hand.wave")
                 }
                 .cacheboxListRow(index: 6)
-                row("Über", "info.circle", index: 7)
+                NavigationLink {
+                    AboutView()
+                } label: {
+                    LabeledContent {
+                        Text(AppVersion.version)
+                            .monospacedDigit()
+                    } label: {
+                        Label("Über", systemImage: "info.circle")
+                    }
+                }
+                .cacheboxListRow(index: 7)
             }
             .cacheboxPage()
             .navigationTitle("Mehr")
-            .selectedCacheBar()
         }
         .environment(\.colorScheme, .light)   // also the navigation bar and the pages behind the entries
     }

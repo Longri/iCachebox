@@ -88,6 +88,13 @@ Teile waren nicht lesbar oder nur sekundär belegt; das ist unten markiert. Kein
 > Wischfunktion steht auch im Menü des Knopfs und als VoiceOver-Aktion (HIG: Gesten nie der einzige Weg). Die Tabelle
 > unten beschreibt den ursprünglichen Plan; die heutige Belegung steht in `MainButton.functions`.
 
+> **Geändert am 12.11.2026 (Wunsch des Nutzers):** Der gewählte Cache steht nicht mehr als Kapsel unten, sondern wie
+> in Cachebox als Slider oben über allen Ansichten. Herunterziehen zeigt die Zusatzknöpfe (Cachebox `QuickButtonList`
+> mit der Grundbelegung) und darunter die Cache-Info (`CacheboxSlider.swift`, Anleitung „Der gewählte Cache und die
+> Zusatzknöpfe“). Die ersten beiden Punkte unter „Weitere Entscheidungen“ sind damit überholt. Die Icons der
+> Zusatzknöpfe (`Assets.xcassets/CacheboxQuick`) stammen aus der Cachebox-Skin; ihre Rechte sind so ungeklärt wie die
+> der übrigen Skin-Bilder.
+
 Struktur und Farben (Cachebox-Grün) bleiben, die Umsetzung ist nativ. Aus verstecktem Wischen werden sichtbare Controls.
 
 | Tab | Inhalt |

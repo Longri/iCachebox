@@ -15,9 +15,10 @@ Unten sitzen wie in Cachebox fünf Knöpfe. Jeder gehört zu einem Bereich mit m
 | **Cache** (Dose) | Alles zum gewählten Cache: **Beschreibung**, **Wegpunkte**, **Logs**, **Spoiler**, dazu **Hinweis**, **Notizen** und **Im Browser öffnen**. |
 | **Navigation** (N-Pfeil) | **Karte** und **Kompass**, **Navigieren** mit Apple Karten und **Karten und Themes** (Download). |
 | **Werkzeuge** (Schraubenschlüssel) | **Entwürfe** für Logs (noch im Aufbau), später Solver, Foto und Sprachnotiz. |
-| **Sonstiges** (Zahnrad) | **Mehr**: Geocaching-Konto, GPX-Import, Karten und Themes, Einstellungen; außerdem die **Taschenlampe**. |
+| **Sonstiges** (Zahnrad) | **Mehr**: Geocaching-Konto, GPX-Import, Karten und Themes, Einstellungen und **Über** (Version und Build-Zeit); außerdem die **Taschenlampe**. |
 
-Der gewählte Cache steht als Leiste über den Knöpfen (mehr dazu im Abschnitt „Der gewählte Cache“).
+Der gewählte Cache steht oben als Leiste über jeder Ansicht. Ziehst du sie herunter, erscheinen darüber die
+**Zusatzknöpfe** (mehr dazu im Abschnitt „Der gewählte Cache und die Zusatzknöpfe“).
 
 ## Die fünf Knöpfe
 
@@ -109,10 +110,13 @@ Jede Zeile zeigt:
   darauf ein Smiley für gefunden, ein Herz für Favorit und ein Verbotszeichen, wenn der Cache deaktiviert ist, bzw.
   ein Leitkegel, wenn er archiviert ist;
 - den Namen (rot, wenn der Cache nicht verfügbar ist, durchgestrichen, wenn er archiviert ist);
-- GC-Code, Schwierigkeit (D), Gelände (T) und Größe (M = Micro, S = Small, R = Regular, L = Large, V = virtuell,
-  O = andere);
-- falls vorhanden Trackables, Favoritenpunkte und zusätzliche Wegpunkte;
-- rechts die Entfernung und einen Pfeil in Richtung des Caches, beim gewählten Cache zusätzlich einen Haken.
+- den GC-Code und, falls vorhanden, die Zahl der zusätzlichen Wegpunkte;
+- rechts die Entfernung und einen Pfeil in Richtung des Caches;
+- unten über die ganze Breite wie in Cachebox die Größe als Buchstabe und Balken (M = Micro, S = Small,
+  R = Regular, L = Large, V = virtuell, O = andere), Schwierigkeit (D) und Gelände (T) als Sterne, dazu
+  Trackables und Favoritenpunkte, falls vorhanden.
+
+Der gewählte Cache ist gelb hinterlegt.
 
 Über der Liste steht, wie viele Caches du siehst, zum Beispiel „200 von 301 Caches · nach Entfernung“.
 
@@ -137,21 +141,36 @@ dann grau.
 **Aufräumen:** Unter **⋯ › Caches löschen** entfernst du alle gefundenen, alle archivierten oder alle gerade
 angezeigten Caches aus der Liste. Ein erneuter Import holt sie zurück.
 
-## Der gewählte Cache
+## Der gewählte Cache und die Zusatzknöpfe
 
-Wie in Cachebox gibt es immer einen gewählten Cache, mit dem du gerade unterwegs bist. Er steht als Leiste über den
-Knöpfen in der Cacheliste, auf der Karte, bei den Entwürfen und unter **Mehr**: Typ-Symbol, Name, GC-Code,
-Schwierigkeit, Gelände und Größe, mit Standort auch Entfernung und ein Pfeil in seine Richtung. Im Kompass und in den
-Cache-Details steht er ohnehin groß da.
+Wie in Cachebox gibt es immer einen gewählten Cache, mit dem du gerade unterwegs bist. Er steht oben als Leiste über
+jeder Ansicht:
+
+- links fünf schmale Felder für seine **letzten fünf Logs**, das neueste zuerst: grün für gefunden (oder Wartung durch
+  den Owner), rot für nicht gefunden, gelb für „Wartung nötig“ oder „Archivierung nötig“, leer für andere Logs oder
+  wenn es keine gibt;
+- Typ-Symbol und Name, darunter Größe, Schwierigkeit und Gelände als Symbole wie in der Cacheliste;
+- rechts mit Standort die Entfernung und ein Pfeil in seine Richtung.
+
+Mit der Leiste machst du Folgendes:
 
 - **Antippen** öffnet seine Details.
 - **Lange drücken** bietet **Details** und **Auf der Karte**.
-- **Auf der Karte** ist der gewählte Cache immer eingezeichnet; wählst du einen anderen, springt die Karte zu ihm
-  (siehe „Offline-Karten“).
+- **Herunterziehen** zeigt darüber die **Zusatzknöpfe** für den schnellen Griff, wie in der Grundeinstellung von
+  Cachebox: Wegpunkte, Hinweis, Spoiler, Schnell-Entwurf, automatisch sortieren, Notizen, Logs und Solver.
+  Ausgegraute Knöpfe gibt es noch nicht; der Hinweis ist grau, wenn der Cache keinen hat.
+- **Weiter herunterziehen** klappt unter den Zusatzknöpfen alles Wichtige zum Cache auf: Owner und Versteckdatum,
+  Koordinaten, GC-Code, wann er zuletzt gefunden wurde, Größe, Schwierigkeit und Gelände, Trackables,
+  Favoritenpunkte und die Attribute (Tippen zeigt den Text).
+- **Hochschieben** blendet das wieder aus. Ob die Zusatzknöpfe zu sehen sind, merkt sich iCacheBox bis zum nächsten
+  Start.
+
+**Auf der Karte** ist der gewählte Cache immer eingezeichnet; wählst du einen anderen, springt die Karte zu ihm
+(siehe „Offline-Karten“).
 
 iCacheBox merkt sich je Liste den zuletzt gewählten Cache, auch nach einem Neustart. Wechselst du die Liste, ist
-deren zuletzt gewählter Cache wieder gewählt; in einer neuen Liste ist zunächst keiner gewählt und die Leiste
-verschwindet.
+deren zuletzt gewählter Cache wieder gewählt; in einer neuen Liste ist zunächst keiner gewählt und die Leiste zeigt
+„Kein Cache gewählt“.
 
 ## Cache-Details
 
@@ -189,6 +208,12 @@ Abspielsymbol setzt ihn fort. Mit der ersten Karte lädt iCacheBox das passende 
 Menü des Navigations-Knopfs, wenn die Karte zu sehen ist – wählst du die Karte, das Theme und den Stil.
 Freizeitkarten bekommen automatisch ihr Design.
 
+**Zoomen und Maßstab:** Neben dem Zoomen mit zwei Fingern gibt es wie in Cachebox unten rechts zwei Knöpfe: links
+heraus, rechts hinein. Jeder Tipp geht genau eine Zoomstufe weiter (von 6 bis 21), auch mehrere Tipps schnell
+hintereinander. Nach 13 Sekunden ohne Berührung werden die Knöpfe blass, mit der nächsten Berührung der Karte kommen
+sie zurück; sie funktionieren aber auch blass. An der kleinsten und größten Stufe ist der jeweilige Knopf
+ausgegraut. Unten links steht immer der **Maßstab**.
+
 Beim nächsten Start zeigt die Karte wieder dieselbe Karte mit demselben Design, Stil und Ausschnitt wie beim
 letzten Mal.
 
@@ -204,8 +229,9 @@ Liste zählt dann ebenfalls bis dorthin.
 **Gewählter Cache:** Er hat einen roten Rahmen, ist immer groß und liegt obenauf. Dazu kommen seine zusätzlichen
 Wegpunkte (Parkplatz, Stationen, Final), soweit sie Koordinaten haben.
 
-**Info-Blase:** Ein Tipp auf einen Cache – oder knapp daneben – öffnet seine Info-Blase: Art, GC-Code,
-Schwierigkeit, Gelände und Größe, Owner (bei Events auch das Datum), Koordinaten und mit Standort die Entfernung.
+**Info-Blase:** Ein Tipp auf einen Cache – oder knapp daneben – öffnet seine Info-Blase: Art, GC-Code, Owner (bei
+Events auch das Datum), Koordinaten, mit Standort die Entfernung und darunter Größe, Schwierigkeit und Gelände als
+Symbole.
 **Auswählen** macht ihn zum gewählten Cache, der Info-Knopf öffnet seine Details.
 
 Die Karte springt zum Cache, wenn du einen anderen Cache wählst oder **Auf der Karte** nutzt: in der Liste nach
@@ -279,6 +305,10 @@ Im Querformat steht der Kasten links neben dem Kompass.
 
 ## Fragen und Antworten
 
+**Welche Version habe ich?**
+Unter **Sonstiges › Mehr › Über** stehen die Version, zum Beispiel 1.0.0.21, und wann sie gebaut wurde. Die letzte
+Stelle zählt die Änderungen am Quellcode (Commits) und wächst mit jeder neuen Version.
+
 **Woher bekomme ich GPX-Dateien?**
 Von geocaching.com (einzelne Caches als „GPX-Datei“, Pocket Queries mit Premium-Mitgliedschaft), aus GSAK, aus
 c:geo (Export als GPX) oder von Opencaching. Auch Cachebox für Android exportiert GPX-Dateien.
@@ -299,6 +329,7 @@ keine Caches. Ist die Datei beschädigt, nennt die Fehlermeldung die Zeile, an d
 
 Im Vergleich zu Cachebox für Android fehlen noch: Laden und Aktualisieren über die Geocaching-API, Spoilerbilder,
 die kleine Karte im Kompass, Wegpunkte als Ziel, die Kartenmodi WP, Lock und Car, Feldnotizen hochladen, Solver,
-Tracks, Trackables, Parkplatz, Foto, Video und Sprachnotiz. Diese Einträge stehen in den Menüs der Knöpfe schon
-ausgegraut an ihrem Platz. Den Tag-/Nachtmodus von Cachebox gibt es nicht; die Knöpfe und der Kompass bleiben auch im
+Tracks, Trackables, Parkplatz, Foto, Video und Sprachnotiz, Schnell-Entwurf und automatisches Sortieren sowie eine
+eigene Auswahl der Zusatzknöpfe. Diese Einträge stehen in den Menüs und bei den Zusatzknöpfen schon ausgegraut an
+ihrem Platz. Den Tag-/Nachtmodus von Cachebox gibt es nicht; die Knöpfe und der Kompass bleiben auch im
 dunklen Erscheinungsbild hell.

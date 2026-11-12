@@ -188,7 +188,7 @@ final class MarkerImages {
 }
 
 /// Content of the info bubble that opens when a cache on the map is tapped (Cachebox `InfoBubble` with
-/// `CacheInfo.VIEW_MODE_BUBBLE`: icon, name, owner – the date for events –, coordinates, D/T/size). The name is
+/// `CacheInfo.VIEW_MODE_BUBBLE`: icon, name, owner – the date for events –, coordinates, size/D/T icons). The name is
 /// the callout title above it. Tapping "Auswählen" selects the cache like tapping the bubble in Cachebox.
 struct CacheBubble: View {
     let cache: CacheSummary
@@ -204,7 +204,7 @@ struct CacheBubble: View {
                               isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
                               isSolved: cache.isSolved, size: 34)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(cache.code) · \(cache.ratingText)")
+                    Text(cache.code)
                     if cache.type.isEvent, let hidden = cache.hidden {
                         Text(hidden.formatted(date: .abbreviated, time: .omitted))
                     }
@@ -221,6 +221,7 @@ struct CacheBubble: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             }
+            SizeDifficultyTerrain(cache: cache, isCompact: true)
             if isSelected {
                 Label("Gewählter Cache", systemImage: "checkmark.circle.fill")
                     .font(.footnote)

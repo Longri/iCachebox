@@ -59,25 +59,36 @@ struct MapStateButton: View {
 /// The Cachebox button look (`btnNormal`/`btn-pressed`): olive green with a light top edge and a black frame,
 /// yellow while pressed.
 struct CacheboxButtonStyle: ButtonStyle {
+    var cornerRadius: CGFloat = 9
+
     func makeBody(configuration: Configuration) -> some View {
-        let pressed = configuration.isPressed
-        let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         configuration.label
-            .background {
-                shape.fill(LinearGradient(stops: pressed ? [
-                    .init(color: Color(red: 1, green: 0.93, blue: 0.72), location: 0),
-                    .init(color: Color(red: 1, green: 0.8, blue: 0.13), location: 0.25),
-                    .init(color: Color(red: 1, green: 0.8, blue: 0.18), location: 1),
-                ] : [
-                    .init(color: Color(red: 0.80, green: 0.83, blue: 0.73), location: 0),
-                    .init(color: Color(red: 0.55, green: 0.62, blue: 0.39), location: 0.28),
-                    .init(color: Color(red: 0.55, green: 0.62, blue: 0.39), location: 0.9),
-                    .init(color: Color(red: 0.52, green: 0.58, blue: 0.37), location: 1),
-                ], startPoint: .top, endPoint: .bottom))
-            }
-            .overlay { shape.strokeBorder(Color.black.opacity(0.95), lineWidth: 1.5) }
+            .background { CacheboxButtonFace(isPressed: configuration.isPressed, cornerRadius: cornerRadius) }
             .contentShape(shape)
             .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
+    }
+}
+
+/// Face of a Cachebox button (`btnNormal`, `btn-pressed`), also the background of the slider bar (Cachebox
+/// `Sprites.progressBack`, a nine-patch of `btnNormal`).
+struct CacheboxButtonFace: View {
+    var isPressed = false
+    var cornerRadius: CGFloat = 9
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        shape.fill(LinearGradient(stops: isPressed ? [
+            .init(color: Color(red: 1, green: 0.93, blue: 0.72), location: 0),
+            .init(color: Color(red: 1, green: 0.8, blue: 0.13), location: 0.25),
+            .init(color: Color(red: 1, green: 0.8, blue: 0.18), location: 1),
+        ] : [
+            .init(color: Color(red: 0.80, green: 0.83, blue: 0.73), location: 0),
+            .init(color: Color(red: 0.55, green: 0.62, blue: 0.39), location: 0.28),
+            .init(color: Color(red: 0.55, green: 0.62, blue: 0.39), location: 0.9),
+            .init(color: Color(red: 0.52, green: 0.58, blue: 0.37), location: 1),
+        ], startPoint: .top, endPoint: .bottom))
+        .overlay { shape.strokeBorder(Color.black.opacity(0.95), lineWidth: 1.5) }
     }
 }
 

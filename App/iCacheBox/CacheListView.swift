@@ -85,7 +85,6 @@ struct CacheListView: View {
                          + " mit Wegpunkten und Logs aus der Liste „\(lists.currentName ?? "")“ entfernt. "
                          + "Ein erneuter Import holt \(count == 1 ? "ihn" : "sie") zurück.")
                 }
-                .selectedCacheBar()
                 .background(Color.cacheboxBackground)
         }
         .environment(\.colorScheme, .light)
@@ -245,7 +244,9 @@ struct CacheListView: View {
     }
 }
 
-/// One cache in the list: type icon with status marks, name, code and rating, distance and direction.
+/// One cache in the list (Cachebox `CacheListViewItem` with `CacheInfo.VIEW_MODE_CACHE_LIST`): type icon with status
+/// marks, name and code, distance and direction, and below over the whole width size, difficulty and terrain as
+/// Cachebox icons with trackables and favourite points.
 struct CacheRowView: View {
     let row: CacheRow
     var heading: Double?
@@ -255,48 +256,50 @@ struct CacheRowView: View {
     private var cache: CacheSummary { row.cache }
 
     var body: some View {
-        HStack(spacing: 12) {
-            CacheTypeIcon(type: cache.type, isFound: cache.isFound, isFavorite: cache.isFavorite,
-                          isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
-                          isSolved: cache.isSolved)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(cache.name)
-                    .strikethrough(cache.isArchived)
-                    .foregroundStyle(cache.isArchived || !cache.isAvailable ? Color.red : Color.primary)
-                    .lineLimit(2)
-                Text("\(cache.code) · \(cache.ratingText)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if !extras.isEmpty {
-                    Text(extras)
-                        .font(.caption2)
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 12) {
+                CacheTypeIcon(type: cache.type, isFound: cache.isFound, isFavorite: cache.isFavorite,
+                              isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
+                              isSolved: cache.isSolved)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(cache.name)
+                        .strikethrough(cache.isArchived)
+                        .foregroundStyle(cache.isArchived || !cache.isAvailable ? Color.red : Color.primary)
+                        .lineLimit(2)
+                    Text(cache.code)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
+                    if !extras.isEmpty {
+                        Text(extras)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer(minLength: 4)
+                if let distance = row.distance, let bearing = row.bearing {
+                    VStack(spacing: 2) {
+                        Image(systemName: "location.north.fill")
+                            .rotationEffect(.degrees(bearing - (isDevice ? heading ?? 0 : 0)))
+                            .foregroundStyle(isDevice ? Color.accentColor : Color.secondary)
+                            .accessibilityHidden(true)
+                        Text(Format.distance(distance))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(minWidth: 56)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Entfernung \(Format.distance(distance))")
                 }
             }
-            Spacer(minLength: 4)
-            if let distance = row.distance, let bearing = row.bearing {
-                VStack(spacing: 2) {
-                    Image(systemName: "location.north.fill")
-                        .rotationEffect(.degrees(bearing - (isDevice ? heading ?? 0 : 0)))
-                        .foregroundStyle(isDevice ? Color.accentColor : Color.secondary)
-                        .accessibilityHidden(true)
-                    Text(Format.distance(distance))
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-                .frame(minWidth: 56)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Entfernung \(Format.distance(distance))")
-            }
+            SizeDifficultyTerrain(cache: cache, isCompact: true)
         }
         .padding(.vertical, 2)
     }
 
-    /// Trackables, favourite points and waypoints, like the bottom line of a Cachebox list row.
+    /// Waypoints and the state, like the text lines of a Cachebox list row (trackables and favourite points are
+    /// icons in the line below).
     private var extras: String {
         var parts: [String] = []
-        if cache.trackableCount > 0 { parts.append("\(cache.trackableCount) Trackable" + (cache.trackableCount > 1 ? "s" : "")) }
-        if let points = cache.favoritePoints, points > 0 { parts.append("♥ \(points)") }
         if cache.waypointCount > 0 { parts.append("\(cache.waypointCount) Wegpunkt" + (cache.waypointCount > 1 ? "e" : "")) }
         if !cache.isAvailable && !cache.isArchived { parts.append("deaktiviert") }
         if cache.isArchived { parts.append("archiviert") }

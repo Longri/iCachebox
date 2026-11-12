@@ -8,14 +8,12 @@ import UIKit
 /// every zoom step flashed black squares.
 final class MapsforgeTileOverlay: MKTileOverlay, @unchecked Sendable {
     let renderer: TileRenderer
-    let stats: RenderStats
     /// Tiles of the overlay this one replaces (other map, theme or style), shown until the own ones are rendered.
     /// Set on the main thread before the overlay is added; taken over by the renderer.
     var previousTiles: TileCache?
 
-    init(renderer: TileRenderer, stats: RenderStats) {
+    init(renderer: TileRenderer) {
         self.renderer = renderer
-        self.stats = stats
         super.init(urlTemplate: nil)
         canReplaceMapContent = true
         minimumZ = 6
@@ -184,7 +182,6 @@ final class TileCache: @unchecked Sendable {
 final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
     let cache: TileCache
     private let tileRenderer: TileRenderer
-    private let stats: RenderStats
     private let minimumZ: Int
     private let maximumZ: Int
     /// Fills the parts of a tile for which nothing at all has been rendered yet.
@@ -210,7 +207,6 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
     init(overlay: MapsforgeTileOverlay, cache: TileCache) {
         self.cache = cache
         tileRenderer = overlay.renderer
-        stats = overlay.stats
         minimumZ = overlay.minimumZ
         maximumZ = overlay.maximumZ
         background = overlay.renderer.theme.mapBackground.cgColor
@@ -329,11 +325,8 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
 
     private func work() {
         while let key = next() {
-            let start = CFAbsoluteTimeGetCurrent()
             let scale = contentScaleFactor > 0 ? contentScaleFactor : 2
-            let image = tileRenderer.renderTile(key.tile, scale: scale)
-            let ms = (CFAbsoluteTimeGetCurrent() - start) * 1000
-            finish(key, image: image, ms: ms)
+            finish(key, image: tileRenderer.renderTile(key.tile, scale: scale))
         }
     }
 
@@ -350,7 +343,7 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
         }
     }
 
-    private func finish(_ key: TileKey, image: CGImage?, ms: Double) {
+    private func finish(_ key: TileKey, image: CGImage?) {
         let (cancelled, recent) = lock.withLock { (isCancelled, key.z == currentZoom) }
         // into the cache before it leaves `rendering`, or a `draw` in between would request it again
         if let image, !cancelled { cache.insert(image, for: key, recent: recent) }
@@ -361,8 +354,6 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
         }
         // without an image the replacement stays; redrawing would only ask for the tile again
         guard image != nil else { return }
-        let stats = self.stats
-        Task { @MainActor in stats.record(ms: ms, zoom: key.z) }
         DispatchQueue.main.async {
             for zoomScale in scales { self.setNeedsDisplay(key.mapRect, zoomScale: zoomScale) }
         }

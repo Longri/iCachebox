@@ -50,7 +50,6 @@ struct MapCamera: Codable, Equatable {
 /// the waypoints of the selected cache on top (Cachebox `MapView` with `MapViewCacheList`).
 struct MapsforgeMapView: UIViewRepresentable {
     let renderer: TileRenderer
-    let stats: RenderStats
     let center: MapCenterRequest
     var markers: [MapMarker] = []
     /// Source of the own position, drawn as an arrow in the direction the user looks. Observed by the coordinator
@@ -60,8 +59,8 @@ struct MapsforgeMapView: UIViewRepresentable {
     var target: Coordinate?
     /// GPS mode: the map keeps the own position in the middle.
     var followsPosition = false
-    /// Parts of the view covered by the info panel, the buttons and the bars; the edge arrows, the compass and
-    /// the scale stay inside the rest.
+    /// Parts of the view covered by the info panel, the buttons and the bars; the edge arrows, the compass, the
+    /// scale and the zoom buttons stay inside the rest.
     var chromeInsets = UIEdgeInsets.zero
     /// "Auswählen" in the info bubble of a cache.
     var onSelect: (CacheSummary) -> Void = { _ in }
@@ -119,7 +118,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         if mapView.chromeInsets != chromeInsets { mapView.chromeInsets = chromeInsets }
         if c.overlay?.renderer !== renderer {
             // new map/theme/style: replace the tile overlay (MapKit has no API to flush its tile cache)
-            let overlay = MapsforgeTileOverlay(renderer: renderer, stats: stats)
+            let overlay = MapsforgeTileOverlay(renderer: renderer)
             if let old = c.overlay, let oldTiles = mapView.renderer(for: old) as? MapsforgeOverlayRenderer {
                 // the old map stays visible until the new tiles are rendered
                 oldTiles.cancel()
@@ -247,9 +246,10 @@ struct MapsforgeMapView: UIViewRepresentable {
         }
 
         /// Marker icons change size at zoom 13 and 15 like in Cachebox. The own position, the edge arrows and the
-        /// coordinates in the info panel move with the map.
+        /// coordinates in the info panel move with the map; the zoom buttons follow the zoom level.
         func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
             refreshPositionViews(on: mapView)
+            (mapView as? CacheMapView)?.updateZoomButtons()
             let center = mapView.centerCoordinate
             if mapView.bounds.width > 0,
                center.latitude != lastCenter?.latitude || center.longitude != lastCenter?.longitude {
@@ -526,13 +526,15 @@ struct MapsforgeMapView: UIViewRepresentable {
 }
 
 /// MKMapView that can be put on a zoom level before it has a size (the first position is set in `makeUIView`).
-/// Also holds the compass and scale (placed outside the info panel) and the arrows at the map edge.
+/// Also holds the compass, the scale and the zoom buttons (placed outside the info panel) and the arrows at the map
+/// edge.
 final class CacheMapView: MKMapView {
     private var pending: (center: CLLocationCoordinate2D, zoom: Double)?
     private var isApplying = false
     let edgeArrows = EdgeArrowsView()
     private lazy var compassButton = MKCompassButton(mapView: self)
     private lazy var scaleView = MKScaleView(mapView: self)
+    private let zoomButtons = ZoomButtonsView()
     /// Called after a position set with `setCenter(_:zoomLevel:)` has been applied.
     var onCameraApplied: () -> Void = {}
     /// Parts covered by SwiftUI controls and bars.
@@ -540,16 +542,28 @@ final class CacheMapView: MKMapView {
         didSet { setNeedsLayout() }
     }
 
-    /// The part of the map not covered by controls or bars.
-    var freeArea: CGRect { bounds.inset(by: chromeInsets) }
+    /// Zoom levels the zoom buttons step through: the levels the Mapsforge overlay renders (Cachebox
+    /// `OsmMinLevel`/`OsmMaxLevel`: 7…21).
+    static let zoomRange: ClosedRange<Double> = 6...21
+
+    /// The part of the map not covered by controls or bars; the strip with the scale and the zoom buttons at the
+    /// bottom is left out, so that the edge arrows stay above it.
+    var freeArea: CGRect {
+        var area = bounds.inset(by: chromeInsets)
+        area.size.height = max(0, area.height - ZoomButtonsView.buttonSize.height - 2 * MapLayout.margin)
+        return area
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         compassButton.compassVisibility = .adaptive   // only while the map is rotated, like MapKit's own
-        scaleView.scaleVisibility = .adaptive         // while zooming, like before
+        scaleView.scaleVisibility = .visible          // always, like Cachebox `MapScale`
         scaleView.legendAlignment = .leading
+        zoomButtons.zoomIn.addTarget(self, action: #selector(zoomInTapped), for: .touchUpInside)
+        zoomButtons.zoomOut.addTarget(self, action: #selector(zoomOutTapped), for: .touchUpInside)
         addSubview(compassButton)
         addSubview(scaleView)
+        addSubview(zoomButtons)
         addSubview(edgeArrows)
     }
 
@@ -569,6 +583,7 @@ final class CacheMapView: MKMapView {
         }
         pending = nil
         isApplying = true
+        zoomStep = nil
         let mid = MKMapPoint(center)
         let scale = pow(2, 20 - zoomLevel)
         var size = MKMapSize(width: bounds.width * scale, height: bounds.height * scale)
@@ -584,23 +599,91 @@ final class CacheMapView: MKMapView {
         onCameraApplied()
     }
 
+    // MARK: Zoom buttons
+
+    @objc private func zoomInTapped() { zoom(by: 1) }
+
+    @objc private func zoomOutTapped() { zoom(by: -1) }
+
+    /// One zoom level in or out around the middle (Cachebox `ZoomButtons`: `zoom ± 1`, then a short zoom
+    /// animation). After pinching the map is between levels; the step goes to the nearest whole level one further,
+    /// where the tiles are drawn 1:1. Taps during the animation add up. While MapKit animates, the visible region
+    /// still has the old level and `camera` may already have the new one (seen in the simulator), so every step
+    /// is measured from the camera at rest before the first one.
+    private func zoom(by step: Int) {
+        zoomButtons.wake()
+        let current = zoomLevel
+        guard current.isFinite else { return }
+        let running = zoomStep.flatMap { Date.now.timeIntervalSince($0.time) < 1 ? $0 : nil }
+        let start = running.map { ($0.startLevel, $0.startDistance) } ?? (current, camera.centerCoordinateDistance)
+        let base = running?.target ?? current
+        let target = min(max((base + Double(step)).rounded(), Self.zoomRange.lowerBound), Self.zoomRange.upperBound)
+        guard abs(target - base) > 0.01 else { return }
+        zoomStep = ZoomStep(target: target, startLevel: start.0, startDistance: start.1, time: .now)
+        let next = camera.copy() as! MKMapCamera
+        // the camera distance halves with every level (2D map, no pitch)
+        next.centerCoordinateDistance = start.1 * pow(2, start.0 - target)
+        setCamera(next, animated: true)
+        updateZoomButtons()
+    }
+
+    /// A zoom button animation: where it goes and the camera at rest before the first tap. Done when the level is
+    /// reached, the map is touched elsewhere or after a second (MapKit may stop short of the target).
+    private struct ZoomStep {
+        let target: Double
+        let startLevel: Double
+        let startDistance: CLLocationDistance
+        let time: Date
+    }
+
+    private var zoomStep: ZoomStep?
+
+    func updateZoomButtons() {
+        let level = zoomLevel
+        guard level.isFinite else { return }   // MapKit may report no region while it jumps
+        if let step = zoomStep, abs(level - step.target) < 0.01 || Date.now.timeIntervalSince(step.time) > 1 {
+            zoomStep = nil
+        }
+        zoomButtons.update(zoomLevel: zoomStep?.target ?? level, range: Self.zoomRange)
+    }
+
+    /// Every touch on the map brings the faded zoom buttons back (Cachebox: when the map is moved); a touch
+    /// outside them ends a zoom button step (pinching starts from where the map is).
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        let view = super.hitTest(point, with: event)
+        if event?.type == .touches {
+            zoomButtons.wake()
+            if let view, !view.isDescendant(of: zoomButtons) { zoomStep = nil }
+        }
+        return view
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
         if let pending, bounds.width > 0, bounds.height > 0 { setCenter(pending.center, zoomLevel: pending.zoom) }
-        let free = freeArea
-        // compass under the button column at the top right, scale at the bottom left (Cachebox `MapScale`)
+        let area = bounds.inset(by: chromeInsets)
+        let margin = MapLayout.margin
+        // compass under the button column at the top right
         let compass = compassButton.sizeThatFits(CGSize(width: 100, height: 100))   // no intrinsic size (44 × 44)
-        compassButton.frame = CGRect(x: free.maxX - MapLayout.margin - MapLayout.buttonSize / 2 - compass.width / 2,
-                                     y: free.minY + MapLayout.menuSize + MapLayout.margin,
+        compassButton.frame = CGRect(x: area.maxX - margin - MapLayout.buttonSize / 2 - compass.width / 2,
+                                     y: area.minY + MapLayout.menuSize + margin,
                                      width: compass.width, height: compass.height)
-        let scale = scaleView.sizeThatFits(CGSize(width: free.width / 2, height: 40))
-        scaleView.frame = CGRect(x: free.minX + MapLayout.margin, y: free.maxY - scale.height,
-                                 width: max(scale.width, free.width / 2), height: scale.height)
+        // zoom buttons at the bottom right, the scale at the bottom left (Cachebox `MapView`: `zoomBtn`, `mapScale`)
+        let zoom = zoomButtons.sizeThatFits(.zero)
+        zoomButtons.frame = CGRect(x: area.maxX - margin - zoom.width, y: area.maxY - margin - zoom.height,
+                                   width: zoom.width, height: zoom.height)
+        let scaleWidth = max(0, min(area.width / 2, zoomButtons.frame.minX - margin - (area.minX + margin)))
+        let scale = scaleView.sizeThatFits(CGSize(width: scaleWidth, height: 40))
+        // level with the top of the zoom buttons, above MapKit's "Legal" link in the corner
+        scaleView.frame = CGRect(x: area.minX + margin, y: zoomButtons.frame.minY - 4,
+                                 width: max(scale.width, scaleWidth), height: scale.height)
         edgeArrows.frame = bounds
+        updateZoomButtons()
         // MapKit inserts its own views (annotations, callouts) later; keep the controls on top
         if subviews.last !== edgeArrows {
             bringSubviewToFront(scaleView)
             bringSubviewToFront(compassButton)
+            bringSubviewToFront(zoomButtons)
             bringSubviewToFront(edgeArrows)
         }
     }

@@ -39,18 +39,24 @@ private struct MainScreen: View {
         @Bindable var details = state.details
         @Bindable var app = state
         VStack(spacing: 0) {
-            ZStack {
-                ForEach(MainButton.allCases) { button in
-                    if created.contains(button) || state.view.button == button {
-                        let isShown = state.view.button == button
-                        page(button)
-                            .opacity(isShown ? 1 : 0)
-                            .allowsHitTesting(isShown)
-                            .accessibilityHidden(!isShown)
+            // the selected cache and the quick buttons over every view (Cachebox `Slider`)
+            CacheboxSlider {
+                ZStack {
+                    ForEach(MainButton.allCases) { button in
+                        if created.contains(button) || state.view.button == button {
+                            let isShown = state.view.button == button
+                            page(button)
+                                .opacity(isShown ? 1 : 0)
+                                .allowsHitTesting(isShown)
+                                .accessibilityHidden(!isShown)
+                        }
                     }
                 }
+                .overlay(alignment: .top) {
+                    ImportStatusCard()
+                        .animation(.default, value: state.lists.importStatus)
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
             if !keyboardShown {
                 MainButtonBar()
                     .transition(.move(edge: .bottom))
@@ -64,10 +70,6 @@ private struct MainScreen: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.easeOut(duration: 0.2)) { keyboardShown = false }
-        }
-        .overlay(alignment: .top) {
-            ImportStatusCard()
-                .animation(.default, value: state.lists.importStatus)
         }
         .task {
             await state.openList(state.lists.currentName)
@@ -136,7 +138,6 @@ private struct NavigationPage: View {
         let compass = state.view == .compass
         ZStack {
             ContentView()
-                .selectedCacheBar()
                 .opacity(compass ? 0 : 1)
                 .allowsHitTesting(!compass)
                 .accessibilityHidden(compass)
@@ -144,81 +145,6 @@ private struct NavigationPage: View {
                 CompassView()
             }
         }
-    }
-}
-
-/// Bar above the main buttons showing the selected cache (Cachebox: the `Slider` with the cache info line, shown above
-/// every view): type with status marks, name, code, D/T/size and, with a position, distance and direction.
-/// Tapping opens the details; the context menu also offers the map.
-struct SelectedCacheBar: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        if let cache = state.selectedCache {
-            Button {
-                state.showCacheDetails()
-            } label: {
-                HStack(spacing: 10) {
-                    CacheTypeIcon(type: cache.type, isFound: cache.isFound, isFavorite: cache.isFavorite,
-                                  isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
-                                  isSolved: cache.isSolved, size: 30)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(cache.name)
-                            .font(.subheadline)
-                            .strikethrough(cache.isArchived)
-                            .lineLimit(1)
-                        Text("\(cache.code) · \(cache.ratingText)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                    Spacer(minLength: 4)
-                    if let here = state.location.coordinate {
-                        let bearing = here.bearing(to: cache.target) - (state.location.heading ?? 0)
-                        HStack(spacing: 4) {
-                            Image(systemName: "location.north.fill")
-                                .rotationEffect(.degrees(bearing))
-                                .foregroundStyle(.tint)
-                            Text(Format.distance(here.distance(to: cache.target)))
-                                .font(.caption.monospacedDigit())
-                        }
-                    }
-                }
-                .padding(.leading, 10)
-                .padding(.trailing, 14)
-                .padding(.vertical, 5)
-                .frame(minHeight: 44)
-                .background {
-                    // floats like the tab bar, also on grouped (grey) backgrounds
-                    Capsule().fill(.regularMaterial).shadow(color: .black.opacity(0.15), radius: 5, y: 1)
-                }
-                .contentShape(Capsule())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(accessibilityText(cache))
-            .accessibilityHint("Öffnet die Details")
-            .contextMenu {
-                Button("Details", systemImage: "doc.text") { state.showCacheDetails() }
-                Button("Auf der Karte", systemImage: "map") { state.select(cache, show: .map) }
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 6)
-            .environment(\.colorScheme, .light)   // Cachebox day skin, like the list and the main buttons
-        }
-    }
-
-    private func accessibilityText(_ cache: CacheSummary) -> String {
-        var text = "Gewählter Cache: \(cache.name), \(cache.code)"
-        if let here = state.location.coordinate {
-            text += ", Entfernung \(Format.distance(here.distance(to: cache.target)))"
-        }
-        return text
-    }
-}
-
-extension View {
-    func selectedCacheBar() -> some View {
-        safeAreaInset(edge: .bottom) { SelectedCacheBar() }
     }
 }
 

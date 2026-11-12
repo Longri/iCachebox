@@ -35,13 +35,21 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `cacheboxPage()` (plain `List` auf Grün, immer hell), `cacheboxListRow(index:)`, `cacheboxListDivider()`,
     `CacheboxListText` (Kopf-/Fußtexte als normale Zeilen, weil plain `List` Section-Header anheftet), `CacheboxDivider`.
     `RootView.MainScreen`: ZStack der Bereiche, einmal erzeugt bleiben sie (wie Tabs); Leiste verschwindet bei Tastatur.
+    Darüber `CacheboxSlider.swift` wie Cachebox `Slider`/`QuickButtonList`: Leiste des gewählten Caches oben über
+    allen Ansichten (`SliderBar`: letzte 5 Logs farbig, Typ-Icon, Name, `SizeDifficultyTerrain`, Entfernung; Tipp =
+    Details, Langdruck = Details/Auf der Karte), Herunterziehen zeigt `QuickButtonRow` (Grundbelegung Cachebox
+    `quickButtonList`, `QuickButton.action` → `MainAction`, Icons `Assets.xcassets/CacheboxQuick`), weiter ziehen
+    `SliderCacheInfo` (`VIEW_MODE_SLIDER`); Stopps `SliderStop`, Zusatzknöpfe gemerkt in UserDefaults
+    `slider.quickButtons`. Breite per `GeometryReader` (am VStack gemessen hielt die Zusatzknopf-Zeile ihn breit);
+    verdeckte Teile `allowsHitTesting(false)`, weil Clipping Treffer nicht begrenzt
     Bilder `Assets.xcassets/CacheboxButtons` (Tagesskin, Rand-Pixel entfernt). Zustand für die Menüs in `AppState`:
     `view`/`lastViews`, `details` (`SelectedCacheDetails` in `CacheDetailView.swift`: Details des gewählten Caches,
     Hinweis/Notiz/Löschen), `listUI` (`CacheListUI`: Suche, Sheets), `map` (`MapModel`), `compass`
   - Kompass: `CompassView.swift` wie Cachebox `CompassView` ohne Minikarte (Infokasten oben, Kompass unten,
     `CompassOptions` = `CompassShow…`-Einstellungen, UserDefaults `compass.show.*`), `SkyPosition.swift` (Sonne/Mond,
     Formeln von Astronomy Answers/suncalc), Bilder `Assets.xcassets/CacheboxCompass` (`CompassViewFrame`/`Scale`,
-    `sonne`, `mond`) und `CacheboxInfo` (Sterne, Größen, `tb`, `FavPoi`)
+    `sonne`, `mond`) und `CacheboxInfo` (Sterne, Größen, `tb`, `FavPoi`); `SizeDifficultyTerrain` (Cachebox
+    `SHOW_S_D_T`) liegt in `CachePresentation.swift` und wird auch von Liste, Slider und Info-Blase benutzt
   - Kacheln zeichnen: `MapsforgeOverlayRenderer.swift` – eigener `MKOverlayRenderer` statt `MKTileOverlayRenderer`
     (der ließ Kacheln bis zum Laden leer/schwarz): Kachel erst auf den Schirm, wenn gerendert, bis dahin die passende
     gecachte Kachel anderer Zoomstufen (nächste darüber vergrößert, bis 3 Stufen darunter verkleinert), sonst
@@ -57,7 +65,7 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     zutreffende, Tipp zeigt Text; `Assets.xcassets/Attributes` = `att_<Cachebox-Ordinal>_1/_0`, GC 71/72 → 68/71;
     fehlt ein `_0`-Icon, wird das `_1`-Icon durchgestrichen, Cachebox lässt es weg)
   - Gewählter Cache: `AppState` (Auswahl je Liste, `mapFocus`; `CacheListModel.onOpen` stellt die Auswahl nach jedem
-    Öffnen/Import wieder her), `SelectedCacheBar` in `RootView.swift`, Zentrieren in `ContentView.swift`
+    Öffnen/Import wieder her), Leiste im `CacheboxSlider`, Zentrieren in `ContentView.swift`
     (`MapModel.focus`, wählt eine Karte, die den Ort abdeckt) und `MapsforgeMapView.swift` (`MapCenterRequest`)
   - Caches auf der Karte: `MapMarkers.swift` (`MapMarker` wie Cachebox `WayPointRenderInfo`, `MarkerImages` zeichnet
     Rahmen/Icon/Herz/`deact` je Zoomklasse wie `MapView.render`, `CacheBubble` = Info-Blase), Symbolwahl
@@ -77,10 +85,20 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `CacheboxArrows.swift` (Pfeile der Skin als Vektoren nachgezeichnet), `Assets.xcassets/CacheboxUI` (Satellit,
     Karte, Kompassrose aus der Skin). Der Coordinator beobachtet `LocationModel` selbst (`withObservationTracking`),
     damit Kompass-Updates nicht `ContentView` samt tausender Marker neu berechnen; GPS zentriert ohne Animation,
-    Pan mit einem Finger → Free, Zoomen/Drehen holt die Position zurück in die Mitte. Kompass und Maßstab platziert
-    `CacheMapView` selbst (`MKCompassButton`/`MKScaleView`), sonst lägen sie unter dem Infofeld
+    Pan mit einem Finger → Free, Zoomen/Drehen holt die Position zurück in die Mitte. Kompass, Maßstab (immer
+    sichtbar) und Zoom-Knöpfe platziert `CacheMapView` selbst (`MKCompassButton`/`MKScaleView`), sonst lägen sie unter
+    dem Infofeld; `freeArea` lässt den Streifen unten frei. `MapZoomButtons.swift` = Cachebox `ZoomButtons` als Vektoren
+    (Farben aus `day-btn-zoom-*`, 70 × 46 pt je Hälfte), verblassen nach 13 s auf 40 % (Cachebox 25 %, Wunsch des Nutzers); Schritte auf ganze Stufen 6…21
+    (`CacheMapView.zoomRange`), schnelle Tipps addieren sich (`ZoomStep`: MapKit meldet während der Animation noch die
+    alte Region, `camera` aber schon das Ziel – deshalb vom Ruhezustand aus gerechnet). Keine Render-Statistik mehr auf
+    der Karte (Performance mit `mfdump bench` messen)
   - Kartendownload: `MapCatalog.swift` (Freizeitkarte-Repository-XML), `MapLibrary.swift` (Hintergrund-`URLSession`,
     MD5-Prüfung, Entpacken nach `Documents/Maps` bzw. `Documents/Themes`), `ZipArchive.swift`, `MapDownloadView.swift`
+  - Version `1.0.0.<Commits>`: `MARKETING_VERSION` = 1.0.0, Build-Phase „Version aus Git“ (läuft nach der
+    Info.plist-Verarbeitung, vor dem Signieren) setzt `CFBundleVersion` = `git rev-list --count HEAD` und schreibt
+    `ICBBuildTime` (UTC) und `ICBUncommittedChanges`; dafür `ENABLE_USER_SCRIPT_SANDBOXING = NO` am App-Target.
+    Angezeigt in Mehr › Über (`AboutView.swift`, `AppVersion`) und rechts in der Zeile „Über“. Nach einem Commit
+    zählt der nächste Build eins weiter; ein Build mit nicht committeten Änderungen trägt noch die alte Zahl
   - `App/iCacheBox-Info.plist` wird mit der generierten Info.plist zusammengeführt (ATS-Ausnahme nur für
     `repository.freizeitkarte-osm.de`, der Katalog gibt es nur per HTTP; Dateien kommen per HTTPS)
 - `TestData/` – Testdaten (nicht im Git):
@@ -135,8 +153,7 @@ GPX-Import und Listen (Caches-Tab): Import über Dateiauswahl, „Teilen › iCa
 `iCacheBox-Info.plist`) oder Mehr › GPX importieren; Fortschritt als Karte über den Tabs. Liste = SQLite-Datei wie eine
 Cachebox-Datenbank (eigenes Schema, nicht Cachebox-kompatibel). Sortierung nach Entfernung (Standort, sonst gewählter
 Cache), Name, Code, D, T, Datum, Favoritenpunkte; Filter: Status dreistufig, Typen (alle), D/T; Suche nach Name, Code,
-Owner. Gewählter Cache (wie Cachebox-Slider): Leiste über Caches/Karte/Loggen/Mehr mit D/T/Größe, Entfernung und
-Richtung, Kontextmenü Details/Auf der Karte; die Karte springt bei neuer Auswahl dorthin (ohne Animation, sonst
+Owner. Gewählter Cache: seit 12.11.2026 im Slider oben (siehe unten), Kontextmenü Details/Auf der Karte; die Karte springt bei neuer Auswahl dorthin (ohne Animation, sonst
 verwirft MapKit Kachelanfragen) und wechselt bei Bedarf auf eine Karte, die den Ort abdeckt; ohne passende Karte
 Hinweis. Website-Kachel „Cacheliste“ ist seit 11.11.2026 kein
 „Coming Soon“ mehr. Im Simulator geprüft mit einer erfundenen 300-Cache-Pocket-Query und Testcaches in Hamburg/Harz;
@@ -192,6 +209,18 @@ Kästchen rechts, hier grüne Popover mit Häkchen links; Titel-Menü der Liste 
 weiter dem Dunkelmodus. Im Simulator
 geprüft (hell/dunkel, Untermenü, Sortieren, ⋯ in Liste/Details/Karte, Wischaktionen). Nicht geprüft: echtes Gerät,
 iPad (Popover statt Bildschirmrand), VoiceOver.
+
+Slider, Zusatzknöpfe und Zoom-Knöpfe (seit 12.11.2026, wie Cachebox): Die Leiste des gewählten Caches sitzt oben über
+allen Ansichten statt unten auf Liste/Karte/Entwürfe/Mehr; Herunterziehen zeigt die acht Zusatzknöpfe der
+Cachebox-Grundbelegung (Schnell-Entwurf und Auto-Sortieren ausgegraut, Solver ebenso), weiter Ziehen die Cache-Info.
+D/T/Größe als Cachebox-Icons in Leiste, Liste (Zeile unten über die ganze Breite), Info-Blase und Slider-Info.
+Karte: Render-Statistik weg, Maßstab immer sichtbar (über MapKits „Rechtliches“), Zoom-Knöpfe unten rechts.
+Abweichungen: Cachebox schreibt in der Leiste „2/2.5S Name“ und lässt die Info bis unten aufziehen, hier Icons und
+Info nur so hoch wie nötig; Zusatzknöpfe nicht konfigurierbar; Statusleisten-Bereich hell grün, im Dunkelmodus
+schwarz. Im Simulator geprüft (Ziehen in alle Stufen und zurück, Antippen/Langdruck der Leiste, Hinweis/Logs über
+Zusatzknöpfe, Log-Farben, Zoomen bis 6 und 21, schnelle Mehrfach-Tipps, Verblassen, Hoch-/Querformat und zurück,
+hell/dunkel). Nicht geprüft: echtes Gerät, iPad, VoiceOver, sehr schmale Breiten (Zusatzknöpfe scrollen dann).
+Anleitungs-Screenshots zeigen noch die alte Leiste unten.
 
 Zoomen ohne schwarze Kacheln (seit 11.11.2026, wie Cachebox): im Simulator geprüft mit künstlich auf 1,5 s
 verlangsamtem Rendern (rein/raus über 3 Stufen, Theme-Wechsel, Dunkelmodus). Nicht geprüft: Speicher und

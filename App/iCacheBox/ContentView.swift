@@ -5,7 +5,7 @@ import MapsforgeRender
 import SwiftUI
 
 /// Main button 3 › Karte: Mapsforge offline map rendered by the Swift port and shown through MapKit, with map/theme/style
-/// selection and a small performance HUD. The caches of the open list (filtered like the list) and the waypoints
+/// selection, a scale and zoom buttons at the bottom (Cachebox `MapScale`, `ZoomButtons`). The caches of the open list (filtered like the list) and the waypoints
 /// of the selected cache are drawn on the map; tapping a cache opens its info bubble. The map centers on the cache
 /// when it is selected or shown with "Auf der Karte" (Cachebox `MapView.setSelectedCache`). Map, theme, style,
 /// position and zoom of the last session come back on the next launch.
@@ -19,15 +19,15 @@ struct ContentView: View {
     /// GPS/Free button (Cachebox `btnMapState`), kept across launches.
     @State private var mapState = MapState.saved
     @State private var viewport = MapViewport()
-    /// Safe area of the map: status bar and the bar of the selected cache (the main buttons are below the map).
+    /// Safe area of the map (the slider is above it and the main buttons are below it, so mostly none).
     @State private var safeInsets = EdgeInsets()
 
     private var model: MapModel { state.map }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             if let renderer = model.renderer {
-                MapsforgeMapView(renderer: renderer, stats: model.stats, center: model.center, markers: markers,
+                MapsforgeMapView(renderer: renderer, center: model.center, markers: markers,
                                  location: state.location, target: state.selectedCache?.target,
                                  followsPosition: mapState == .gps, chromeInsets: chromeInsets,
                                  onSelect: { state.select($0, show: .map, onMap: true) },
@@ -46,8 +46,6 @@ struct ContentView: View {
                 ContentUnavailableView("Karte nicht geladen", systemImage: "map",
                                        description: Text(model.error ?? "Lade Karte …"))
             }
-            StatsView(stats: model.stats, loading: model.loading)
-                .padding()
         }
         .onGeometryChange(for: EdgeInsets.self) { $0.safeAreaInsets } action: { safeInsets = $0 }
         .overlay(alignment: .top) { controls }
@@ -119,11 +117,11 @@ struct ContentView: View {
         .environment(\.colorScheme, .light)   // the Cachebox colors are light, also in dark mode
     }
 
-    /// Area of the map covered by the controls and bars, for the edge arrows, compass and scale.
+    /// Area of the map covered by the SwiftUI controls, for the edge arrows, compass, scale and zoom buttons.
     private var chromeInsets: UIEdgeInsets {
         UIEdgeInsets(top: safeInsets.top + MapLayout.panelHeight + 2 * MapLayout.margin,
                      left: safeInsets.leading,
-                     bottom: safeInsets.bottom + 46,   // the render statistics at the bottom
+                     bottom: safeInsets.bottom,
                      right: safeInsets.trailing)
     }
 
@@ -220,8 +218,6 @@ struct ThemeChoice: Hashable, Identifiable {
 final class MapModel {
     var renderer: TileRenderer?
     var error: String?
-    var loading = false
-    let stats = RenderStats()
 
     private(set) var maps: [URL] = []
     private(set) var themes: [ThemeChoice] = []
@@ -373,7 +369,6 @@ final class MapModel {
         guard let mapURL = selectedMap else { return }
         generation += 1
         let current = generation
-        loading = true
         let (theme, style, overlays, language) = (selectedTheme, selectedStyle, overlays, language)
         let result = await Task.detached(priority: .userInitiated) { () -> Result<(TileRenderer, MapFile), Error> in
             Result {
@@ -389,7 +384,6 @@ final class MapModel {
             }
         }.value
         guard current == generation else { return }   // a newer selection is already loading
-        loading = false
         switch result {
         case .success(let (renderer, map)):
             if recenter || self.renderer == nil, map.info.comment?.contains("FZK") == true,
@@ -428,59 +422,11 @@ final class MapModel {
             defaults.set(themeKey(theme), forKey: Keys.theme)
             defaults.set(style ?? styleMenu?.defaultValue, forKey: Keys.style)
             defaults.set(try? JSONEncoder().encode(overlays), forKey: Keys.overlays)
-            stats.reset()
             error = nil
             loadedMap = mapURL
             self.renderer = renderer
         case .failure(let e):
             error = "\(e)"
         }
-    }
-}
-
-/// Tile render statistics, updated from the render queue.
-@MainActor
-@Observable
-final class RenderStats {
-    var tiles = 0
-    var totalMs = 0.0
-    var lastMs = 0.0
-    var maxMs = 0.0
-    var zoom = 0
-
-    var averageMs: Double { tiles == 0 ? 0 : totalMs / Double(tiles) }
-
-    func record(ms: Double, zoom: Int) {
-        tiles += 1
-        totalMs += ms
-        lastMs = ms
-        maxMs = max(maxMs, ms)
-        self.zoom = zoom
-    }
-
-    func reset() {
-        tiles = 0
-        totalMs = 0
-        lastMs = 0
-        maxMs = 0
-    }
-}
-
-struct StatsView: View {
-    let stats: RenderStats
-    var loading = false
-
-    var body: some View {
-        HStack(spacing: 12) {
-            if loading { ProgressView().controlSize(.small) }
-            Label("\(stats.tiles)", systemImage: "square.grid.3x3")
-            Text("z\(stats.zoom)")
-            Text(String(format: "Ø %.0f ms", stats.averageMs))
-            Text(String(format: "max %.0f ms", stats.maxMs))
-        }
-        .font(.caption.monospacedDigit())
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(.regularMaterial, in: Capsule())
     }
 }
