@@ -1,5 +1,6 @@
 package de.cachebox.website.views;
 
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
 
 /** Startseite: das Logo „Cachebox – too many secrets." vor den Bäumen, wie der Splash-Screen der App. */
+@AnonymousAllowed
 @Route(value = "", layout = MainLayout.class)
 @PageTitle("iCachebox – Cachebox für iOS")
 public class StartView extends Div {

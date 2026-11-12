@@ -49,3 +49,15 @@ nb-configuration.xml
 # Lokale Konfiguration / Secrets
 .env
 application-local.properties
+
+.env.*
+!.env.example
+# Lokale Statistik und GeoIP-Datenbank
+/data/
+*.mv.db
+*.trace.db
+*.mmdb
+
+# Persistenter Admin-Hash und Remember-Me-Schlüssel (auch bei abweichendem Datenverzeichnis)
+admin-login.properties
+admin-login-*.tmp

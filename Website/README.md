@@ -53,3 +53,96 @@ liefert sie weiter aus, CSS-Änderungen erscheinen dann nicht: vorher `mvn clean
 
 Neue Seite: View-Klasse mit `@Route(value = "...", layout = MainLayout.class)` anlegen, von `Page` erben
 und in `MainLayout.createNav()` verlinken.
+
+## Geschützte Website-Statistik
+
+`/admin` öffnet die Auswertung; ohne Anmeldung wird auf `/login` weitergeleitet. Die öffentlichen Seiten bleiben
+frei erreichbar. Der Zugang erscheint nicht in der öffentlichen Navigation. Nach Anmeldung steht „Abmelden“ bereit.
+Die Umsetzung nutzt die [Vaadin-Sicherheitsintegration](https://vaadin.com/docs/latest/flow/security/enabling-security).
+
+### Server einrichten
+
+Im Arbeitsverzeichnis des Dienstes (z. B. `/Vaadin/iCacheboxWeb`) `.env.example` als `.env` anlegen und ausfüllen:
+
+```properties
+ADMIN_USER=dein-benutzername
+ADMIN_PASSWORD=hier-ein-eigenes-zufaelliges-langes-passwort-eintragen
+ADMIN_REMEMBER_ME_DAYS=14
+ANALYTICS_DIRECTORY=/Vaadin/iCacheboxWeb/data
+GEOIP_DATABASE=/Vaadin/iCacheboxWeb/GeoLite2-Country.mmdb
+ANALYTICS_TRUSTED_PROXIES=127.0.0.1,::1
+```
+
+Das gezeigte Passwort ist nur ein Platzhalter. Ein eigenes Passwort mit mindestens 10 Zeichen und höchstens
+72 UTF-8-Bytes verwenden. Fehlt Benutzer oder Passwort, gibt es **keinen** anmeldbaren Admin und kein Standardpasswort.
+Zu kurze konfigurierte Passwörter verhindern den Start. Benutzername und Passwort werden beim Start geladen;
+Änderungen erfordern einen Neustart. Intern wird das Passwort als BCrypt-Hash für die Anmeldung gehalten.
+
+Die optionale Checkbox „14 Tage angemeldet bleiben“ setzt ein Remember-Me-Cookie. Die Dauer lässt sich über
+`ADMIN_REMEMBER_ME_DAYS` als ganze Zahl von 1 bis 24855 konfigurieren; ohne Angabe gelten 14 Tage ab Anmeldung.
+Ohne Häkchen bleibt es bei der normalen Sitzung. Remember-Me-Cookies sind HttpOnly und werden ausschließlich
+über HTTPS übertragen. Abmelden entfernt das Cookie aus diesem Browser. Ein Passwortwechsel mit anschließendem
+Neustart widerruft alle bisherigen Remember-Me-Cookies. Die Dauer ist keine gleitende Verlängerung bei jedem Aufruf.
+Die Remember-Me-Anmeldung ersetzt keine Sitzung: Die Statistik zählt nach Sitzungsablauf weiterhin einen neuen Besuch.
+
+Damit Remember-Me auch Neustarts und Deployments übersteht, speichert die Anwendung im Datenverzeichnis zusätzlich
+`admin-login.properties` mit dem BCrypt-Hash und einem zufälligen Cookie-Schlüssel. Das Klartextpasswort bleibt in
+der `.env`. Die Datei ist nur für den Dienstbenutzer lesbar und darf weder öffentlich ausgeliefert noch eingecheckt
+werden. Bei geändertem Passwort wird sie automatisch aktualisiert. Zum Widerrufen aller Cookies ohne Passwortwechsel
+diese Datei bei gestopptem Dienst entfernen; beim nächsten Start werden Hash und Schlüssel neu erzeugt.
+
+Die `.env` wird über [Spring Boots externe Konfiguration](https://docs.spring.io/spring-boot/reference/features/external-config.html)
+als UTF-8 Java-Properties-Datei eingelesen: `NAME=Wert`, ohne `export` und ohne Anführungszeichen.
+Rückstriche als `\\` schreiben. Keine Shell-Skripte mit dieser Datei ausführen.
+`.env`, `.env.*` (außer `.env.example`), Statistikdaten und GeoIP-Datenbanken sind in `.gitignore` ausgeschlossen.
+Die Datei bleibt außerhalb der Jar und wird von `deploy.sh` weder übertragen noch ersetzt.
+
+Für `Cachebox.service` entweder `WorkingDirectory=/Vaadin/iCacheboxWeb` setzen oder
+`Environment=WEBSITE_ENV_FILE=/Vaadin/iCacheboxWeb/.env` in der systemd-Konfiguration ergänzen.
+Die `.env` nur für den Dienstbenutzer lesbar machen (`chmod 600 .env`); das Datenverzeichnis ebenfalls nur diesem
+Benutzer zugänglich machen (`chmod 700 data`) und schreibbar halten. Nach Änderungen der systemd-Konfiguration
+`sudo systemctl daemon-reload` und `sudo systemctl restart Cachebox.service` ausführen.
+Die Anmeldung über die öffentliche Website ausschließlich über HTTPS verwenden. Der Proxy muss die Verbindung
+zu Java auf lokale/vertraute Zugriffe begrenzen. Keine zusätzliche Freigabe von `.env` oder `data` im Webserver anlegen.
+
+### Länder und vorgeschalteter Webserver
+
+Eine lokale [MaxMind GeoLite2-Country-Datenbank](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/)
+(`.mmdb`) nach den Bedingungen des Anbieters beziehen und unter `GEOIP_DATABASE` eintragen. Sie ist nicht Teil dieses
+Repos. Die Anwendung verwendet ausschließlich die lokale [GeoIP-Datenbank-API](https://maxmind.github.io/GeoIP2-java/),
+keinen Webdienst; IP-Adressen werden nicht gespeichert. Datenbank regelmäßig aktualisieren und den Dienst danach
+neu starten. Ohne konfigurierten Pfad läuft die Statistik mit Land „Unbekannt“; ein falscher konfigurierter Pfad
+verhindert den Start, damit ein Einrichtungsfehler auffällt.
+
+`ANALYTICS_TRUSTED_PROXIES` enthält ausschließlich die **exakten IP-Adressen** der eigenen Proxies (kein CIDR).
+Die Beispielwerte passen nur zu einem Proxy auf demselben Server. Ohne Proxy die Variable leer lassen.
+Nur für diese direkten Absender wird `X-Forwarded-For` ausgewertet; die Kette wird von rechts bis zum ersten
+nicht vertrauten Absender durchlaufen. Der Proxy muss den Header überschreiben oder die tatsächliche Client-IP
+anhängen (Nginx beispielsweise `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`).
+Die Anwendung wertet keine vom Besucher frei behaupteten Länder-Header aus. Bestehende globale
+`server.forward-headers-strategy`/Tomcat-Remote-IP-Einstellungen nur mit passender Proxy-Vertrauenskonfiguration einsetzen.
+
+### Was gezählt wird
+
+- Aufrufe: erfolgreich angezeigte öffentliche Vaadin-Seiten, auch interne Navigation und Neuladen. Keine Bilder,
+  Heartbeats, Login- oder Admin-Seiten. Die Erfassung erfolgt nach der Vaadin-Navigation und benötigt einen
+  funktionierenden Browser mit JavaScript; reine HTTP-Abrufe und viele Crawler werden nicht gezählt.
+- Besuche: erster öffentlicher Aufruf pro Vaadin-Sitzung (30 Minuten Inaktivität). Mehrere Tabs derselben Sitzung
+  zählen zusammen. Das sind keine eindeutig wiedererkannten Menschen. Ein Besuch über Mitternacht wird nur am
+  Starttag als Besuch gezählt. Es gibt keine zusätzlichen Tracking-Cookies oder Fingerprints; die bestehende
+  technisch erforderliche Vaadin-Sitzung dient als kurzlebige Zählhilfe.
+- Tagesverlauf, Seiten, Länder, Herkunftsdomains und grobe Geräteklassen; Filter für 7/30/90/365 Tage und erkannte
+  Bots. Der Zeitraum enthält den heutigen, noch unvollständigen Tag. Die Tabellen zeigen Besuchsstarts in der
+  jeweiligen Kategorie. Herkunftsdomains werden pro Browser-Tab beim Laden erfasst; interne Navigation behält
+  diese Quelle. Fehlender Referer ist „Direkt / unbekannt“. Nur der Hostname wird gespeichert, keine Pfade,
+  Suchbegriffe, URL-Parameter, Browserkennungen oder IP-Adressen. Bots und Geräte werden nur grob anhand des
+  User-Agent-Headers eingeordnet. „Bots einschließen“ zeigt erkannte Bots zusammen mit den übrigen Aufrufen.
+
+Gespeichert werden ausschließlich Tagesaggregate (Zeitzone Europe/Berlin) in `data/analytics.mv.db`, für maximal
+400 Kalendertage. Ältere Zeilen werden beim Start und beim nächsten Zugriff am neuen Tag entfernt. Der Dienst
+muss allein auf diese eingebettete H2-Datenbank zugreifen. Bei einem Neustart bleiben die Zahlen erhalten, die
+Sitzungen beginnen neu. Vor der ersten Inbetriebnahme gibt es keine rückwirkenden Zahlen. Für Backups den Dienst
+stoppen und die Datenbankdatei sowie `admin-login.properties` geschützt sichern; `.env` getrennt und geschützt sichern. Diese Aggregation ändert keine
+bestehenden Webserver-Zugriffslogs.
+
+Prüfen: `mvn test`; Produktions-Jar: `mvn package -Pproduction`.

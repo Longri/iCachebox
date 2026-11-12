@@ -1,5 +1,6 @@
 package de.cachebox.website.views;
 
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.markdown.Markdown;
@@ -15,6 +16,7 @@ import java.nio.charset.StandardCharsets;
  * Die Anleitung der App. Quelle ist {@code docs/anleitung/README.md} im Repository (auch auf GitHub lesbar);
  * der Maven-Build kopiert sie samt Bildern in den Classpath (siehe pom.xml, Ausführung "anleitung").
  */
+@AnonymousAllowed
 @Route(value = "anleitung", layout = MainLayout.class)
 @PageTitle("Anleitung – iCachebox")
 public class ManualView extends Div {

@@ -1,5 +1,6 @@
 package de.cachebox.website;
 
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.dependency.StyleSheet;
@@ -27,6 +28,7 @@ import de.cachebox.website.views.StartView;
  * Neue Seite hinzufügen: View-Klasse mit {@code @Route(value = "...", layout = MainLayout.class)}
  * anlegen und hier in {@link #createNav()} verlinken.
  */
+@AnonymousAllowed
 @StyleSheet("context://styles/site.css")
 public class MainLayout extends Div implements RouterLayout {
 

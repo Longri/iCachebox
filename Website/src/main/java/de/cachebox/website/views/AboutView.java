@@ -1,10 +1,12 @@
 package de.cachebox.website.views;
 
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import de.cachebox.website.MainLayout;
 
+@AnonymousAllowed
 @Route(value = "projekt", layout = MainLayout.class)
 @PageTitle("Projekt – iCachebox")
 public class AboutView extends Page {

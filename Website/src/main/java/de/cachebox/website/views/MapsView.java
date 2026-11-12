@@ -1,10 +1,12 @@
 package de.cachebox.website.views;
 
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import de.cachebox.website.MainLayout;
 
+@AnonymousAllowed
 @Route(value = "karten", layout = MainLayout.class)
 @PageTitle("Offline-Karten – iCachebox")
 public class MapsView extends Page {
