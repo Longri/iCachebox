@@ -1,14 +1,11 @@
 import CacheboxCore
 import SwiftUI
 
-/// Tab 2: details of the selected cache (Cachebox: description, waypoints, logs, spoiler views
-/// behind main button 2). The segmented control replaces the swipe gestures on that button.
-struct CacheDetailView: View {
-    enum Part: String, CaseIterable, Identifiable {
-        case description = "Beschr.", waypoints = "Wegpunkte", logs = "Logs", spoiler = "Spoiler"
-        var id: Self { self }
-    }
-
+/// Details of the selected cache, read from its list for the cache views and the compass (Cachebox
+/// `CachesDAO.loadDetail`), and the dialogs about it, which the cache button also opens from other views.
+@MainActor
+@Observable
+final class SelectedCacheDetails {
     /// Everything of one cache read from its list.
     struct Details {
         var cache: Geocache
@@ -17,15 +14,47 @@ struct CacheDetailView: View {
         var trackables: [Trackable]
     }
 
-    @Environment(AppState.self) private var state
-    @State private var section = Part.description
-    @State private var details: Details?
+    private(set) var value: Details?
     /// Code whose details could not be read (e.g. deleted meanwhile).
-    @State private var missingCode: String?
-    @State private var showHint = false
-    @State private var editingNote = false
-    @State private var confirmDelete = false
+    private(set) var missingCode: String?
+    /// Main button 2 › Hinweis (Cachebox `ShowHint`).
+    var showHint = false
+    /// Main button 2 › Notizen (Cachebox `ShowNotes`).
+    var editingNote = false
+    /// "Aus der Liste löschen" in the cache menu.
+    var confirmDelete = false
+
+    func load(code: String?, list: URL?) async {
+        guard let code, let list else {
+            value = nil
+            return
+        }
+        let loaded = await Task.detached(priority: .userInitiated) { () -> Details? in
+            guard let database = try? CacheDatabase(url: list), let cache = try? database.cache(code: code) else { return nil }
+            return Details(cache: cache, waypoints: (try? database.waypoints(cacheCode: code)) ?? [],
+                           logs: (try? database.logs(cacheCode: code)) ?? [],
+                           trackables: (try? database.trackables(cacheCode: code)) ?? [])
+        }.value
+        guard !Task.isCancelled else { return }
+        value = loaded
+        missingCode = loaded == nil ? code : nil
+    }
+
+    func noteChanged(_ note: String, code: String) {
+        if value?.cache.code == code { value?.cache.note = note }
+    }
+}
+
+/// Main button 2: description, waypoints, logs and spoiler of the selected cache (Cachebox: the views behind the
+/// cache button). The segmented control switches like the button's menu and swipes.
+struct CacheDetailView: View {
+    /// The views of the cache button, in the order of the segmented control.
+    private static let parts: [MainView] = [.description, .waypoints, .logs, .spoiler]
+
+    @Environment(AppState.self) private var state
     @State private var descriptionHeight: CGFloat = 200
+
+    private var details: SelectedCacheDetails.Details? { state.selectedDetails }
 
     var body: some View {
         NavigationStack {
@@ -38,52 +67,39 @@ struct CacheDetailView: View {
                     } description: {
                         Text("Wähle einen Cache in der Cacheliste.")
                     } actions: {
-                        Button("Zur Cacheliste") { state.tab = .caches }
+                        Button("Zur Cacheliste") { state.show(.cacheList) }
                     }
                 }
             }
             .navigationTitle(state.selectedCache?.name ?? "Cache")
             .navigationBarTitleDisplayMode(.inline)
         }
-        .task(id: state.selectedCache) { await load() }
     }
 
-    private func load() async {
-        guard let code = state.selectedCache?.code, let name = state.lists.currentName else {
-            details = nil
-            return
-        }
-        let url = state.lists.store.url(of: name)
-        let loaded = await Task.detached(priority: .userInitiated) { () -> Details? in
-            guard let database = try? CacheDatabase(url: url), let cache = try? database.cache(code: code) else { return nil }
-            return Details(cache: cache, waypoints: (try? database.waypoints(cacheCode: code)) ?? [],
-                           logs: (try? database.logs(cacheCode: code)) ?? [],
-                           trackables: (try? database.trackables(cacheCode: code)) ?? [])
-        }.value
-        guard code == state.selectedCache?.code else { return }
-        details = loaded
-        missingCode = loaded == nil ? code : nil
+    private var part: Binding<MainView> {
+        Binding(get: { Self.parts.contains(state.view) ? state.view : state.lastViews[.cache] ?? .description },
+                set: { state.show($0) })
     }
 
     @ViewBuilder
     private func content(_ summary: CacheSummary) -> some View {
         VStack(spacing: 0) {
-            Picker("Ansicht", selection: $section) {
-                ForEach(Part.allCases) { Text($0.rawValue).tag($0) }
+            Picker("Ansicht", selection: part) {
+                ForEach(Self.parts, id: \.self) { Text($0 == .description ? "Beschr." : $0.title).tag($0) }
             }
             .pickerStyle(.segmented)
             .padding()
 
-            if let details, details.cache.code == summary.code {
-                switch section {
-                case .description: description(details, summary)
+            if let details {
+                switch part.wrappedValue {
                 case .waypoints: waypoints(details)
                 case .logs: logs(details)
                 case .spoiler:
                     ContentUnavailableView("Spoiler", systemImage: "photo",
                                            description: Text("Spoilerbilder werden noch nicht geladen."))
+                default: description(details, summary)
                 }
-            } else if missingCode == summary.code {
+            } else if state.details.missingCode == summary.code {
                 ContentUnavailableView("Cache nicht gefunden", systemImage: "exclamationmark.triangle",
                                        description: Text("\(summary.code) ist nicht mehr in der Liste "
                                                          + "„\(state.lists.currentName ?? "")“."))
@@ -93,28 +109,18 @@ struct CacheDetailView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button("Hinweis", systemImage: "lightbulb") { showHint = true }
-                    .disabled(details?.cache.hint.isEmpty ?? true)
-                actions(summary)
-            }
-        }
-        .alert("Hinweis", isPresented: $showHint) {
-            Button("Schließen", role: .cancel) {}
-        } message: {
-            Text(details?.cache.hint ?? "")
-        }
-        .sheet(isPresented: $editingNote) {
-            if let details {
-                NoteEditor(code: details.cache.code, text: details.cache.note) { note in
-                    self.details?.cache.note = note
+                Button("Hinweis", systemImage: "lightbulb") { state.perform(.hint) }
+                    .disabled(!state.isEnabled(.hint))
+                Menu("Aktionen", systemImage: "ellipsis.circle") {
+                    MenuEntriesContent(entries: state.cacheEntries(summary))
                 }
             }
         }
-        .alert("„\(summary.name)“ löschen?", isPresented: $confirmDelete) {
+        .alert("„\(summary.name)“ löschen?", isPresented: Bindable(state.details).confirmDelete) {
             Button("Löschen", role: .destructive) {
                 state.lists.deleteCaches([summary.code])
                 state.refreshSelection()
-                state.tab = .caches
+                state.show(.cacheList)
             }
             Button("Abbrechen", role: .cancel) {}
         } message: {
@@ -122,39 +128,9 @@ struct CacheDetailView: View {
         }
     }
 
-    private func actions(_ summary: CacheSummary) -> some View {
-        Menu("Aktionen", systemImage: "ellipsis.circle") {
-            Button("Auf Karte zeigen", systemImage: "map") { state.select(summary, show: .map) }
-            Button(summary.isFound ? "Als nicht gefunden markieren" : "Als gefunden markieren",
-                   systemImage: summary.isFound ? "xmark.circle" : "checkmark.circle") {
-                state.lists.setFound(!summary.isFound, code: summary.code)
-                state.refreshSelection()
-            }
-            Button(summary.isFavorite ? "Kein Favorit" : "Favorit",
-                   systemImage: summary.isFavorite ? "star.slash" : "star") {
-                state.lists.setFavorite(!summary.isFavorite, code: summary.code)
-                state.refreshSelection()
-            }
-            Button("Notiz bearbeiten", systemImage: "note.text") { editingNote = true }
-                .disabled(details == nil)
-            Button("Koordinaten kopieren", systemImage: "doc.on.doc") {
-                UIPasteboard.general.string = summary.coordinate.formatted
-            }
-            if let url = details.flatMap({ URL(string: $0.cache.url) }), !(details?.cache.url.isEmpty ?? true) {
-                Link(destination: url) { Label("Im Browser öffnen", systemImage: "safari") }
-            }
-            Divider()
-            // TODO: Aktualisieren über die API, Solver (Cachebox: cache menu)
-            Button("Aktualisieren", systemImage: "arrow.clockwise") {}.disabled(true)
-            Button("Solver", systemImage: "function") {}.disabled(true)
-            Divider()
-            Button("Aus der Liste löschen", systemImage: "trash", role: .destructive) { confirmDelete = true }
-        }
-    }
-
     // MARK: - Description
 
-    private func description(_ details: Details, _ summary: CacheSummary) -> some View {
+    private func description(_ details: SelectedCacheDetails.Details, _ summary: CacheSummary) -> some View {
         let cache = details.cache
         return ScrollView {
             VStack(alignment: .leading, spacing: 12) {
@@ -175,7 +151,7 @@ struct CacheDetailView: View {
                     GroupBox("Meine Notiz") {
                         Text(cache.note).frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .onTapGesture { editingNote = true }
+                    .onTapGesture { state.details.editingNote = true }
                 }
                 if !cache.attributes.isEmpty { CacheAttributeIcons(attributes: cache.attributes) }
                 if !descriptionHTML(cache).isEmpty {
@@ -199,7 +175,7 @@ struct CacheDetailView: View {
         }
     }
 
-    private func facts(_ cache: Geocache, _ details: Details) -> some View {
+    private func facts(_ cache: Geocache, _ details: SelectedCacheDetails.Details) -> some View {
         Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
             GridRow {
                 Text("Schwierigkeit").foregroundStyle(.secondary)
@@ -266,7 +242,7 @@ struct CacheDetailView: View {
 
     // MARK: - Waypoints and logs
 
-    private func waypoints(_ details: Details) -> some View {
+    private func waypoints(_ details: SelectedCacheDetails.Details) -> some View {
         List {
             Section {
                 // "Solved" also with a final that has coordinates, like `CacheSummary.isSolved`
@@ -312,7 +288,7 @@ struct CacheDetailView: View {
         }
     }
 
-    private func logs(_ details: Details) -> some View {
+    private func logs(_ details: SelectedCacheDetails.Details) -> some View {
         List(details.logs) { log in
             VStack(alignment: .leading, spacing: 4) {
                 HStack {

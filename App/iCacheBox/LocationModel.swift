@@ -16,6 +16,8 @@ final class LocationModel: NSObject, CLLocationManagerDelegate {
     private(set) var accuracy: Double?
     /// Speed over ground in metres per second, if the last fix had one.
     private(set) var speed: Double?
+    /// Height above mean sea level in metres, if the last fix had one (Cachebox `Locator.getAltString`).
+    private(set) var altitude: Double?
     /// Heading in degrees (0 = north, clockwise) in which the user looks or moves: the direction of travel from GPS
     /// when moving faster than `compassSpeedLimit` or without a compass, otherwise the compass (Cachebox
     /// `Locator.setHeading`/`getHeading`). The compass heading refers to the top of the screen in its current
@@ -107,6 +109,7 @@ final class LocationModel: NSObject, CLLocationManagerDelegate {
                 self.coordinate = nil
                 self.accuracy = nil
                 self.speed = nil
+                self.altitude = nil
                 self.course = nil
                 self.updateHeading()
             }
@@ -120,10 +123,12 @@ final class LocationModel: NSObject, CLLocationManagerDelegate {
         let accuracy = location.horizontalAccuracy
         let speed = location.speed >= 0 ? location.speed : nil
         let course = location.course >= 0 ? location.course : nil
+        let altitude = location.verticalAccuracy > 0 ? location.altitude : nil
         Task { @MainActor in
             if self.coordinate != coordinate { self.coordinate = coordinate }
             if self.accuracy != accuracy { self.accuracy = accuracy }
             if self.speed != speed { self.speed = speed }
+            if self.altitude != altitude { self.altitude = altitude }
             self.course = course
             self.updateHeading()
         }

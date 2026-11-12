@@ -86,7 +86,7 @@ struct ImportView: View {
             name = typed.isEmpty ? uniqueNewName() : typed
         }
         lists.importFiles(urls, into: name)
-        state.tab = .caches
+        state.show(.cacheList)
         if isSheet { dismiss() }
     }
 

@@ -129,14 +129,7 @@ struct MapInfoPanel: View {
         .padding(.trailing, 6)
         .frame(height: MapLayout.panelHeight)
         .frame(maxWidth: MapLayout.panelMaxWidth)
-        .background {
-            // Cachebox `InfoPanelBack`: light green, slightly transparent, grey frame
-            let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
-            let frame = Color(red: 149 / 255, green: 163 / 255, blue: 152 / 255)
-            shape.fill(Color(red: 216 / 255, green: 239 / 255, blue: 221 / 255).opacity(0.85))
-                .overlay { shape.strokeBorder(frame, lineWidth: 1.5) }
-                .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
-        }
+        .background { InfoPanelBackground() }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
     }
@@ -178,6 +171,18 @@ struct MapInfoPanel: View {
     }
 }
 
+/// Cachebox `InfoPanelBack` (`Sprites.infoBack`): light green, slightly transparent, grey frame. Background of the
+/// map info panel and of the distance in the compass view.
+struct InfoPanelBackground: View {
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
+        let frame = Color(red: 149 / 255, green: 163 / 255, blue: 152 / 255)
+        shape.fill(Color(red: 216 / 255, green: 239 / 255, blue: 221 / 255).opacity(0.85))
+            .overlay { shape.strokeBorder(frame, lineWidth: 1.5) }
+            .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
+    }
+}
+
 /// Number formats of the Cachebox map info panel.
 enum MapFormat {
     private static func number(_ value: Double, digits: Int) -> String {
@@ -202,6 +207,11 @@ enum MapFormat {
 
     /// Cachebox `UnitFormatter.FormatLongitudeDM`, "9°  15,858 E".
     static func longitude(_ value: Double) -> String { degreesMinutes(value, "E", "W") }
+
+    /// Cachebox `Coordinate.formatCoordinate`, "52°  26,910 N / 13°  32,748 E".
+    static func coordinate(_ value: Coordinate) -> String {
+        latitude(value.latitude) + " / " + longitude(value.longitude)
+    }
 
     private static func degreesMinutes(_ value: Double, _ positive: String, _ negative: String) -> String {
         // round to thousandths of a minute first, so that 59.9996' becomes the next degree and not "60,000"

@@ -1,22 +1,19 @@
 import CacheboxCore
 import SwiftUI
 
-/// Tab 1: the caches of the open list, sorted and filtered (Cachebox: `GeoCachesView`, main button 1).
-///
-/// The title menu switches between lists; the toolbar menu holds sort order, filter, import, list management and
-/// deleting caches (Cachebox: list menu). Tapping a row selects the cache and shows its details.
-struct CacheListView: View {
-    @Environment(AppState.self) private var state
-    @State private var search = ""
-    @State private var showImport = false
-    @State private var showLists = false
-    @State private var showFilter = false
-    @State private var pendingDelete: DeleteChoice?
-
-    private var lists: CacheListModel { state.lists }
+/// Search text and dialogs of the cache list. Kept in `AppState`, because the menu of the list button opens them,
+/// too, and the search decides which caches "Alle angezeigten" deletes.
+@MainActor
+@Observable
+final class CacheListUI {
+    var search = ""
+    var showImport = false
+    var showLists = false
+    var showFilter = false
+    var pendingDelete: CacheListView.DeleteChoice?
 
     /// Rows matching the search text (name, GC code or owner, like Cachebox's quick search).
-    private var shown: [CacheRow] {
+    func shown(in lists: CacheListModel) -> [CacheRow] {
         let text = search.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return lists.rows }
         return lists.rows.filter {
@@ -25,34 +22,62 @@ struct CacheListView: View {
         }
     }
 
+    /// Codes of the caches a delete choice removes.
+    func codes(for choice: CacheListView.DeleteChoice, in lists: CacheListModel) -> [String] {
+        switch choice {
+        case .found: lists.caches.filter(\.isFound).map(\.code)
+        case .archived: lists.caches.filter(\.isArchived).map(\.code)
+        case .shown: shown(in: lists).map(\.cache.code)
+        }
+    }
+}
+
+/// Main button 1: the caches of the open list, sorted and filtered (Cachebox: `GeoCachesView`).
+///
+/// The title menu switches between lists; the toolbar menu holds sort order, filter, import, list management and
+/// deleting caches, like the menu of the list button (Cachebox: list menu). Tapping a row selects the cache and
+/// shows its details.
+struct CacheListView: View {
+    @Environment(AppState.self) private var state
+
+    private var lists: CacheListModel { state.lists }
+    private var ui: CacheListUI { state.listUI }
+    private var search: String { ui.search }
+    private var shown: [CacheRow] { ui.shown(in: lists) }
+
     var body: some View {
+        @Bindable var ui = state.listUI
         NavigationStack {
             content
                 .navigationTitle(lists.currentName ?? "Caches")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarTitleMenu { listMenu }
-                .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always),
+                .searchable(text: $ui.search, placement: .navigationBarDrawer(displayMode: .always),
                             prompt: "Name, GC-Code oder Owner")
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         Button("Filter", systemImage: lists.filter.isActive
                                ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle") {
-                            showFilter = true
+                            ui.showFilter = true
                         }
                         .disabled(lists.current == nil)
                     }
-                    ToolbarItem(placement: .topBarTrailing) { actionsMenu }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu("Mehr", systemImage: "ellipsis.circle") {
+                            MenuEntriesContent(entries: state.cacheListEntries)
+                        }
+                    }
                 }
-                .sheet(isPresented: $showImport) { NavigationStack { ImportView(isSheet: true) } }
-                .sheet(isPresented: $showLists) { NavigationStack { CacheListsView() } }
-                .sheet(isPresented: $showFilter) { NavigationStack { CacheFilterView() } }
-                .alert(pendingDelete?.title ?? "", isPresented: Binding(get: { pendingDelete != nil },
-                                                                        set: { if !$0 { pendingDelete = nil } }),
-                       presenting: pendingDelete) { choice in
+                .sheet(isPresented: $ui.showImport) { NavigationStack { ImportView(isSheet: true) } }
+                .sheet(isPresented: $ui.showLists) { NavigationStack { CacheListsView() } }
+                .sheet(isPresented: $ui.showFilter) { NavigationStack { CacheFilterView() } }
+                .alert(ui.pendingDelete?.title ?? "", isPresented: Binding(get: { ui.pendingDelete != nil },
+                                                                           set: { if !$0 { ui.pendingDelete = nil } }),
+                       presenting: ui.pendingDelete) { choice in
                     Button("Löschen", role: .destructive) { delete(choice) }
                     Button("Abbrechen", role: .cancel) {}
                 } message: { choice in
-                    let count = codes(for: choice).count
+                    let count = ui.codes(for: choice, in: lists).count
                     Text((count == 1 ? "1 Cache wird" : "\(count) Caches werden")
                          + " mit Wegpunkten und Logs aus der Liste „\(lists.currentName ?? "")“ entfernt. "
                          + "Ein erneuter Import holt \(count == 1 ? "ihn" : "sie") zurück.")
@@ -81,7 +106,7 @@ struct CacheListView: View {
             } description: {
                 Text("Importiere eine GPX-Datei oder Pocket Query, um deine erste Cacheliste anzulegen.")
             } actions: {
-                Button("GPX importieren") { showImport = true }
+                Button("GPX importieren") { ui.showImport = true }
                     .buttonStyle(.borderedProminent)
             }
         } else if lists.caches.isEmpty && !lists.isLoading {
@@ -90,7 +115,7 @@ struct CacheListView: View {
             } description: {
                 Text("„\(lists.currentName ?? "")“ enthält noch keine Caches.")
             } actions: {
-                Button("GPX importieren") { showImport = true }
+                Button("GPX importieren") { ui.showImport = true }
                     .buttonStyle(.borderedProminent)
             }
         } else if shown.isEmpty && !lists.isLoading {
@@ -161,31 +186,7 @@ struct CacheListView: View {
             }
         }
         Divider()
-        Button("Listen verwalten …", systemImage: "folder") { showLists = true }
-    }
-
-    private var actionsMenu: some View {
-        Menu("Mehr", systemImage: "ellipsis.circle") {
-            Picker("Sortieren", selection: Binding(get: { lists.sortOrder }, set: { lists.sortOrder = $0 })) {
-                ForEach(CacheSortOrder.allCases) { Text($0.title).tag($0) }
-            }
-            .pickerStyle(.menu)
-            Button("Filter …", systemImage: "line.3.horizontal.decrease.circle") { showFilter = true }
-                .disabled(lists.current == nil)
-            Divider()
-            Button("GPX importieren …", systemImage: "square.and.arrow.down") { showImport = true }
-            Button("Listen verwalten …", systemImage: "folder") { showLists = true }
-            Menu("Caches löschen", systemImage: "trash") {
-                ForEach(DeleteChoice.allCases) { choice in
-                    Button(choice.menuTitle, role: .destructive) { pendingDelete = choice }
-                        .disabled(codes(for: choice).isEmpty)
-                }
-            }
-            .disabled(lists.caches.isEmpty)
-            Divider()
-            // TODO: Trackables, Parken, Teilen (Cachebox: list menu)
-            Button("Trackables", systemImage: "tag") {}.disabled(true)
-        }
+        Button("Listen verwalten …", systemImage: "folder") { ui.showLists = true }
     }
 
     @ViewBuilder
@@ -230,16 +231,8 @@ struct CacheListView: View {
         }
     }
 
-    private func codes(for choice: DeleteChoice) -> [String] {
-        switch choice {
-        case .found: lists.caches.filter(\.isFound).map(\.code)
-        case .archived: lists.caches.filter(\.isArchived).map(\.code)
-        case .shown: shown.map(\.cache.code)
-        }
-    }
-
     private func delete(_ choice: DeleteChoice) {
-        lists.deleteCaches(codes(for: choice))
+        lists.deleteCaches(ui.codes(for: choice, in: lists))
         state.refreshSelection()
     }
 }

@@ -21,6 +21,22 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     Koordinaten), `CacheListStore.swift` (Listen anlegen/umbenennen/löschen), `ZipArchive.swift`, `SQLite.swift`
   - Tests mit erfundenen Testdaten unter `Tests/CacheboxCoreTests/Resources` (PQ-GPX, -wpts, ZIP, GPX 1.1)
 - `App/` – iOS-App (Xcode-Projekt, synchronisierter Ordner `App/iCacheBox/`), `MKTileOverlay` mit Mapsforge-Kacheln
+  - Fünf Knöpfe unten wie Cachebox (`ViewManager`/`GestureButton`/`CB_TabView`), kein `TabView` mehr:
+    `MainButtons.swift` (`MainButton` mit `functions` = Cachebox `addAction`: Ansicht/Funktion, Default, Wischrichtung;
+    `MainView` = die Ansichten; `MainButtonBar`, `MainButtonView` = Antippen zeigt die letzte Ansicht des Knopfs
+    (`rememberLastAction`), Antippen des aktiven Knopfs öffnet `MainMenuView` (Kontextmenü der Ansicht + Funktionen,
+    `compoundMenu`), Wischen führt die Funktion der Richtung aus, Langdruck zeigt nur die Funktionen; Popover mit
+    Untermenüs, Einträge laufen nach dem Schließen, damit Sheets/Alerts erscheinen), `MainActions.swift`
+    (`AppState.perform`/`isEnabled`, Kontextmenüs je Ansicht, Teilen, Navigieren mit Apple Karten, `Torch`),
+    `MenuEntry.swift` (ein Menümodell für Knopf-Popover und Toolbar-Menüs, `MenuEntriesContent`).
+    `RootView.MainScreen`: ZStack der Bereiche, einmal erzeugt bleiben sie (wie Tabs); Leiste verschwindet bei Tastatur.
+    Bilder `Assets.xcassets/CacheboxButtons` (Tagesskin, Rand-Pixel entfernt). Zustand für die Menüs in `AppState`:
+    `view`/`lastViews`, `details` (`SelectedCacheDetails` in `CacheDetailView.swift`: Details des gewählten Caches,
+    Hinweis/Notiz/Löschen), `listUI` (`CacheListUI`: Suche, Sheets), `map` (`MapModel`), `compass`
+  - Kompass: `CompassView.swift` wie Cachebox `CompassView` ohne Minikarte (Infokasten oben, Kompass unten,
+    `CompassOptions` = `CompassShow…`-Einstellungen, UserDefaults `compass.show.*`), `SkyPosition.swift` (Sonne/Mond,
+    Formeln von Astronomy Answers/suncalc), Bilder `Assets.xcassets/CacheboxCompass` (`CompassViewFrame`/`Scale`,
+    `sonne`, `mond`) und `CacheboxInfo` (Sterne, Größen, `tb`, `FavPoi`)
   - Kacheln zeichnen: `MapsforgeOverlayRenderer.swift` – eigener `MKOverlayRenderer` statt `MKTileOverlayRenderer`
     (der ließ Kacheln bis zum Laden leer/schwarz): Kachel erst auf den Schirm, wenn gerendert, bis dahin die passende
     gecachte Kachel anderer Zoomstufen (nächste darüber vergrößert, bis 3 Stufen darunter verkleinert), sonst
@@ -144,11 +160,26 @@ echter Kompass (roter Pfeil, `headingOrientation` im Querformat), echtes Gerät,
 Lizenz-Hinweis: Elevate ist CC BY-NC-SA 4.0 (kommerziell nur BY-ND) – nicht ungefragt in eine verteilte App packen;
 OAM-Karten und Themes lädt in Cachebox der Nutzer selbst.
 
+Knöpfe und Kompass (seit 11.11.2026, wie Cachebox; Website-Kachel „Kompass & Navigation“ kein „Coming Soon“ mehr):
+Die Tab-Leiste ist durch die fünf Cachebox-Knöpfe ersetzt
+(Bilder der Android-Version, Verhalten von `GestureButton`; Belegung siehe `MainButton.functions`, nicht gebaute
+Funktionen ausgegraut). Kompass mit Infokasten (Name/Symbol, Ziel-Koordinaten + GC-Code, eigene Position + Höhe,
+Richtung zum Ziel, S/D/T mit Cachebox-Sternen, zuletzt gefunden, Attribute), Entfernung + Genauigkeit, Rose dreht mit
+der Richtung, Pfeil rot/türkis wie auf der Karte, Sonne/Mond; Optionen über Knopf-Menü › Ansicht. Abweichungen:
+keine Minikarte (erster Schritt), keine Satellitenbalken (iOS liefert keine) und keine Wegpunktbeschreibung (keine
+Wegpunktauswahl), Ziel = `CacheSummary.target`; Kompass verkleinert sich unter das Entfernungsfeld statt es zu
+überlappen; Querformat mit Kasten links (Cachebox nur Hochformat); Kontextmenü der Wegpunkte/Logs/Spoiler = das der
+Beschreibung; Tag/Nacht und Beenden entfallen, „Mehr“ steht für About/Credits. Im Simulator geprüft (Antippen,
+zweites Antippen, Wischen in alle Richtungen, Langdruck, Menüs mit Untermenüs, Hinweis/Notiz/Teilen/Kartendownload
+aus dem Menü, Filter-Rot, Tastatur, Quer-/Hochformat, Dunkelmodus, Sonne/Mond mit Standort Sydney). Nicht geprüft:
+echter Kompass, Taschenlampe (Simulator hat keine), Navigieren (öffnet Apple Karten), VoiceOver, iPad. Die Knopf-
+und Kompassbilder sind Bitmaps (88 × 76 bzw. 400 px) und auf @3x leicht weich.
+
 Zoomen ohne schwarze Kacheln (seit 11.11.2026, wie Cachebox): im Simulator geprüft mit künstlich auf 1,5 s
 verlangsamtem Rendern (rein/raus über 3 Stufen, Theme-Wechsel, Dunkelmodus). Nicht geprüft: Speicher und
 Flüssigkeit auf echtem Gerät (Cache bis ca. 150 MB bei @3x), iPad.
 
-Offen (Phase 2): Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
+Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
 Nachtmodus, Kachel-Cache auf Platte, Kartenrotation mit
 aufrechten Labels, Pixel-Vergleich gegen Java-AWT-Rendering, SVG `<use>`/Gradienten/`<pattern>` (betrifft z. B.
 Elevates `s_mall.svg`), Test auf echtem Gerät.

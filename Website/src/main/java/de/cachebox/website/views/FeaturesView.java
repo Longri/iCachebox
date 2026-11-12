@@ -23,8 +23,11 @@ public class FeaturesView extends Page {
                         + "laden. Alle Caches der Liste liegen auf der Karte, ein Tipp öffnet ihre Info-Blase. "
                         + "Dein Standort als Pfeil in Blickrichtung, im GPS-Modus folgt dir die Karte.",
                 manual());
-        comingSoon(card("compass.png", "Kompass & Navigation",
-                "Richtung und Entfernung zum Ziel – zum Cache, zum nächsten Wegpunkt oder zum geparkten Auto."));
+        card("compass.png", "Kompass & Navigation",
+                "Der Kompass wie in Cachebox: Pfeil und Entfernung zum gewählten Cache, dazu Koordinaten, "
+                        + "Schwierigkeit, Gelände und Attribute, auf Wunsch Sonne und Mond. Die Route dorthin "
+                        + "plant Apple Karten.",
+                manual());
         comingSoon(card("fieldnoteListIcon.png", "Loggen unterwegs",
                 "Funde, DNFs und Notizen als Entwurf festhalten und später in Ruhe hochladen."));
         comingSoon(card("dayGcLiveIcon.png", "Geocaching Live",

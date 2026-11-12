@@ -1,11 +1,6 @@
 import CacheboxCore
 import SwiftUI
 
-/// The five main areas, matching the five main buttons of Cachebox (`ViewManager`).
-enum MainTab: Hashable {
-    case caches, cache, map, log, more
-}
-
 /// Request to center the map on a position. Every request has its own `id`, so showing the same cache again
 /// re-centers a map the user has moved meanwhile.
 struct MapFocus: Equatable {
@@ -16,11 +11,15 @@ struct MapFocus: Equatable {
     let id = UUID()
 }
 
-/// App-wide UI state: active tab and the selected cache (Cachebox: `GlobalCore.getSelectedCache`).
+/// App-wide UI state: the shown view and the selected cache (Cachebox: `ViewManager`, `GlobalCore.getSelectedCache`).
 @MainActor
 @Observable
 final class AppState {
-    var tab: MainTab = .caches
+    /// The view above the main buttons (Cachebox `CB_TabView.currentView`).
+    private(set) var view: MainView = .cacheList
+    /// The last view shown with each main button (Cachebox `GestureButton.aktActionView`); a tap on the button shows
+    /// it again (setting `rememberLastAction`).
+    private(set) var lastViews: [MainButton: MainView] = [:]
     /// The cache selected in the list; kept per cache list and selected again when the list is opened.
     private(set) var selectedCache: CacheSummary?
     /// Where the map should go: set when the selection changes and by "Auf der Karte" (Cachebox `MapView`
@@ -30,6 +29,18 @@ final class AppState {
     let mapLibrary = MapLibrary.shared
     let lists = CacheListModel()
     let location = LocationModel()
+    /// Details (waypoints, logs, attributes …) of the selected cache, for the cache views and the compass.
+    let details = SelectedCacheDetails()
+    /// Search text and sheets of the cache list, also opened from the menu of the list button.
+    let listUI = CacheListUI()
+    /// The map shown by the navigation button; its menu also offers map, theme and style.
+    let map = MapModel()
+    /// What the compass view shows (Cachebox `CompassShow…` settings).
+    let compass = CompassOptions()
+    /// Main button 3 › "Karten und Themes" shows the download as a sheet.
+    var showMapDownload = false
+    /// The torch is on (main button 5 › "Taschenlampe", Cachebox `SwitchTorch`).
+    var isTorchOn = false
     /// The selection was taken from a list at least once (the first time is the app launch).
     private var hasRestoredSelection = false
 
@@ -38,15 +49,28 @@ final class AppState {
         lists.onOpen = { [weak self] in self?.restoreSelection() }
     }
 
-    /// Selects a cache and switches to `tab`; with `.map` the map centers on the cache (on its target: corrected
-    /// coordinates or a final, where the map draws it), also in GPS mode unless the cache was chosen on the map.
-    func select(_ cache: CacheSummary, show tab: MainTab = .cache, onMap: Bool = false) {
-        if cache.code != selectedCache?.code || tab == .map {
-            mapFocus = MapFocus(coordinate: cache.target, isExplicit: tab == .map && !onMap)
+    /// Shows a view and remembers it for its main button (Cachebox `CB_TabView.showView`).
+    func show(_ view: MainView) {
+        self.view = view
+        lastViews[view.button] = view
+    }
+
+    /// Shows the cache button's view that was shown last (description, waypoints, logs or spoiler), like a tap on
+    /// the cache button.
+    func showCacheDetails() {
+        show(lastViews[.cache] ?? .description)
+    }
+
+    /// Selects a cache and shows `view`, by default its details; with `.map` the map centers on the cache (on its
+    /// target: corrected coordinates or a final, where the map draws it), also in GPS mode unless the cache was chosen
+    /// on the map.
+    func select(_ cache: CacheSummary, show view: MainView? = nil, onMap: Bool = false) {
+        if cache.code != selectedCache?.code || view == .map {
+            mapFocus = MapFocus(coordinate: cache.target, isExplicit: view == .map && !onMap)
         }
         selectedCache = cache
         lists.rememberSelection(cache.code)
-        self.tab = tab
+        if let view { show(view) } else { showCacheDetails() }
     }
 
     /// Opens a cache list; its last selected cache is selected again (Cachebox: `ShowSelectDB`).

@@ -65,7 +65,11 @@ Teile waren nicht lesbar oder nur sekundär belegt; das ist unten markiert. Kein
   (`CB_Android/assets/data/attributes` → `Assets.xcassets/Attributes`) und für das Karten-Infofeld Satellit, Karte und
   Kompassrose (`satellite`, `map`, `compass-frame-small`, `compass-scale-small` → `Assets.xcassets/CacheboxUI`); die
   Positions- und Zielpfeile (`arrow-Compass`, `arrow-GPS`, `target-arrow`) und der Toggle-Knopf sind als Vektoren
-  nachgezeichnet (`CacheboxArrows.swift`, `MapControls.swift`). Rechte vor einer Veröffentlichung klären.
+  nachgezeichnet (`CacheboxArrows.swift`, `MapControls.swift`). Seit 11.11.2026 außerdem die fünf Hauptknöpfe mit
+  gedrückter und Filter-Variante, `cmIcon`/`MENUFILTERED` und `button-list-back` (→ `Assets.xcassets/CacheboxButtons`,
+  äußerster halbtransparenter Pixelrand entfernt), für den Kompass `compass-frame`/`compass-scale` in 400 px, `sonne`,
+  `mond` (→ `CacheboxCompass`) sowie Sterne `stars*icon`, Größenbalken, `tb` und `FavPoi` (→ `CacheboxInfo`).
+  Rechte vor einer Veröffentlichung klären.
   Die Attribut-Texte sind selbst formuliert (nicht aus den Cachebox-`strings.ini`).
 - **mapsforge:** LGPL-3.0 mit Verzicht auf Relink-Pflicht (§4d/e). Der Swift-Port bleibt LGPL-3.0, Quelltext veröffentlichen.
   Ob der Fork im Cachebox-Repo denselben Verzicht trägt, ist nicht geprüft.
@@ -77,6 +81,12 @@ Teile waren nicht lesbar oder nur sekundär belegt; das ist unten markiert. Kein
   Bei sichtbarer Karte „© OpenStreetMap contributors“ anzeigen.
 
 ## 3. Zielkonzept: fünf Tabs mit nativen SwiftUI-Bausteinen
+
+> **Geändert am 11.11.2026 (Wunsch des Nutzers):** Statt der Tab-Leiste sitzen unten die fünf Cachebox-Knöpfe mit den
+> Bildern und dem Verhalten der Android-Version (Antippen, Menü beim zweiten Antippen, Wischen, Langdruck; siehe
+> `MainButtons.swift` und Anleitung „Die fünf Knöpfe“). Die Ansichten selbst bleiben native SwiftUI-Bausteine; jede
+> Wischfunktion steht auch im Menü des Knopfs und als VoiceOver-Aktion (HIG: Gesten nie der einzige Weg). Die Tabelle
+> unten beschreibt den ursprünglichen Plan; die heutige Belegung steht in `MainButton.functions`.
 
 Struktur und Farben (Cachebox-Grün) bleiben, die Umsetzung ist nativ. Aus verstecktem Wischen werden sichtbare Controls.
 

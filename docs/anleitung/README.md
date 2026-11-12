@@ -5,25 +5,52 @@ Diese Anleitung beschreibt den aktuellen Prototyp (Stand November 2026). Was noc
 
 ## Überblick
 
-Die App hat unten fünf Bereiche:
+![Kompass mit den fünf Knöpfen](bilder/kompass.png)
 
-| Bereich | Wofür |
+Unten sitzen wie in Cachebox fünf Knöpfe. Jeder gehört zu einem Bereich mit mehreren Ansichten:
+
+| Knopf | Ansichten und Funktionen |
 | --- | --- |
-| **Caches** | Die Caches der geöffneten Liste, sortiert nach Entfernung. Hier importierst du GPX-Dateien und verwaltest deine Listen. |
-| **Cache** | Alles zum gewählten Cache: Beschreibung, Wegpunkte, Logs, Hinweis und deine Notiz. |
-| **Karte** | Die Offline-Karte mit frei wählbarem Design, darauf die Caches der Liste und die Wegpunkte des gewählten Caches. |
-| **Loggen** | Log-Entwürfe (noch im Aufbau). |
-| **Mehr** | Geocaching-Konto, GPX-Import, Karten und Themes, Einstellungen. |
+| **Cacheliste** (Stapel) | Die Caches der geöffneten Liste, sortiert nach Entfernung; Import und Listen. Außerdem **Teilen** des gewählten Caches. |
+| **Cache** (Dose) | Alles zum gewählten Cache: **Beschreibung**, **Wegpunkte**, **Logs**, **Spoiler**, dazu **Hinweis**, **Notizen** und **Im Browser öffnen**. |
+| **Navigation** (N-Pfeil) | **Karte** und **Kompass**, **Navigieren** mit Apple Karten und **Karten und Themes** (Download). |
+| **Werkzeuge** (Schraubenschlüssel) | **Entwürfe** für Logs (noch im Aufbau), später Solver, Foto und Sprachnotiz. |
+| **Sonstiges** (Zahnrad) | **Mehr**: Geocaching-Konto, GPX-Import, Karten und Themes, Einstellungen; außerdem die **Taschenlampe**. |
 
-Der gewählte Cache steht als Leiste über den Bereichen (mehr dazu im Abschnitt „Der gewählte Cache“).
+Der gewählte Cache steht als Leiste über den Knöpfen (mehr dazu im Abschnitt „Der gewählte Cache“).
+
+## Die fünf Knöpfe
+
+![Menü des Navigations-Knopfs](bilder/menue.png)
+
+Die Knöpfe funktionieren wie in Cachebox:
+
+- **Antippen** zeigt die Ansicht des Knopfs, und zwar die, die du dort zuletzt hattest. Beim ersten Mal ist das die
+  Grundansicht (Cacheliste, Beschreibung, Karte, Mehr). Der Werkzeuge-Knopf hat keine Grundansicht und öffnet gleich
+  sein Menü.
+- Der Knopf der gezeigten Ansicht ist **gelb**. Tippst du ihn noch einmal an, öffnet sich sein **Menü**: oben die
+  Funktionen der gezeigten Ansicht (zum Beispiel Sortieren und Filter bei der Liste, „Ansicht“ beim Kompass),
+  darunter alle Ansichten und Funktionen des Knopfs. Drei Punkte unten rechts im Knopf zeigen, dass die Ansicht
+  eigene Funktionen hat; rot sind sie, solange ein Filter gesetzt ist.
+- **Wischen** über einen Knopf springt direkt zu einer Funktion, ohne Menü. Welche Richtung wohin führt, steht als
+  kleiner Pfeil im Menü, zum Beispiel beim Navigations-Knopf: nach oben **Karte**, nach rechts **Kompass**, nach
+  unten **Navigieren**.
+- **Lange drücken** öffnet das Menü mit allen Funktionen des Knopfs, egal welche Ansicht gerade zu sehen ist.
+
+Ist ein Filter in der Cacheliste gesetzt, ist der Cacheliste-Knopf **rot**. Ausgegraute Einträge im Menü gibt es
+noch nicht (siehe „Noch nicht enthalten“).
+
+Während du tippst (Suche, Import), verschwinden die Knöpfe hinter der Tastatur.
 
 ## Erste Schritte
 
 1. Lade eine GPX-Datei oder Pocket Query auf dein iPhone, zum Beispiel aus einer Mail oder über die Dateien-App.
-2. Öffne **Caches** und tippe auf **GPX importieren**. iCacheBox legt dabei deine erste Liste „Meine Caches“ an.
+2. Öffne die **Cacheliste** und tippe auf **GPX importieren**. iCacheBox legt dabei deine erste Liste
+   „Meine Caches“ an.
 3. Erlaube beim ersten Mal den Zugriff auf deinen Standort. Dann sortiert die App die Caches nach Entfernung und zeigt
    Richtung und Abstand zu jedem Cache.
-4. Lade unter **Mehr › Karten und Themes** eine Offline-Karte deiner Gegend.
+4. Lade unter **Sonstiges › Karten und Themes** (oder im Menü des Navigations-Knopfs) eine Offline-Karte deiner
+   Gegend.
 
 ## Caches importieren
 
@@ -34,7 +61,8 @@ iCacheBox liest GPX-Dateien, wie sie geocaching.com, GSAK, c:geo und Opencaching
 
 So importierst du:
 
-1. Tippe in **Caches** oben rechts auf **⋯ › GPX importieren** oder gehe zu **Mehr › GPX importieren**.
+1. Tippe in der **Cacheliste** oben rechts auf **⋯ › GPX importieren** (dasselbe steht im Menü des
+   Cacheliste-Knopfs) oder gehe zu **Sonstiges › GPX importieren**.
 2. Wähle unter **Importieren in** die Liste, in die die Caches sollen: die geöffnete, eine andere oder eine
    **Neue Liste** mit eigenem Namen.
 3. Tippe auf **Dateien wählen** und wähle eine oder mehrere Dateien aus. Mehrere Dateien auf einmal sind kein
@@ -61,7 +89,7 @@ Koordinaten und die Markierung „gefunden“. Eine leere Beschreibung in der ne
 
 Wie in Cachebox ist jede Liste eine eigene Datenbank, zum Beispiel eine für zu Hause und eine für den Urlaub.
 
-- **Liste wechseln:** Tippe in **Caches** auf den Namen der Liste oben in der Mitte und wähle eine andere.
+- **Liste wechseln:** Tippe in der **Cacheliste** auf den Namen der Liste oben in der Mitte und wähle eine andere.
   iCacheBox merkt sich je Liste den zuletzt gewählten Cache.
 - **Listen verwalten:** Im selben Menü öffnet **Listen verwalten** die Übersicht mit Anzahl der Caches,
   Speicherbedarf und letztem Import.
@@ -112,8 +140,9 @@ angezeigten Caches aus der Liste. Ein erneuter Import holt sie zurück.
 ## Der gewählte Cache
 
 Wie in Cachebox gibt es immer einen gewählten Cache, mit dem du gerade unterwegs bist. Er steht als Leiste über den
-Bereichen **Caches**, **Karte**, **Loggen** und **Mehr**: Typ-Symbol, Name, GC-Code, Schwierigkeit, Gelände und
-Größe, mit Standort auch Entfernung und ein Pfeil in seine Richtung.
+Knöpfen in der Cacheliste, auf der Karte, bei den Entwürfen und unter **Mehr**: Typ-Symbol, Name, GC-Code,
+Schwierigkeit, Gelände und Größe, mit Standort auch Entfernung und ein Pfeil in seine Richtung. Im Kompass und in den
+Cache-Details steht er ohnehin groß da.
 
 - **Antippen** öffnet seine Details.
 - **Lange drücken** bietet **Details** und **Auf der Karte**.
@@ -128,7 +157,8 @@ verschwindet.
 
 ![Cache-Details](bilder/details.png)
 
-Der Bereich **Cache** zeigt den gewählten Cache. Oben schaltest du um zwischen:
+Der **Cache**-Knopf zeigt den gewählten Cache. Oben schaltest du um zwischen den Ansichten; dasselbe geht über das
+Menü des Knopfs oder per Wischen (nach rechts Wegpunkte, nach unten Logs):
 
 - **Beschreibung:** Typ, Owner, Schwierigkeit und Gelände, Größe, Koordinaten, Versteckdatum, Region,
   Favoritenpunkte, Trackables, die Attribute als Symbole (durchgestrichen = trifft nicht zu, Tippen zeigt den Text)
@@ -138,9 +168,11 @@ Der Bereich **Cache** zeigt den gewählten Cache. Oben schaltest du um zwischen:
 - **Logs:** Die Logs aus der GPX-Datei, die neuesten zuerst.
 - **Spoiler:** Spoilerbilder lädt iCacheBox noch nicht.
 
-Die Glühbirne oben rechts zeigt den **Hinweis**. Unter **⋯** findest du außerdem: auf der Karte zeigen, als
-gefunden markieren, Favorit, **Notiz bearbeiten** (deine eigene Notiz, die beim nächsten Import erhalten bleibt),
-Koordinaten kopieren, im Browser öffnen und den Cache aus der Liste löschen.
+Die Glühbirne oben rechts zeigt den **Hinweis**. Unter **⋯** – und genauso im Menü des Cache-Knopfs – findest du
+außerdem: auf der Karte zeigen, als gefunden markieren, Favorit, **Notiz bearbeiten** (deine eigene Notiz, die beim
+nächsten Import erhalten bleibt), Koordinaten kopieren, im Browser öffnen und den Cache aus der Liste löschen.
+Hinweis und Notiz erreichst du über den Cache-Knopf auch von jeder anderen Ansicht aus (lange drücken, oder nach links
+wischen für die Notiz).
 
 ## Offline-Karten
 
@@ -148,13 +180,14 @@ Koordinaten kopieren, im Browser öffnen und den Cache aus der Liste löschen.
 
 iCacheBox zeichnet Mapsforge-Karten direkt auf dem iPhone, ganz ohne Netz.
 
-**Karten laden:** Unter **Mehr › Karten und Themes** stehen die Freizeitkarten des Freizeitkarte-OSM-Projekts für
+**Karten laden:** Unter **Sonstiges › Karten und Themes** oder im Menü des Navigations-Knopfs stehen die Freizeitkarten des Freizeitkarte-OSM-Projekts für
 ganz Europa. Tippe auf den Pfeil neben einer Region. Große Karten (ab 100 MB) fragen vorher nach und zeigen den
 nötigen Speicherplatz. Der Download läuft weiter, wenn du die App verlässt; der Stopp-Knopf hält ihn an, das
 Abspielsymbol setzt ihn fort. Mit der ersten Karte lädt iCacheBox das passende Design „Standard-Design V5“ mit.
 
-**Karte anzeigen:** Im Bereich **Karte** wählst du über das Ebenen-Symbol unter dem GPS-Knopf die Karte, das
-Theme und den Stil. Freizeitkarten bekommen automatisch ihr Design.
+**Karte anzeigen:** Der Navigations-Knopf zeigt die **Karte**. Über das Ebenen-Symbol unter dem GPS-Knopf – oder im
+Menü des Navigations-Knopfs, wenn die Karte zu sehen ist – wählst du die Karte, das Theme und den Stil.
+Freizeitkarten bekommen automatisch ihr Design.
 
 Beim nächsten Start zeigt die Karte wieder dieselbe Karte mit demselben Design, Stil und Ausschnitt wie beim
 letzten Mal.
@@ -180,7 +213,7 @@ rechts wischen, lange auf einen Cache oder die Leiste drücken oder im Cache-Men
 GPS-Modus (siehe unten) bleibt die Karte beim Wählen bei dir; nur **Auf der Karte** schaltet auf Free und zeigt den
 Cache. Deckt die eingestellte Karte den Ort nicht ab, nimmt iCacheBox von selbst eine andere vorhandene Karte, die
 ihn abdeckt. Gibt es keine, steht der Cache auf leerem Grund und ein Hinweis erscheint; die passende Karte lädst du
-dann unter **Mehr › Karten und Themes**.
+dann unter **Sonstiges › Karten und Themes**.
 
 ### Eigene Position, GPS und Free
 
@@ -217,6 +250,33 @@ fragt die App nach und zeigt, wie viel Speicher frei wird.
 **Quellenangabe:** Karten: FZK-Projekt (CC BY 3.0) · Kartendaten © OpenStreetMap-Mitwirkende (ODbL) ·
 Höhenlinien: sonny.4lima.de.
 
+## Kompass
+
+Den Kompass erreichst du über den Navigations-Knopf: nach rechts wischen oder antippen und **Kompass** wählen. Er
+sieht aus wie in Cachebox (Bild ganz oben):
+
+- **Oben** steht der gewählte Cache: Symbol und Name, die Koordinaten des Ziels und der GC-Code, darunter deine
+  eigene Position und die Höhe, die Größe als Buchstabe und Balken, Schwierigkeit (D) und Gelände (T) als Sterne,
+  wann er zuletzt gefunden wurde und seine Attribute. Passt nicht alles hin, lässt sich der Kasten scrollen.
+- **Darunter** die **Entfernung** zum Ziel und rechts daneben die Genauigkeit deiner Position.
+- **Der Kompass** dreht sich mit dem iPhone, sodass N immer nach Norden zeigt. Der Pfeil zeigt zum Ziel. Wie auf der
+  Karte ist er **rot**, solange die Richtung vom Kompass kommt (im Stehen und langsam), und **türkis**, wenn sie aus
+  deiner Bewegungsrichtung (GPS) kommt.
+
+Ziel ist der gewählte Cache, bei korrigierten Koordinaten oder einem Final mit Koordinaten dieser Ort – derselbe,
+den die Karte zeigt.
+
+**Ansicht anpassen:** Tippe bei offenem Kompass auf den Navigations-Knopf und wähle **Ansicht**. Dort schaltest du
+jedes Element einzeln an oder aus: Name, Symbol, Attribute, GC-Code, Koordinaten, eigene Position und Höhe, Sonne
+und Mond, Richtung zum Ziel (in Grad), Größe/Schwierigkeit/Gelände und „Zuletzt gefunden“. Die Wahl bleibt
+gespeichert. **Sonne und Mond** stehen dann am Rand des Kompasses in ihrer Himmelsrichtung, solange sie über dem
+Horizont sind – praktisch, wenn der Kompass zwischen Gebäuden spinnt.
+
+**Navigieren:** Nach unten wischen über den Navigations-Knopf (oder **Navigieren** im Menü) öffnet Apple Karten mit
+einer Route zum gewählten Cache.
+
+Im Querformat steht der Kasten links neben dem Kompass.
+
 ## Fragen und Antworten
 
 **Woher bekomme ich GPX-Dateien?**
@@ -238,4 +298,7 @@ keine Caches. Ist die Datei beschädigt, nennt die Fehlermeldung die Zeile, an d
 ## Noch nicht enthalten
 
 Im Vergleich zu Cachebox für Android fehlen noch: Laden und Aktualisieren über die Geocaching-API, Spoilerbilder,
-Kompass und Navigation, die Kartenmodi WP, Lock und Car, Feldnotizen hochladen, Solver, Tracks und Trackables.
+die kleine Karte im Kompass, Wegpunkte als Ziel, die Kartenmodi WP, Lock und Car, Feldnotizen hochladen, Solver,
+Tracks, Trackables, Parkplatz, Foto, Video und Sprachnotiz. Diese Einträge stehen in den Menüs der Knöpfe schon
+ausgegraut an ihrem Platz. Den Tag-/Nachtmodus von Cachebox gibt es nicht; die Knöpfe und der Kompass bleiben auch im
+dunklen Erscheinungsbild hell.

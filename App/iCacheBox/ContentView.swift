@@ -4,7 +4,7 @@ import MapsforgeCore
 import MapsforgeRender
 import SwiftUI
 
-/// Tab 3: Mapsforge offline map rendered by the Swift port and shown through MapKit, with map/theme/style
+/// Main button 3 › Karte: Mapsforge offline map rendered by the Swift port and shown through MapKit, with map/theme/style
 /// selection and a small performance HUD. The caches of the open list (filtered like the list) and the waypoints
 /// of the selected cache are drawn on the map; tapping a cache opens its info bubble. The map centers on the cache
 /// when it is selected or shown with "Auf der Karte" (Cachebox `MapView.setSelectedCache`). Map, theme, style,
@@ -14,14 +14,15 @@ import SwiftUI
 /// folder of the app bundle (`App/BundledMaps`, not in git) and from the downloads (`MapLibrary`).
 struct ContentView: View {
     @Environment(AppState.self) private var state
-    @State private var model = MapModel()
     /// Additional waypoints of the selected cache.
     @State private var waypoints: [Waypoint] = []
     /// GPS/Free button (Cachebox `btnMapState`), kept across launches.
     @State private var mapState = MapState.saved
     @State private var viewport = MapViewport()
-    /// Safe area of the map tab: status bar, tab bar and the bar of the selected cache.
+    /// Safe area of the map: status bar and the bar of the selected cache (the main buttons are below the map).
     @State private var safeInsets = EdgeInsets()
+
+    private var model: MapModel { state.map }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -30,7 +31,7 @@ struct ContentView: View {
                                  location: state.location, target: state.selectedCache?.target,
                                  followsPosition: mapState == .gps, chromeInsets: chromeInsets,
                                  onSelect: { state.select($0, show: .map, onMap: true) },
-                                 onShowDetails: { state.select($0, show: .cache) },
+                                 onShowDetails: { state.select($0) },
                                  onCameraChange: { model.cameraChanged($0) },
                                  onCenterChange: { viewport.center = $0 },
                                  onUserPan: { mapState = .free },
@@ -65,11 +66,19 @@ struct ContentView: View {
         }
         .animation(.default, value: model.notice)
         .task { await model.reload() }
-        // pick up maps and themes downloaded meanwhile; a changed selection reloads through MapMenu
-        .onAppear {
-            model.refreshSources()
-            state.location.start()
+        .onAppear { state.location.start() }
+        // pick up maps and themes downloaded meanwhile (the view stays alive behind the other views)
+        .onChange(of: state.view == .map) { if state.view == .map { model.refreshSources() } }
+        .onChange(of: state.mapLibrary.installations.keys.sorted()) { model.refreshSources() }
+        // a changed selection (map menu or the menu of the navigation button) reloads the map
+        .onChange(of: model.selectedMap) { Task { await model.reload(recenter: true) } }
+        .onChange(of: model.selectedTheme) {
+            model.selectedStyle = nil
+            model.overlays = [:]
+            Task { await model.reload() }
         }
+        .onChange(of: model.selectedStyle) { Task { await model.reload() } }
+        .onChange(of: model.overlays) { Task { await model.reload() } }
         .onChange(of: state.mapFocus, initial: true) {
             guard let focus = state.mapFocus else { return }
             if mapState == .gps {
@@ -102,7 +111,7 @@ struct ContentView: View {
             Spacer(minLength: 0)
             VStack(spacing: MapLayout.margin) {
                 MapStateButton(state: mapState, action: showOwnPosition)
-                MapMenu(model: model)
+                MapMenu()
             }
         }
         .padding(.horizontal, MapLayout.margin)
@@ -178,40 +187,14 @@ struct ContentView: View {
     }
 }
 
-/// Map, theme, style and overlay selection.
+/// Map, theme, style and overlay selection; the same entries as the menu of the navigation button on the map
+/// (`AppState.mapEntries`). `ContentView` reloads the map when the selection changes.
 struct MapMenu: View {
-    @Bindable var model: MapModel
+    @Environment(AppState.self) private var state
 
     var body: some View {
         Menu {
-            Picker("Karte", selection: $model.selectedMap) {
-                ForEach(model.maps, id: \.self) { url in
-                    Text(url.deletingPathExtension().lastPathComponent).tag(Optional(url))
-                }
-            }
-            .pickerStyle(.menu)
-            Picker("Theme", selection: $model.selectedTheme) {
-                ForEach(model.themes) { theme in
-                    Text(theme.name).tag(theme)
-                }
-            }
-            .pickerStyle(.menu)
-            if let menu = model.styleMenu {
-                Picker("Stil", selection: $model.selectedStyle) {
-                    ForEach(menu.styles, id: \.id) { layer in
-                        Text(layer.title(language: model.language) ?? layer.id).tag(Optional(layer.id))
-                    }
-                }
-                .pickerStyle(.menu)
-                if let style = menu.layer(model.selectedStyle ?? menu.defaultValue), !style.overlays.isEmpty {
-                    Menu("Overlays") {
-                        ForEach(style.overlays, id: \.id) { overlay in
-                            Toggle(overlay.title(language: model.language) ?? overlay.id,
-                                   isOn: model.overlayBinding(overlay))
-                        }
-                    }
-                }
-            }
+            MenuEntriesContent(entries: state.mapEntries)
         } label: {
             Image(systemName: "square.3.layers.3d")
                 .font(.title3)
@@ -219,14 +202,6 @@ struct MapMenu: View {
                 .background(.regularMaterial, in: Circle())
         }
         .accessibilityLabel("Karte und Design")
-        .onChange(of: model.selectedMap) { Task { await model.reload(recenter: true) } }
-        .onChange(of: model.selectedTheme) {
-            model.selectedStyle = nil
-            model.overlays = [:]
-            Task { await model.reload() }
-        }
-        .onChange(of: model.selectedStyle) { Task { await model.reload() } }
-        .onChange(of: model.overlays) { Task { await model.reload() } }
     }
 }
 
