@@ -62,7 +62,8 @@ body { background: transparent; }
   text-decoration: none;
 }
 
-.site-brand img { width: 32px; height: 32px; }
+.site-brand-icon { width: 32px; height: 32px; }
+.site-brand-logo { height: 30px; width: auto; }
 
 .site-nav { display: flex; flex-wrap: wrap; gap: 4px; }
 
@@ -104,10 +105,30 @@ a:focus-visible { outline: 3px solid var(--cb-orange); outline-offset: 2px; }
 
 .start h1 { margin: 0; }
 
+/* Logo mit dem Spruch rechts darunter; beides wächst mit der Logobreite */
+.start-heading {
+  --logo-width: min(560px, 86vw);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .start-logo {
-  width: min(560px, 86vw);
+  width: var(--logo-width);
   height: auto;
   filter: drop-shadow(0 2px 14px rgba(255, 255, 255, 0.9));
+}
+
+/* Unter „BOX“, auf Höhe der unteren Rahmenlinie, kurz hinter ihrem Ende bei 64 % der Logobreite (wie im alten
+   Cachebox-Logo). Links verankert, weil die Textbreite je nach Schriftgröße nicht genau mitwächst. */
+.start-tagline {
+  margin: calc(var(--logo-width) * -0.05) 0 0 calc(var(--logo-width) * 0.655);
+  font-size: calc(var(--logo-width) * 0.044);
+  white-space: nowrap;
+  font-weight: 500;
+  line-height: 1;
+  color: #000;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
 }
 
 .start-claim {

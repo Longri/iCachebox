@@ -39,7 +39,8 @@ Die Startseite zeigt unten „Stand: …“ – die Build-Zeit aus `META-INF/bui
 
 - `src/main/java/de/cachebox/website/MainLayout.java` – Kopfzeile, Navigation, Fußzeile
 - `src/main/java/de/cachebox/website/views/` – eine Klasse pro Seite
-  - `StartView` (`/`) – Logo „Cachebox – too many secrets." vor den Bäumen
+  - `StartView` (`/`) – iCachebox-Logo (`images/icachebox-logo.svg`) mit „too many secrets." vor den Bäumen;
+    dasselbe Logo steht in der Kopfzeile und, als Kopie ohne `<use>`, in der App unter Mehr › Über
   - `FeaturesView` (`/funktionen`), `MapsView` (`/karten`), `AboutView` (`/projekt`) – Karten über `Page.card(...)`
   - `ManualView` (`/anleitung`) – zeigt `docs/anleitung/README.md` mit der Vaadin-Markdown-Komponente; der
     Maven-Build kopiert Text und Bilder in den Classpath (`pom.xml`, Ausführungen `anleitung*`). Die Anleitung

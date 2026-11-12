@@ -56,9 +56,13 @@ public class MainLayout extends Div implements RouterLayout {
 
     private Component createHeader() {
         Image icon = new Image("images/cb-ios.png", "");
+        icon.addClassName("site-brand-icon");
+        // Logo statt Schriftzug; den Namen nennt das aria-label des Links
+        Image logo = new Image("images/icachebox-logo.svg", "");
+        logo.addClassName("site-brand-logo");
         RouterLink home = new RouterLink(StartView.class);
         home.addClassName("site-brand");
-        home.add(icon, new Span("iCachebox"));
+        home.add(icon, logo);
         home.getElement().setAttribute("aria-label", "iCachebox Startseite");
 
         Header header = new Header(home, createNav());

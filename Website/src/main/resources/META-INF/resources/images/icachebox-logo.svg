@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="416" height="102" viewBox="0 0 416 102" role="img" aria-labelledby="title desc">
+  <title id="title">iCACHE BOX</title>
+  <desc id="desc">Vector reconstruction of the NASA-style Cachebox wordmark, with olive lettering, black BOX lettering and an orange open frame. All letters are vector outlines.</desc>
+  <g id="lowercase-i" transform="translate(0.175 26.6) scale(0.65)" fill="#829357" stroke="#697748" stroke-width="3" stroke-linejoin="round">
+    <path d="M2 26.5 H10 V34.5 H2 Z M2 42.5 H10 V74.5 H2 Z"/>
+  </g>
+  <g transform="translate(17)">
+  <g id="frame" fill="none" stroke="#ee701d" stroke-width="8.5">
+    <path d="M160.5 39 V28 C160.5 14.8 170.9 4.25 184 4.25 H289 C300.6 4.25 310.3 11.2 313.4 21.4"/>
+    <path d="M160.5 62 V74 C160.5 87.2 170.9 97.75 184 97.75 H248"/>
+  </g>
+  <g id="cache" fill="#829357" stroke="#697748" stroke-width="3" stroke-linejoin="round">
+    <path id="c" d="M40 26.5 H23 C8.6 26.5 1.5 35.6 1.5 50.6 C1.5 65.7 8.6 74.5 23 74.5 H40 V66.5 H23 C13.8 66.5 9.5 61.2 9.5 50.6 C9.5 40 13.8 34.5 23 34.5 H40 Z"/>
+    <path id="a" d="M45.3 74.5 L60.2 33.1 C61.9 28.5 64.9 26.5 69.2 26.5 C73.5 26.5 76.4 28.5 78.1 33.1 L93 74.5 H85 L71.5 37 C71 35.5 70.3 34.7 69.2 34.7 C68.1 34.7 67.4 35.5 66.9 37 L53.3 74.5 Z"/>
+    <use href="#c" transform="translate(96)"/>
+    <path id="h" d="M142.5 26.5 H150.5 V46.5 H173.5 V26.5 H181.5 V74.5 H173.5 V54.5 H150.5 V74.5 H142.5 Z"/>
+    <path id="e" d="M226.5 26.5 H203 C193.1 26.5 187.5 31.6 187.5 40 C187.5 44.6 189.4 48.1 193.2 50.5 C189.4 52.9 187.5 56.4 187.5 61 C187.5 69.4 193.1 74.5 203 74.5 H226.5 V66.5 H203 C198 66.5 195.5 64.7 195.5 60.7 C195.5 56.6 198 54.5 203 54.5 H226.5 V46.5 H203 C198 46.5 195.5 44.4 195.5 40.3 C195.5 36.3 198 34.5 203 34.5 H226.5 Z"/>
+  </g>
+  <g id="box" fill="#000000" stroke="#1f2316" stroke-width="2.5" stroke-linejoin="round">
+    <path id="b" d="M257.25 26.25 H279.7 C290.7 26.25 296.1 31.8 296.1 40.3 C296.1 44.6 294.3 48 290.8 50.5 C294.3 53 296.1 56.4 296.1 60.7 C296.1 69.2 290.7 74.75 279.7 74.75 H257.25 V66.75 H279.7 C285.1 66.75 288.1 64.9 288.1 60.8 C288.1 56.7 285.1 54.5 279.7 54.5 H257.25 V46.5 H279.7 C285.1 46.5 288.1 44.3 288.1 40.2 C288.1 36.1 285.1 34.25 279.7 34.25 H257.25 Z"/>
+    <path id="o" fill-rule="evenodd" d="M325 26.25 C308.6 26.25 301.25 34.7 301.25 50.5 C301.25 66.3 308.6 74.75 325 74.75 C341.4 74.75 348.75 66.3 348.75 50.5 C348.75 34.7 341.4 26.25 325 26.25 Z M325 34.25 C335.8 34.25 340.75 39.5 340.75 50.5 C340.75 61.5 335.8 66.75 325 66.75 C314.2 66.75 309.25 61.5 309.25 50.5 C309.25 39.5 314.2 34.25 325 34.25 Z"/>
+    <path id="x" d="M353.25 26.25 H362.75 L375 43.6 L387.25 26.25 H396.75 L379.9 50.5 L396.75 74.75 H387.25 L375 57.4 L362.75 74.75 H353.25 L370.1 50.5 Z"/>
+  </g>
+  </g>
+</svg>

@@ -5,6 +5,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
@@ -14,7 +15,7 @@ import java.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
 
-/** Startseite: das Logo „Cachebox – too many secrets." vor den Bäumen, wie der Splash-Screen der App. */
+/** Startseite: das iCachebox-Logo mit „too many secrets." vor den Bäumen, wie der Splash-Screen der App. */
 @AnonymousAllowed
 @Route(value = "", layout = MainLayout.class)
 @PageTitle("iCachebox – Cachebox für iOS")
@@ -30,10 +31,14 @@ public class StartView extends Div {
     public StartView(ObjectProvider<BuildProperties> buildProperties) {
         addClassName("start");
 
-        Image logo = new Image("images/cachebox-logo.png", "Cachebox – too many secrets.");
+        Image logo = new Image("images/icachebox-logo.svg", "iCachebox");
         logo.addClassName("start-logo");
+        // Der Spruch steht wie im alten Cachebox-Logo rechts unter „BOX“
+        Span tagline = new Span("too many secrets.");
+        tagline.addClassName("start-tagline");
         // Das Logo ist die Überschrift der Seite
-        H1 heading = new H1(logo);
+        H1 heading = new H1(logo, tagline);
+        heading.addClassName("start-heading");
 
         Paragraph claim = new Paragraph("Geocaching ohne Netz. Mit deinen Caches, deinen Karten – iCachebox bringt Cachebox aufs iPhone.");
         claim.addClassName("start-claim");
