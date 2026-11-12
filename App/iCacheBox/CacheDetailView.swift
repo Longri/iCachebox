@@ -111,8 +111,10 @@ struct CacheDetailView: View {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button("Hinweis", systemImage: "lightbulb") { state.perform(.hint) }
                     .disabled(!state.isEnabled(.hint))
-                Menu("Aktionen", systemImage: "ellipsis.circle") {
-                    MenuEntriesContent(entries: state.cacheEntries(summary))
+                CacheboxMenuButton {
+                    ViewContextMenu(title: summary.name, entries: state.cacheEntries(summary))
+                } label: {
+                    Label("Aktionen", systemImage: "ellipsis.circle")
                 }
             }
         }

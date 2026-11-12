@@ -395,57 +395,17 @@ struct MainButtonView: View {
 
 // MARK: - Popup menu
 
-/// The popup of a main button: title, the context menu of the shown view, a line, then the functions of the button
-/// with the swipe direction behind each title (Cachebox `Menu` as `compoundMenu`). Submenus open in place with a
-/// back button. The entries are built anew on every change, so checkmarks follow the state while it is open.
+/// The popup of a main button: the context menu of the shown view, a line, then the functions of the button with the
+/// swipe direction behind each title (Cachebox `Menu` as `compoundMenu`). The entries are built anew on every
+/// change, so checkmarks follow the state while it is open.
 struct MainMenuView: View {
     let button: MainButton
     let kind: MainMenuKind
 
     @Environment(AppState.self) private var state
-    @Environment(\.dismiss) private var dismiss
-    /// Ids of the opened submenus.
-    @State private var path: [String] = []
-    /// Entry to run once the popup is gone.
-    @State private var pending: (() -> Void)?
-    @State private var contentHeight: CGFloat = 0
-
-    private static let width: CGFloat = 300
-    private static let maxHeight: CGFloat = 560
 
     var body: some View {
-        let (title, entries) = current
-        // one column for the checkmarks, so that the symbols line up
-        let checkColumn = entries.contains { $0.isChecked != nil }
-        VStack(spacing: 0) {
-            header(title)
-            Divider()
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(entries) { row($0, checkColumn: checkColumn) }
-                }
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
-            }
-            .scrollBounceBehavior(.basedOnSize)
-            .frame(height: min(max(contentHeight, 44), Self.maxHeight))
-        }
-        .frame(width: Self.width)
-        .onDisappear {
-            pending?()
-            pending = nil
-        }
-    }
-
-    /// Title and entries of the root menu or of the opened submenu.
-    private var current: (String, [MenuEntry]) {
-        var title = rootTitle
-        var entries = rootEntries
-        for id in path {
-            guard let entry = entries.first(where: { $0.id == id }), case .submenu(let children) = entry.kind else { break }
-            title = entry.title
-            entries = children
-        }
-        return (title, entries)
+        CacheboxMenu(title: rootTitle, entries: rootEntries)
     }
 
     private var rootTitle: String {
@@ -460,116 +420,6 @@ struct MainMenuView: View {
         guard kind == .compound, state.view.button == button, let menu = state.contextMenu(for: state.view) else {
             return functions
         }
-        return menu.entries + [.divider("functions")] + functions
-    }
-
-    private func header(_ title: String) -> some View {
-        HStack(spacing: 8) {
-            if !path.isEmpty {
-                Button {
-                    path.removeLast()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.body.weight(.semibold))
-                        .frame(width: 32, height: 32)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel("Zurück")
-            }
-            Text(title)
-                .font(.headline)
-                .lineLimit(1)
-            Spacer(minLength: 0)
-        }
-        .padding(.leading, path.isEmpty ? 16 : 8)
-        .padding(.trailing, 16)
-        .frame(minHeight: 44)
-        .accessibilityAddTraits(.isHeader)
-    }
-
-    @ViewBuilder
-    private func row(_ entry: MenuEntry, checkColumn: Bool) -> some View {
-        switch entry.kind {
-        case .divider:
-            Rectangle()
-                .fill(Color(.separator))
-                .frame(height: entry.id == "divider-functions" ? 6 : 0.5)
-                .opacity(entry.id == "divider-functions" ? 0.5 : 1)
-        case .submenu:
-            Button {
-                path.append(entry.id)
-            } label: {
-                rowLabel(entry, checkColumn: checkColumn) {
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .buttonStyle(MenuRowStyle())
-            .disabled(entry.isDisabled)
-        case .action(let run):
-            Button {
-                if entry.keepsMenuOpen {
-                    run()
-                } else if entry.runsImmediately {
-                    run()
-                    dismiss()
-                } else {
-                    pending = run
-                    dismiss()
-                }
-            } label: {
-                rowLabel(entry, checkColumn: checkColumn) {
-                    if let gesture = entry.gesture {
-                        Image(systemName: gesture.systemImage)
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                            .accessibilityLabel(gesture.spokenText)
-                    }
-                }
-            }
-            .buttonStyle(MenuRowStyle())
-            .disabled(entry.isDisabled)
-            .accessibilityAddTraits(entry.isChecked == true ? .isSelected : [])
-        }
-    }
-
-    private func rowLabel(_ entry: MenuEntry, checkColumn: Bool,
-                          @ViewBuilder trailing: () -> some View) -> some View {
-        HStack(spacing: 12) {
-            if checkColumn {
-                Image(systemName: "checkmark")
-                    .font(.body.weight(.semibold))
-                    .opacity(entry.isChecked == true ? 1 : 0)
-                    .frame(width: 18)
-                    .accessibilityHidden(true)
-            }
-            if let symbol = entry.systemImage {
-                Image(systemName: symbol)
-                    .frame(width: 24)
-                    .accessibilityHidden(true)
-            }
-            Text(entry.title)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 4)
-            trailing()
-        }
-        .foregroundStyle(entry.role == .destructive ? AnyShapeStyle(Color.red) : AnyShapeStyle(.primary))
-        .padding(.horizontal, 16)
-        .padding(.vertical, 11)
-        .frame(minHeight: 44)
-        .contentShape(Rectangle())
-    }
-}
-
-/// A full-width row that darkens while pressed and fades when disabled.
-private struct MenuRowStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(configuration.isPressed ? Color(.systemFill) : .clear)
-            .opacity(isEnabled ? 1 : 0.4)
+        return menu.entries + [.divider(CacheboxMenu.functionsDivider)] + functions
     }
 }

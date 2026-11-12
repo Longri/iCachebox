@@ -12,44 +12,40 @@ struct MapDownloadView: View {
     private let language = Locale.current.language.languageCode?.identifier ?? "en"
 
     var body: some View {
+        // Cachebox day skin like the FZK download dialog: green, the entries as boxes
         List {
             if let catalog = library.catalog {
                 if !installed.isEmpty {
-                    Section {
-                        ForEach(installed) { row($0, deletable: true) }
-                    } header: {
-                        Text("Auf diesem Gerät")
-                    } footer: {
-                        if let free = library.availableSpace {
-                            Text("Frei: \(Self.bytes(free))")
-                        }
+                    CacheboxListText("Auf diesem Gerät", isHeader: true)
+                    ForEach(Array(installed.enumerated()), id: \.element.id) { index, entry in
+                        row(entry, deletable: true).cacheboxListRow(index: index)
+                    }
+                    if let free = library.availableSpace {
+                        CacheboxListText("Frei: \(Self.bytes(free))")
                     }
                 }
-                Section {
-                    ForEach(filtered(catalog.entries.filter { $0.kind == .map })) { row($0) }
-                } header: {
-                    Text("Karten")
-                } footer: {
-                    Text(catalog.hint(language: language))
+                CacheboxListText("Karten", isHeader: true)
+                ForEach(Array(filtered(catalog.entries.filter { $0.kind == .map }).enumerated()), id: \.element.id) {
+                    index, entry in
+                    row(entry).cacheboxListRow(index: index)
                 }
-                Section {
-                    ForEach(filtered(catalog.entries.filter { $0.kind == .theme })) { row($0) }
-                } header: {
-                    Text("Designs")
-                } footer: {
-                    Text("Mit der ersten Karte wird das Standard-Design mitgeladen.")
+                CacheboxListText(catalog.hint(language: language))
+                CacheboxListText("Designs", isHeader: true)
+                ForEach(Array(filtered(catalog.entries.filter { $0.kind == .theme }).enumerated()), id: \.element.id) {
+                    index, entry in
+                    row(entry).cacheboxListRow(index: index)
                 }
-                Section {
-                    Link(destination: FreizeitkarteCatalog.homepage) {
-                        Label("Freizeitkarte-OSM", systemImage: "safari")
-                    }
-                } footer: {
-                    Text(FreizeitkarteCatalog.attribution)
+                CacheboxListText("Mit der ersten Karte wird das Standard-Design mitgeladen.")
+                CacheboxDivider().cacheboxListDivider()
+                Link(destination: FreizeitkarteCatalog.homepage) {
+                    Label("Freizeitkarte-OSM", systemImage: "safari")
                 }
+                .cacheboxListRow(index: 0)
+                CacheboxListText(FreizeitkarteCatalog.attribution)
             } else if library.loadingCatalog {
                 ProgressView("Lade Kartenliste …")
                     .frame(maxWidth: .infinity)
-                    .listRowBackground(Color.clear)
+                    .cacheboxPlainRow()
             } else {
                 ContentUnavailableView {
                     Label("Kartenliste nicht verfügbar", systemImage: "wifi.exclamationmark")
@@ -58,8 +54,10 @@ struct MapDownloadView: View {
                 } actions: {
                     Button("Erneut versuchen") { Task { await library.loadCatalog() } }
                 }
+                .cacheboxPlainRow()
             }
         }
+        .cacheboxPage()
         .searchable(text: $search, prompt: "Region suchen")
         .navigationTitle("Karten und Themes")
         .refreshable { await library.loadCatalog() }

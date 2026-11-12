@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Mehr › Geocaching-Konto: sign-in state and sign-in/sign-out.
+/// Mehr › Geocaching-Konto: sign-in state and sign-in/sign-out, in the Cachebox day skin.
 struct AccountView: View {
     @Environment(AppState.self) private var state
 
@@ -8,24 +8,22 @@ struct AccountView: View {
         List {
             switch state.account.status {
             case .signedOut:
-                Section {
-                    Label("Nicht angemeldet", systemImage: "person.crop.circle.badge.questionmark")
-                } footer: {
-                    Text("Mit einem Geocaching.com-Konto holst du Caches aufs Gerät und lädst Feldnotizen hoch.")
-                }
-                Section {
-                    SignInButton()
-                }
+                Label("Nicht angemeldet", systemImage: "person.crop.circle.badge.questionmark")
+                    .cacheboxListRow(index: 0)
+                CacheboxListText("Mit einem Geocaching.com-Konto holst du Caches aufs Gerät und lädst Feldnotizen hoch.")
+                SignInButton()
+                    .cacheboxListRow(index: 0)
             case .signedIn(let username, let premium):
-                Section {
-                    LabeledContent("Benutzer", value: username)
-                    LabeledContent("Mitgliedschaft", value: premium ? "Premium" : "Basic")
-                }
-                Section {
-                    Button("Abmelden", role: .destructive) { state.account.signOut() }
-                }
+                LabeledContent("Benutzer", value: username)
+                    .cacheboxListRow(index: 0)
+                LabeledContent("Mitgliedschaft", value: premium ? "Premium" : "Basic")
+                    .cacheboxListRow(index: 1)
+                CacheboxDivider().cacheboxListDivider()
+                Button("Abmelden", role: .destructive) { state.account.signOut() }
+                    .cacheboxListRow(index: 0)
             }
         }
+        .cacheboxPage()
         .navigationTitle("Geocaching-Konto")
     }
 }

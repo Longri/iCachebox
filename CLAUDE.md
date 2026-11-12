@@ -25,10 +25,15 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `MainButtons.swift` (`MainButton` mit `functions` = Cachebox `addAction`: Ansicht/Funktion, Default, Wischrichtung;
     `MainView` = die Ansichten; `MainButtonBar`, `MainButtonView` = Antippen zeigt die letzte Ansicht des Knopfs
     (`rememberLastAction`), Antippen des aktiven Knopfs öffnet `MainMenuView` (Kontextmenü der Ansicht + Funktionen,
-    `compoundMenu`), Wischen führt die Funktion der Richtung aus, Langdruck zeigt nur die Funktionen; Popover mit
-    Untermenüs, Einträge laufen nach dem Schließen, damit Sheets/Alerts erscheinen), `MainActions.swift`
+    `compoundMenu`), Wischen führt die Funktion der Richtung aus, Langdruck zeigt nur die Funktionen), `MainActions.swift`
     (`AppState.perform`/`isEnabled`, Kontextmenüs je Ansicht, Teilen, Navigieren mit Apple Karten, `Torch`),
-    `MenuEntry.swift` (ein Menümodell für Knopf-Popover und Toolbar-Menüs, `MenuEntriesContent`).
+    `MenuEntry.swift` (ein Menümodell; `CacheboxMenu` = Popover im Cachebox-Stil mit Untermenüs, Einträge laufen nach
+    dem Schließen, damit Sheets/Alerts erscheinen; `CacheboxMenuButton` = ⋯-Knöpfe in Toolbar/Karte mit demselben
+    Menü statt System-`Menu`; `PopoverColor` färbt das Popover samt Pfeil über `UIPopoverPresentationController`).
+    `CacheboxStyle.swift`: Farben der Tagesskin (`background`, `activity-back`, `dialog-*`/`menu-divider`-Grün,
+    `listrec-first/-secend/-selected`), `CacheboxRowBox` (Zeilenkasten wie `ListViewItemBackground`),
+    `cacheboxPage()` (plain `List` auf Grün, immer hell), `cacheboxListRow(index:)`, `cacheboxListDivider()`,
+    `CacheboxListText` (Kopf-/Fußtexte als normale Zeilen, weil plain `List` Section-Header anheftet), `CacheboxDivider`.
     `RootView.MainScreen`: ZStack der Bereiche, einmal erzeugt bleiben sie (wie Tabs); Leiste verschwindet bei Tastatur.
     Bilder `Assets.xcassets/CacheboxButtons` (Tagesskin, Rand-Pixel entfernt). Zustand für die Menüs in `AppState`:
     `view`/`lastViews`, `details` (`SelectedCacheDetails` in `CacheDetailView.swift`: Details des gewählten Caches,
@@ -174,6 +179,19 @@ zweites Antippen, Wischen in alle Richtungen, Langdruck, Menüs mit Untermenüs,
 aus dem Menü, Filter-Rot, Tastatur, Quer-/Hochformat, Dunkelmodus, Sonne/Mond mit Standort Sydney). Nicht geprüft:
 echter Kompass, Taschenlampe (Simulator hat keine), Navigieren (öffnet Apple Karten), VoiceOver, iPad. Die Knopf-
 und Kompassbilder sind Bitmaps (88 × 76 bzw. 400 px) und auf @3x leicht weich.
+
+Cachebox-Optik für Liste und Menüs (seit 12.11.2026): Cacheliste auf Cachebox-Grün, Zeilen als Kästen mit dunklem
+Rand abwechselnd weiß/hellgrau (Index ungerade = weiß wie Cachebox), gewählter Cache gelb statt Häkchen; alle
+Knopf-Menüs und die ⋯-Menüs von Liste, Details und Karte als grünes `CacheboxMenu` (Titelleiste im Rahmen-Grün,
+Einträge als Kästen, gelb beim Drücken, grüne Trennlinien). „Mehr“ ebenso: grüner Hintergrund, Einträge als Kästen,
+grüne Linien statt Abschnitten. Liste, Mehr, Menüs und die Leiste des gewählten Caches bleiben im Dunkelmodus hell
+(Tagesskin). Die Unterseiten von Mehr ebenso grün: Konto, GPX importieren (auch als Fenster aus der Liste),
+Karten und Themes (auch als Fenster aus dem Navigationsknopf, wie Cachebox `FZKDownload`), Platzhalterseiten. Abweichungen: Cachebox-Menüs sind weiße Dialoge mit grünem Rahmen und Häkchen-
+Kästchen rechts, hier grüne Popover mit Häkchen links; Titel-Menü der Liste (Listenwahl) und Kontextmenüs
+(Langdruck auf Zeilen) bleiben System-Menüs; Details, Listen verwalten, Filter, Notiz und Willkommensseite folgen
+weiter dem Dunkelmodus. Im Simulator
+geprüft (hell/dunkel, Untermenü, Sortieren, ⋯ in Liste/Details/Karte, Wischaktionen). Nicht geprüft: echtes Gerät,
+iPad (Popover statt Bildschirmrand), VoiceOver.
 
 Zoomen ohne schwarze Kacheln (seit 11.11.2026, wie Cachebox): im Simulator geprüft mit künstlich auf 1,5 s
 verlangsamtem Rendern (rein/raus über 3 Stufen, Theme-Wechsel, Dunkelmodus). Nicht geprüft: Speicher und

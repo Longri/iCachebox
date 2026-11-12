@@ -101,6 +101,7 @@ private struct MainScreen: View {
                         }
                     }
             }
+            .environment(\.colorScheme, .light)   // the page is in the Cachebox day skin
         }
         .onChange(of: scenePhase) {
             // iOS switches the torch off in the background
@@ -202,6 +203,7 @@ struct SelectedCacheBar: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 6)
+            .environment(\.colorScheme, .light)   // Cachebox day skin, like the list and the main buttons
         }
     }
 

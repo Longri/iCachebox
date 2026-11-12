@@ -36,7 +36,8 @@ final class CacheListUI {
 ///
 /// The title menu switches between lists; the toolbar menu holds sort order, filter, import, list management and
 /// deleting caches, like the menu of the list button (Cachebox: list menu). Tapping a row selects the cache and
-/// shows its details.
+/// shows its details. Drawn in the Cachebox day skin, also in dark mode: green background, rows in white and light
+/// grey in turn, the selected cache yellow (`ListViewItemBackground`).
 struct CacheListView: View {
     @Environment(AppState.self) private var state
 
@@ -63,8 +64,10 @@ struct CacheListView: View {
                         .disabled(lists.current == nil)
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        Menu("Mehr", systemImage: "ellipsis.circle") {
-                            MenuEntriesContent(entries: state.cacheListEntries)
+                        CacheboxMenuButton {
+                            ViewContextMenu(title: lists.currentName ?? "Cacheliste", entries: state.cacheListEntries)
+                        } label: {
+                            Label("Mehr", systemImage: "ellipsis.circle")
                         }
                     }
                 }
@@ -83,7 +86,9 @@ struct CacheListView: View {
                          + "Ein erneuter Import holt \(count == 1 ? "ihn" : "sie") zurück.")
                 }
                 .selectedCacheBar()
+                .background(Color.cacheboxBackground)
         }
+        .environment(\.colorScheme, .light)
         .task(id: lists.caches.isEmpty) {
             if !lists.caches.isEmpty { state.location.start() }
         }
@@ -131,12 +136,13 @@ struct CacheListView: View {
         } else {
             List {
                 Section {
-                    ForEach(shown) { row in
-                        CacheRowView(row: row, isSelected: row.cache.code == state.selectedCache?.code,
-                                     heading: state.location.heading, isDevice: lists.referenceIsDevice)
+                    ForEach(Array(shown.enumerated()), id: \.element.id) { index, row in
+                        let isSelected = row.cache.code == state.selectedCache?.code
+                        CacheRowView(row: row, heading: state.location.heading, isDevice: lists.referenceIsDevice)
                             .contentShape(Rectangle())
                             .onTapGesture { state.select(row.cache) }
-                            .accessibilityAddTraits(.isButton)
+                            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+                            .cacheboxListRow(index: index, isSelected: isSelected)
                             .swipeActions(edge: .leading) {
                                 Button("Karte", systemImage: "map") { state.select(row.cache, show: .map) }
                                     .tint(.blue)
@@ -152,9 +158,11 @@ struct CacheListView: View {
                     }
                 } header: {
                     Text(countText)
+                        .foregroundStyle(Color.black.opacity(0.7))
                 }
             }
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .overlay { if lists.isLoading { ProgressView() } }
         }
     }
@@ -240,7 +248,6 @@ struct CacheListView: View {
 /// One cache in the list: type icon with status marks, name, code and rating, distance and direction.
 struct CacheRowView: View {
     let row: CacheRow
-    var isSelected = false
     var heading: Double?
     /// The distance is measured from the device (otherwise from the selected cache; the arrow is grey then).
     var isDevice = true
@@ -280,11 +287,6 @@ struct CacheRowView: View {
                 .frame(minWidth: 56)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Entfernung \(Format.distance(distance))")
-            }
-            if isSelected {
-                Image(systemName: "checkmark")
-                    .foregroundStyle(.tint)
-                    .accessibilityLabel("Gewählt")
             }
         }
         .padding(.vertical, 2)

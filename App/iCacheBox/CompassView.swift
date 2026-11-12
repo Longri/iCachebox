@@ -80,16 +80,11 @@ private enum CompassLayout {
     }
 }
 
-extension Color {
-    /// Cachebox day skin `background` (`ListBack`).
-    static let cacheboxBackground = Color(red: 0.7921, green: 0.8313, blue: 0.6980)
-}
-
 /// Cachebox `activity-back`: light green box with a dark rim.
 private struct ActivityBox: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
-        shape.fill(Color(red: 211 / 255, green: 219 / 255, blue: 191 / 255))
+        shape.fill(Color.cacheboxActivity)
             .overlay { shape.strokeBorder(Color.black.opacity(0.55), lineWidth: 1.2) }
             .shadow(color: .black.opacity(0.18), radius: 1.5, y: 0.5)
             .padding(CompassLayout.boxInset)

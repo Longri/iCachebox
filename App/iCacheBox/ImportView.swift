@@ -3,7 +3,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// GPX import: choose the target list, then one or more GPX files or pocket query ZIPs
-/// (Cachebox: Import dialog, "Pocket Query, Spoiler, …"). Progress and result appear in `ImportStatusCard`.
+/// (Cachebox: Import dialog, "Pocket Query, Spoiler, …"), in the Cachebox day skin. Progress and result appear in
+/// `ImportStatusCard`.
 struct ImportView: View {
     /// Shown as a sheet from the cache list (closes itself after choosing files).
     var isSheet = false
@@ -23,44 +24,42 @@ struct ImportView: View {
     private var lists: CacheListModel { state.lists }
 
     var body: some View {
-        Form {
-            Section {
-                Picker("Importieren in", selection: $target) {
-                    if let current = lists.currentName {
-                        Text("\(current) (geöffnet)").tag(Target.current)
-                    }
-                    ForEach(lists.lists.filter { $0.name != lists.currentName }) { list in
-                        Text(list.name).tag(Target.existing(list.name))
-                    }
-                    Text("Neue Liste").tag(Target.new)
+        List {
+            CacheboxListText("Ziel", isHeader: true)
+            Picker("Importieren in", selection: $target) {
+                if let current = lists.currentName {
+                    Text("\(current) (geöffnet)").tag(Target.current)
                 }
-                if target == .new || lists.currentName == nil {
-                    TextField("Name der neuen Liste", text: $newName, prompt: Text(CacheListModel.defaultListName))
+                ForEach(lists.lists.filter { $0.name != lists.currentName }) { list in
+                    Text(list.name).tag(Target.existing(list.name))
                 }
-            } header: {
-                Text("Ziel")
-            } footer: {
-                Text("Vorhandene Caches werden aktualisiert. Deine Notizen, Favoriten, Fund-Markierungen und "
-                     + "korrigierten Koordinaten bleiben erhalten.")
+                Text("Neue Liste").tag(Target.new)
             }
-            Section {
-                Button {
-                    showPicker = true
-                } label: {
-                    Label("Dateien wählen …", systemImage: "doc.badge.plus")
-                }
-                .disabled(lists.importStatus?.isRunning == true)
-            } footer: {
-                Text("GPX-Dateien (GPX 1.0 und 1.1 mit Groundspeak-Erweiterung, z. B. von geocaching.com, GSAK oder "
-                     + "c:geo) und Pocket-Query-ZIPs. Mehrere Dateien auf einmal sind möglich; Wegpunktdateien "
-                     + "(„-wpts.gpx“) werden ihren Caches zugeordnet.")
+            .cacheboxListRow(index: 0)
+            if target == .new || lists.currentName == nil {
+                TextField("Name der neuen Liste", text: $newName, prompt: Text(CacheListModel.defaultListName))
+                    .cacheboxListRow(index: 1)
             }
-            Section("Tipp") {
-                Text("Eine GPX- oder ZIP-Datei lässt sich auch aus Dateien, Mail oder Safari mit "
-                     + "„Teilen › iCacheBox“ öffnen. Sie landet dann in der geöffneten Liste.")
-                    .font(.footnote)
+            CacheboxListText("Vorhandene Caches werden aktualisiert. Deine Notizen, Favoriten, Fund-Markierungen und "
+                             + "korrigierten Koordinaten bleiben erhalten.")
+            CacheboxDivider().cacheboxListDivider()
+            Button {
+                showPicker = true
+            } label: {
+                Label("Dateien wählen …", systemImage: "doc.badge.plus")
             }
+            .disabled(lists.importStatus?.isRunning == true)
+            .cacheboxListRow(index: 0)
+            CacheboxListText("GPX-Dateien (GPX 1.0 und 1.1 mit Groundspeak-Erweiterung, z. B. von geocaching.com, GSAK "
+                             + "oder c:geo) und Pocket-Query-ZIPs. Mehrere Dateien auf einmal sind möglich; "
+                             + "Wegpunktdateien („-wpts.gpx“) werden ihren Caches zugeordnet.")
+            CacheboxListText("Tipp", isHeader: true)
+            Text("Eine GPX- oder ZIP-Datei lässt sich auch aus Dateien, Mail oder Safari mit "
+                 + "„Teilen › iCacheBox“ öffnen. Sie landet dann in der geöffneten Liste.")
+                .font(.footnote)
+                .cacheboxListRow(index: 0)
         }
+        .cacheboxPage()
         .navigationTitle("GPX importieren")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -193,8 +193,8 @@ struct MapMenu: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        Menu {
-            MenuEntriesContent(entries: state.mapEntries)
+        CacheboxMenuButton {
+            ViewContextMenu(title: "Karte", entries: state.mapEntries)
         } label: {
             Image(systemName: "square.3.layers.3d")
                 .font(.title3)
