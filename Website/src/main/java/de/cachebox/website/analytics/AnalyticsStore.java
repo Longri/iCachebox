@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AnalyticsStore {
     public static final ZoneId ZONE = ZoneId.of("Europe/Berlin");
-    public static final Set<String> PUBLIC_PATHS = Set.of("", "funktionen", "karten", "anleitung", "projekt");
+    public static final Set<String> PUBLIC_PATHS = Set.of("", "funktionen", "coming-soon", "karten", "anleitung", "projekt");
     private static final Set<String> DIMENSIONS = Set.of("visit_day", "page", "country", "referrer", "device");
     private final Connection connection;
     private LocalDate lastPruned;

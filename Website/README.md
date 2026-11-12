@@ -55,6 +55,31 @@ liefert sie weiter aus, CSS-Änderungen erscheinen dann nicht: vorher `mvn clean
 Neue Seite: View-Klasse mit `@Route(value = "...", layout = MainLayout.class)` anlegen, von `Page` erben
 und in `MainLayout.createNav()` verlinken.
 
+## Coming Soon! und Funktionsabstimmung
+
+`/coming-soon` listet alle offenen Funktionen, absteigend nach Stimmen; Suche und Themenfilter ändern
+nur den Ausschnitt, nicht die Rangfolge. Bis zu drei Funktionen erhalten je eine gleichwertige Stimme.
+Besucher können die Auswahl speichern, später ersetzen oder mit leerer Auswahl zurückziehen.
+Wiederholtes Speichern erzeugt keine zusätzlichen Stimmen. Gleiche Stimmenzahlen teilen sich einen Rang;
+Funktionen ohne Stimmen stehen am Ende in Katalogreihenfolge.
+
+Der gemeinsame Stand steht in `src/main/java/de/cachebox/website/features/FeatureCatalog.java`:
+`done=true` hakt eine Funktion auf `/funktionen` ab und entfernt sie aus der Abstimmung.
+Karten ohne erledigten Punkt erhalten automatisch den „Coming Soon!“-Streifen. Die ausdrücklich vergebenen
+Funktions-IDs bei Textänderungen und Umgruppierungen beibehalten; neue Funktionen bekommen neue IDs.
+Gelöschte IDs nicht für andere Funktionen wiederverwenden.
+
+Stimmzettel liegen in `feature-votes.mv.db` im selben konfigurierten Datenverzeichnis wie die Statistik
+(`ANALYTICS_DIRECTORY`). Dieses Verzeichnis muss auch bei Deployments erhalten bleiben und sollte gesichert
+werden. Erledigte oder entfernte Funktionen werden beim Lesen der Auswahl und beim Zählen ausgeblendet.
+Die Speicherung ist unabhängig von den Statistikaggregaten und deren Aufbewahrungsfrist.
+
+Ein HttpOnly-Cookie `cachebox-feature-voter` mit zufälliger Kennung ordnet die Auswahl für ein Jahr dem
+Browser zu (SameSite=Lax, bei HTTPS zusätzlich Secure). Es wird erst beim Öffnen der Abstimmungsseite gesetzt.
+Die Abstimmung speichert keine IP-Adresse und benötigt keine Anmeldung. Die Begrenzung gilt je Browser;
+Cookie-Löschen, andere Browser und Automatisierung werden nicht als dieselbe Person erkannt.
+Die Seite ist damit eine unverbindliche Wunschliste, keine manipulationssichere Personenabstimmung.
+
 ## Geschützte Website-Statistik
 
 `/admin` öffnet die Auswertung; ohne Anmeldung wird auf `/login` weitergeleitet. Die öffentlichen Seiten bleiben

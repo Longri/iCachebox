@@ -17,6 +17,7 @@ import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.router.RouterLink;
 import de.cachebox.website.views.AboutView;
 import de.cachebox.website.views.FeaturesView;
+import de.cachebox.website.views.ComingSoonView;
 import de.cachebox.website.views.ManualView;
 import de.cachebox.website.views.MapsView;
 import de.cachebox.website.views.StartView;
@@ -74,6 +75,7 @@ public class MainLayout extends Div implements RouterLayout {
         Nav nav = new Nav(
                 navLink("Start", StartView.class),
                 navLink("Funktionen", FeaturesView.class),
+                navLink("Coming Soon!", ComingSoonView.class),
                 navLink("Offline-Karten", MapsView.class),
                 navLink("Anleitung", ManualView.class),
                 navLink("Projekt", AboutView.class));

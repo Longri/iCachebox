@@ -333,3 +333,45 @@ a:focus-visible { outline: 3px solid var(--cb-orange); outline-offset: 2px; }
   font-weight: 600;
   color: var(--cb-ink-soft);
 }
+
+/* Besucher priorisieren bis zu drei offene Funktionen. */
+.roadmap-ballot {
+  position: sticky;
+  top: 76px;
+  z-index: 5;
+  padding: 16px 20px;
+  border: 1px solid var(--cb-line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 6px 24px rgba(40, 50, 90, 0.10);
+}
+.roadmap-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.roadmap-actions > span { font-weight: 700; margin-right: auto; }
+.roadmap-ballot p { margin: 8px 0 0; }
+.roadmap-selection { font-size: 0.85rem; color: var(--cb-ink-soft); }
+.roadmap-filters { display: flex; flex-wrap: wrap; gap: 16px; margin: 20px 0; }
+.roadmap-filters > * { flex: 1; min-width: min(240px, 100%); }
+.roadmap-ranking { display: flex; flex-direction: column; gap: 10px; }
+.roadmap-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--cb-line);
+}
+.roadmap-position { flex: 0 0 3ch; font-weight: 700; color: var(--cb-green-dark); }
+.roadmap-detail { flex: 1; min-width: 0; }
+.roadmap-topic { display: block; margin: 0 0 4px 4px; font-size: 0.8rem; color: var(--cb-ink-soft); }
+.roadmap-detail vaadin-checkbox { width: 100%; min-width: 0; }
+.roadmap-detail vaadin-checkbox::part(label) { white-space: normal; overflow-wrap: anywhere; }
+.roadmap-votes { flex: 0 0 7ch; text-align: right; font-size: 0.9rem; font-weight: 600; }
+.features > .button { margin: 0 0 24px; }
+@media (max-width: 700px) {
+  /* Die Navigation darf mehrzeilig werden; der Stimmzettel verdeckt keine Funktionen. */
+  .roadmap-ballot { position: static; }
+  .roadmap-row { padding: 12px; gap: 8px; }
+  .roadmap-position { flex-basis: 2.5ch; }
+  .roadmap-votes { flex-basis: 6ch; font-size: 0.8rem; }
+}
