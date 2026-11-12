@@ -98,7 +98,10 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     Info.plist-Verarbeitung, vor dem Signieren) setzt `CFBundleVersion` = `git rev-list --count HEAD` und schreibt
     `ICBBuildTime` (UTC) und `ICBUncommittedChanges`; dafür `ENABLE_USER_SCRIPT_SANDBOXING = NO` am App-Target.
     Angezeigt in Mehr › Über (`AboutView.swift`, `AppVersion`) und rechts in der Zeile „Über“. Nach einem Commit
-    zählt der nächste Build eins weiter; ein Build mit nicht committeten Änderungen trägt noch die alte Zahl
+    zählt der nächste Build eins weiter; ein Build mit nicht committeten Änderungen trägt noch die alte Zahl.
+    Über wie Cachebox `AboutView`: `splash-back` als Hintergrund (`CacheboxUI/SplashBack`, `cacheboxPage { … }`),
+    oben das Logo `CacheboxUI/ICacheBoxLogo` = Kopie von `Website/…/images/icachebox-logo.svg` ohne `<use>`
+    (bei Änderungen nachziehen)
   - `App/iCacheBox-Info.plist` wird mit der generierten Info.plist zusammengeführt (ATS-Ausnahme nur für
     `repository.freizeitkarte-osm.de`, der Katalog gibt es nur per HTTP; Dateien kommen per HTTPS)
 - `TestData/` – Testdaten (nicht im Git):

@@ -23,13 +23,31 @@ enum AppVersion {
     }
 }
 
-/// Mehr › Über (Cachebox `About`): the version and build time, so that it is clear which build is running.
+/// The foggy forest of the Cachebox splash screen (`splash-back`, Cachebox `Sprites.aboutback`), filling the whole
+/// screen behind About and the navigation bar.
+struct CacheboxSplashBackground: View {
+    var body: some View {
+        Image("SplashBack")
+            .resizable()
+            .scaledToFill()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+            .ignoresSafeArea()
+            .accessibilityHidden(true)
+    }
+}
+
+/// Mehr › Über (Cachebox `AboutView`: `splash-back` behind the logo and the version): the version and build time, so
+/// that it is clear which build is running.
 struct AboutView: View {
     var body: some View {
         List {
             VStack(spacing: 4) {
-                Text("iCacheBox")
-                    .font(.title.weight(.bold))
+                Image("ICacheBoxLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 300)
+                    .accessibilityLabel("iCacheBox")
                 Text("Cachebox für das iPhone")
                     .font(.subheadline)
                     .foregroundStyle(Color.black.opacity(0.62))
@@ -50,7 +68,7 @@ struct AboutView: View {
                                  + "Version ist die Zahl der Commits bis dahin.")
             }
         }
-        .cacheboxPage()
+        .cacheboxPage { CacheboxSplashBackground() }
         .navigationTitle("Über")
     }
 }

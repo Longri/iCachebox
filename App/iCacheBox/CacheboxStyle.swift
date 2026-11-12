@@ -100,10 +100,15 @@ extension View {
     /// A plain `List` as a page in the Cachebox day skin: green background, light also in dark mode, thin rows
     /// allowed for `CacheboxListText` and `cacheboxListDivider` (the boxes keep 44 pt).
     func cacheboxPage() -> some View {
+        cacheboxPage { Color.cacheboxBackground }
+    }
+
+    /// `cacheboxPage()` with another background, e.g. `CacheboxSplashBackground` on Über.
+    func cacheboxPage<Background: View>(@ViewBuilder background: () -> Background) -> some View {
         listStyle(.plain)
             .environment(\.defaultMinListRowHeight, 8)
             .scrollContentBackground(.hidden)
-            .background(Color.cacheboxBackground)
+            .background(background())
             .environment(\.colorScheme, .light)
     }
 
