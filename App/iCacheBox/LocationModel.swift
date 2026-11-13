@@ -26,6 +26,9 @@ final class LocationModel: NSObject, CLLocationManagerDelegate {
     /// `heading` comes from the compass (Cachebox `UseMagneticCompass`: red arrows), not from GPS (cyan arrows).
     private(set) var isCompassHeading = CLLocationManager.headingAvailable()
     private(set) var authorization: CLAuthorizationStatus
+    /// Counts the fixes; `coordinate` only changes when the position really moved, so measuring (`MeasureView`,
+    /// Cachebox `MeasureCoordinate`) counts these instead.
+    private(set) var fixCount = 0
 
     /// Below this speed the compass gives the heading (Cachebox setting `HardwareCompassLevel`, 5 km/h).
     static let compassSpeedLimit = 5.0 / 3.6
@@ -152,6 +155,7 @@ final class LocationModel: NSObject, CLLocationManagerDelegate {
             if self.altitude != altitude { self.altitude = altitude }
             self.course = course
             self.updateHeading()
+            self.fixCount &+= 1
             self.onPositionChanged?()
         }
     }

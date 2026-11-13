@@ -82,6 +82,9 @@ private struct MainScreen: View {
                              imported: state.lists.current?.lastImport, waypoints: state.waypointRevision)) {
             let list = state.lists.currentName.map { state.lists.store.url(of: $0) }
             await state.details.load(code: state.selectedCache?.code, list: list)
+            // the chosen waypoint keeps its new coordinates, or goes when it was deleted; a cancelled load leaves
+            // the old details standing, which would drop a waypoint that was just created
+            if !Task.isCancelled { state.refreshSelectedWaypoint() }
         }
         // dialogs of the cache button, which can be opened from every view
         .alert("Hinweis", isPresented: $details.showHint) {
@@ -99,6 +102,13 @@ private struct MainScreen: View {
         // waypoint editor of the waypoint view and the map (Cachebox `EditWaypoint`)
         .sheet(item: $app.waypointEditor) { request in
             WaypointEditor(request: request) { state.saveWaypoint($0) }
+        }
+        // projection and measuring from the waypoint menu (Cachebox `ProjectionCoordinate`, `MeasureCoordinate`)
+        .sheet(item: $app.projection) { request in
+            ProjectionEditor(request: request) { state.saveProjection($0) }
+        }
+        .sheet(item: $app.measuring) { _ in
+            MeasureView(location: state.location) { state.saveMeasured($0) }
         }
         .alert("Wegpunkt löschen", isPresented: Binding(get: { state.waypointToDelete != nil },
                                                         set: { if !$0 { state.waypointToDelete = nil } }),

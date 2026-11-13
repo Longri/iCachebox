@@ -28,11 +28,12 @@ struct ContentView: View {
         ZStack {
             if let renderer = model.renderer {
                 MapsforgeMapView(renderer: renderer, center: model.center, markers: markers,
-                                 location: state.location, target: state.selectedCache?.target,
+                                 location: state.location, target: state.target?.coordinate,
                                  followsPosition: mapState == .gps, alignsToHeading: model.alignsToCompass,
                                  chromeInsets: chromeInsets,
                                  onSelect: { state.select($0, show: .map, onMap: true) },
                                  onShowDetails: { state.select($0) },
+                                 onSelectWaypoint: { state.selectWaypoint($0) },
                                  onCameraChange: { model.cameraChanged($0) },
                                  onCenterChange: {
                                      viewport.center = $0
@@ -107,7 +108,7 @@ struct ContentView: View {
     /// `MapView.requestLayout`: info panel and toggle button in the top corners).
     private var controls: some View {
         HStack(alignment: .top, spacing: MapLayout.margin) {
-            MapInfoPanel(location: state.location, viewport: viewport, target: state.selectedCache?.target,
+            MapInfoPanel(location: state.location, viewport: viewport, target: state.target?.coordinate,
                          state: mapState)
                 .layoutPriority(1)
             Spacer(minLength: 0)
@@ -146,9 +147,9 @@ struct ContentView: View {
         }
     }
 
-    /// Edge arrow of the selected cache: the map goes there (Cachebox `MapView` click on `targetArrow`).
+    /// Edge arrow of the target: the map goes there (Cachebox `MapView` click on `targetArrow`).
     private func showSelectedCache() {
-        guard let target = state.selectedCache?.target else { return }
+        guard let target = state.target?.coordinate else { return }
         mapState = .free
         model.focus(on: target)
     }
@@ -166,8 +167,11 @@ struct ContentView: View {
         if let cache = state.selectedCache, !markers.contains(where: { $0.id == cache.code }) {
             markers.append(.cache(cache, isSelected: true, isOwn: own != nil && cache.owner.lowercased() == own))
         }
+        let targetCode = state.selectedWaypoint?.code
         for waypoint in waypoints where waypoint.cacheCode == selected {
-            if let coordinate = waypoint.coordinate { markers.append(.waypoint(waypoint, at: coordinate)) }
+            if let coordinate = waypoint.coordinate {
+                markers.append(.waypoint(waypoint, at: coordinate, isTarget: waypoint.code == targetCode))
+            }
         }
         return markers
     }

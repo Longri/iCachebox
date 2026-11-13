@@ -43,7 +43,8 @@ extension AppState {
         }
     }
 
-    /// The functions of a button as menu entries; the shown view has a checkmark (Cachebox greys it out).
+    /// The functions of a button as menu entries; the shown view has a checkmark (Cachebox greys it out). What the
+    /// chosen "Funktionsumfang" does not cover is left out (`MainAction.level`).
     func functionEntries(for button: MainButton) -> [MenuEntry] {
         button.functions.map { function in
             let action = function.action
@@ -62,10 +63,12 @@ extension AppState {
             }
             return MenuEntry(action.title, systemImage: action.systemImage, id: "function-\(action)",
                              isDisabled: !isEnabled(action), isChecked: checked, gesture: function.gesture,
-                             keepsMenuOpen: action == .torch, runsImmediately: isView) { [weak self] in
+                             keepsMenuOpen: action == .torch, runsImmediately: isView,
+                             level: action.level) { [weak self] in
                 self?.perform(action)
             }
         }
+        .shown(at: featureLevel)
     }
 
     // MARK: - Context menus
@@ -79,7 +82,14 @@ extension AppState {
         }
     }
 
+    /// The context menu of a view, without what the chosen "Funktionsumfang" hides.
     func contextMenu(for view: MainView) -> ViewContextMenu? {
+        guard let menu = fullContextMenu(for: view) else { return nil }
+        let entries = menu.entries.shown(at: featureLevel)
+        return entries.isEmpty ? nil : ViewContextMenu(title: menu.title, entries: entries)
+    }
+
+    private func fullContextMenu(for view: MainView) -> ViewContextMenu? {
         guard hasContextMenu(view) else { return nil }
         switch view {
         case .cacheList:
@@ -124,7 +134,7 @@ extension AppState {
                 self?.listUI.showImport = true
             },
             MenuEntry("Listen verwalten …", systemImage: "folder") { [weak self] in self?.listUI.showLists = true },
-            MenuEntry("Caches löschen", systemImage: "trash", isDisabled: lists.caches.isEmpty,
+            MenuEntry("Caches löschen", systemImage: "trash", isDisabled: lists.caches.isEmpty, level: .advanced,
                       entries: CacheListView.DeleteChoice.allCases.map { choice in
                           MenuEntry(choice.menuTitle, id: "delete-\(choice.rawValue)",
                                     isDisabled: listUI.codes(for: choice, in: lists).isEmpty, role: .destructive) {
@@ -132,7 +142,7 @@ extension AppState {
                           }
                       }),
         ]
-        return entries
+        return entries.shown(at: featureLevel)
     }
 
     /// The selected cache (Cachebox `CacheContextMenu`), for description, waypoints, logs and spoiler.
@@ -155,22 +165,22 @@ extension AppState {
             MenuEntry("Notiz bearbeiten …", systemImage: "note.text", isDisabled: selectedDetails == nil) {
                 [weak self] in self?.details.editingNote = true
             },
-            MenuEntry("Koordinaten kopieren", systemImage: "doc.on.doc", runsImmediately: true) {
+            MenuEntry("Koordinaten kopieren", systemImage: "doc.on.doc", runsImmediately: true, level: .advanced) {
                 UIPasteboard.general.string = cache.coordinate.formatted
             },
             MenuEntry("Im Browser öffnen", systemImage: "safari", isDisabled: selectedCacheURL == nil,
-                      runsImmediately: true) { [weak self] in
+                      runsImmediately: true, level: .advanced) { [weak self] in
                 if let url = self?.selectedCacheURL { UIApplication.shared.open(url) }
             },
             .divider("api"),
             // TODO: Aktualisieren über die API, Solver (Cachebox: cache menu)
-            MenuEntry("Aktualisieren", systemImage: "arrow.clockwise", isDisabled: true) {},
-            MenuEntry("Solver", systemImage: "function", isDisabled: true) {},
+            MenuEntry("Aktualisieren", systemImage: "arrow.clockwise", isDisabled: true, level: .expert) {},
+            MenuEntry("Solver", systemImage: "function", isDisabled: true, level: .expert) {},
             .divider("delete"),
-            MenuEntry("Aus der Liste löschen", systemImage: "trash", role: .destructive) { [weak self] in
-                self?.details.confirmDelete = true
+            MenuEntry("Aus der Liste löschen", systemImage: "trash", role: .destructive, level: .advanced) {
+                [weak self] in self?.details.confirmDelete = true
             },
-        ]
+        ].shown(at: featureLevel)
     }
 
     /// Map, theme, style and overlays, map rotation and a waypoint at the map center (Cachebox
@@ -182,20 +192,22 @@ extension AppState {
                 MenuEntry(url.deletingPathExtension().lastPathComponent, id: url.path,
                           isChecked: model.selectedMap == url, runsImmediately: true) { model.selectedMap = url }
             }),
-            MenuEntry("Theme wählen", systemImage: "paintpalette", entries: model.themes.map { theme in
+            MenuEntry("Theme wählen", systemImage: "paintpalette", level: .advanced,
+                      entries: model.themes.map { theme in
                 MenuEntry(theme.name, id: "\(theme.source)", isChecked: model.selectedTheme == theme,
                           runsImmediately: true) { model.selectedTheme = theme }
             }),
         ]
         if let menu = model.styleMenu {
-            entries.append(MenuEntry("Stil", systemImage: "paintbrush", entries: menu.styles.map { layer in
+            entries.append(MenuEntry("Stil", systemImage: "paintbrush", level: .expert,
+                                     entries: menu.styles.map { layer in
                 MenuEntry(layer.title(language: model.language) ?? layer.id, id: layer.id,
                           isChecked: (model.selectedStyle ?? menu.defaultValue) == layer.id,
                           runsImmediately: true) { model.selectedStyle = layer.id }
             }))
             if let style = menu.layer(model.selectedStyle ?? menu.defaultValue), !style.overlays.isEmpty {
-                entries.append(MenuEntry("Overlays", systemImage: "square.3.layers.3d", entries: style.overlays.map {
-                    overlay in
+                entries.append(MenuEntry("Overlays", systemImage: "square.3.layers.3d", level: .expert,
+                                         entries: style.overlays.map { overlay in
                     let binding = model.overlayBinding(overlay)
                     return MenuEntry(overlay.title(language: model.language) ?? overlay.id, id: overlay.id,
                                      isChecked: binding.wrappedValue, keepsMenuOpen: true) {
@@ -208,21 +220,22 @@ extension AppState {
         entries += [
             .divider("waypoint"),
             MenuEntry("Nach Kompass ausrichten", systemImage: "location.north.line", isChecked: model.alignsToCompass,
-                      runsImmediately: true) { model.alignsToCompass.toggle() },
-            MenuEntry("WP vom Kartenmittelpunkt", systemImage: "mappin.and.ellipse", isDisabled: selectedCache == nil) {
-                [weak self] in self?.addWaypointAtMapCenter()
-            },
+                      runsImmediately: true, level: .advanced) { model.alignsToCompass.toggle() },
+            MenuEntry("WP vom Kartenmittelpunkt", systemImage: "mappin.and.ellipse", isDisabled: selectedCache == nil,
+                      level: .advanced) { [weak self] in self?.addWaypointAtMapCenter() },
         ]
-        return entries
+        return entries.shown(at: featureLevel)
     }
 
     /// Cachebox `ShowCompass.getContextMenu`: "Ansicht" opens the elements to show.
     var compassEntries: [MenuEntry] {
-        [MenuEntry("Ansicht", systemImage: "eye", entries: CompassOptions.Element.allCases.map { element in
+        // stays in every "Funktionsumfang": it is the only entry of this menu, and the button shows its three dots
+        [MenuEntry("Ansicht", systemImage: "eye",
+                   entries: CompassOptions.Element.allCases.map { element in
             MenuEntry(element.title, id: element.rawValue, isChecked: compass[element], keepsMenuOpen: true) {
                 [weak self] in self?.compass[element].toggle()
             }
-        })]
+        })].shown(at: featureLevel)
     }
 
     /// Cachebox `ShowDrafts.getContextMenu`; drafts are not built yet.
@@ -262,18 +275,19 @@ extension AppState {
         ShareSheet.present([text])
     }
 
-    /// Cachebox `NavigateTo`: route to the target of the selected cache in Apple Maps.
+    /// Cachebox `NavigateTo`: route to the navigation target — the chosen waypoint, else the cache — in Apple Maps.
     private func navigateToSelectedCache() {
-        guard let cache = selectedCache else { return }
+        guard let target else { return }
+        let coordinate = target.coordinate
         let item: MKMapItem
         if #available(iOS 26, *) {
-            item = MKMapItem(location: CLLocation(latitude: cache.target.latitude, longitude: cache.target.longitude),
+            item = MKMapItem(location: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude),
                              address: nil)
         } else {
             item = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(
-                latitude: cache.target.latitude, longitude: cache.target.longitude)))
+                latitude: coordinate.latitude, longitude: coordinate.longitude)))
         }
-        item.name = "\(cache.name) (\(cache.code))"
+        item.name = "\(target.name) (\(target.code))"
         item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDefault])
     }
 }

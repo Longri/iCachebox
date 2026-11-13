@@ -246,23 +246,43 @@ struct CacheDetailView: View {
 
     // MARK: - Waypoints and logs
 
+    /// Cachebox `WayPointsView`: the cache in the first row, below it its waypoints. Tapping a row makes it the
+    /// navigation target (Cachebox `setSelectedWaypoint`), the cache row takes the target back to the cache; the
+    /// target carries the scope mark. Long press opens the Cachebox context menu of that waypoint.
     private func waypoints(_ details: SelectedCacheDetails.Details) -> some View {
-        List {
+        let target = state.selectedWaypoint
+        return List {
             Section {
                 // "Solved" also with a final that has coordinates, like `CacheSummary.isSolved`
                 let hasFinal = details.waypoints.contains {
                     $0.type == .final && $0.coordinate.map { $0.latitude != 0 || $0.longitude != 0 } == true
                 }
-                waypointRow(icon: details.cache.type.iconName(solved: details.cache.correctedCoordinate != nil || hasFinal),
-                            title: "Cache", code: details.cache.code, coordinate: details.cache.target, comment: "")
+                Button {
+                    state.selectWaypoint(nil)
+                } label: {
+                    waypointRow(icon: details.cache.type.iconName(solved: details.cache.correctedCoordinate != nil || hasFinal),
+                                title: "Cache", code: details.cache.code, coordinate: details.cache.target,
+                                comment: "", isTarget: target == nil)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(target == nil ? "" : "Wählt den Cache als Ziel")
             }
             Section {
                 ForEach(details.waypoints) { waypoint in
-                    waypointRow(icon: waypoint.type.iconName,
-                                title: waypoint.title.isEmpty ? waypoint.type.title : waypoint.title,
-                                code: "\(waypoint.code) · \(waypoint.type.title)"
-                                    + (waypoint.isStart ? " · Start" : "") + (waypoint.isUserCreated ? " · eigener" : ""),
-                                coordinate: waypoint.coordinate, comment: waypoint.comment, clue: waypoint.clue)
+                    Button {
+                        state.selectWaypoint(waypoint)
+                    } label: {
+                        waypointRow(icon: waypoint.type.iconName,
+                                    title: waypoint.title.isEmpty ? waypoint.type.title : waypoint.title,
+                                    code: "\(waypoint.code) · \(waypoint.type.title)"
+                                        + (waypoint.isStart ? " · Start" : "")
+                                        + (waypoint.isUserCreated ? " · eigener" : ""),
+                                    coordinate: waypoint.coordinate, comment: waypoint.comment, clue: waypoint.clue,
+                                    isTarget: waypoint.code == target?.code)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(waypoint.coordinate?.isValid != true)
+                    .accessibilityHint(waypoint.coordinate?.isValid == true ? "Wählt diesen Wegpunkt als Ziel" : "")
                     // Cachebox `WayPointsView.getContextMenu` for the selected waypoint (here: the pressed one)
                     .contextMenu {
                         Button("Anzeigen", systemImage: "eye") {
@@ -270,6 +290,9 @@ struct CacheDetailView: View {
                         }
                         Button("Ändern", systemImage: "pencil") {
                             state.editWaypoint(waypoint, showsCoordinateDialog: true)
+                        }
+                        if waypoint.coordinate?.isValid == true, waypoint.code != target?.code {
+                            Button("Als Ziel wählen", systemImage: "scope") { state.selectWaypoint(waypoint) }
                         }
                         if waypoint.isUserCreated {
                             Button("Löschen", systemImage: "trash", role: .destructive) {
@@ -282,13 +305,18 @@ struct CacheDetailView: View {
                 if details.waypoints.isEmpty { Text("Keine zusätzlichen Wegpunkte.") }
             }
             Section {
+                // Cachebox has these only in the context menu; here they are also buttons under the list
                 Button("Wegpunkt hinzufügen", systemImage: "plus.circle") { state.addWaypoint() }
+                if state.featureLevel >= .advanced {
+                    Button("Projektion", systemImage: "arrow.up.right.circle") { state.startProjection() }
+                    Button("Vom GPS", systemImage: "location.circle") { state.startMeasuring() }
+                }
             }
         }
     }
 
     private func waypointRow(icon: String, title: String, code: String, coordinate: Coordinate?,
-                             comment: String, clue: String = "") -> some View {
+                             comment: String, clue: String = "", isTarget: Bool = false) -> some View {
         HStack(alignment: .top, spacing: 12) {
             CacheboxIcon(name: icon, size: 32)
             VStack(alignment: .leading, spacing: 2) {
@@ -305,12 +333,22 @@ struct CacheDetailView: View {
                 }
             }
             Spacer()
-            if let coordinate, let here = state.location.coordinate {
-                Text(Format.distance(here.distance(to: coordinate)))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .trailing, spacing: 4) {
+                if let coordinate, let here = state.location.coordinate {
+                    Text(Format.distance(here.distance(to: coordinate)))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                if isTarget {
+                    Image(systemName: "scope")
+                        .foregroundStyle(.tint)
+                        .accessibilityLabel("Ziel")
+                }
             }
         }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isTarget ? .isSelected : [])
     }
 
     private func logs(_ details: SelectedCacheDetails.Details) -> some View {

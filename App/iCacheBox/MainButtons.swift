@@ -166,6 +166,17 @@ enum MainAction: Hashable {
         }
     }
 
+    /// From which "Funktionsumfang" on the function is in the button menu (Mehr › Einstellungen). The views, the
+    /// cache functions and the torch belong to every level; what is only occasionally needed or not built yet
+    /// comes later.
+    var level: FeatureLevel {
+        switch self {
+        case .show, .share, .hint, .notes, .navigate, .mapDownload, .settings, .help, .torch: .standard
+        case .browser, .parking, .trackables, .tracks: .advanced
+        case .solver, .solver2, .photo, .video, .voiceNote: .expert
+        }
+    }
+
     var systemImage: String {
         switch self {
         case .show(let view): view.systemImage

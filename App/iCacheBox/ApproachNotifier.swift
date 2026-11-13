@@ -14,7 +14,8 @@ import UserNotifications
 // shows its blue location indicator.
 //
 // Not taken over: the sound files of Cachebox (GPL assets) and the volume settings — the notification uses the
-// system sound; without a waypoint selection the target is always the cache target (`CacheSummary.target`).
+// system sound. The target is the chosen waypoint of the selected cache, else the cache itself
+// (`AppState.target`, Cachebox `GlobalCore.getSelectedCoordinate`).
 
 /// Settings of the approach notification, kept in `UserDefaults` (Cachebox `SoundApproachDistance`,
 /// `switchViewApproach`).
@@ -91,10 +92,10 @@ final class ApproachNotifier: NSObject, UNUserNotificationCenterDelegate {
     /// Called after every fix and after a change of the selection. Returns true when it has just notified, so that
     /// the caller can switch to the compass (Cachebox `switchViewApproach`).
     @discardableResult
-    func update(cache: CacheSummary?, here: Coordinate?) -> Bool {
-        guard options.isOn, let cache, let here else {
-            // without a cache, a position or the notification there is nothing to announce (Cachebox `resetApproach`)
-            lastCode = cache?.code
+    func update(target: NavigationTarget?, here: Coordinate?) -> Bool {
+        guard options.isOn, let target, let here else {
+            // without a target, a position or the notification there is nothing to announce (Cachebox `resetApproach`)
+            lastCode = target?.id
             hasNotified = true
             return false
         }
@@ -102,11 +103,11 @@ final class ApproachNotifier: NSObject, UNUserNotificationCenterDelegate {
             hasAsked = true
             Task { await requestAuthorization() }
         }
-        let distance = here.distance(to: cache.target)
+        let distance = here.distance(to: target.coordinate)
         let threshold = Double(options.distance)
-        if cache.code != lastCode {
-            lastCode = cache.code
-            // Cachebox `resetApproach`: selecting a cache one is already standing at stays quiet
+        if target.id != lastCode {
+            lastCode = target.id
+            // Cachebox `resetApproach`: choosing a target one is already standing at stays quiet
             hasNotified = distance < threshold
             return false
         }
@@ -116,7 +117,7 @@ final class ApproachNotifier: NSObject, UNUserNotificationCenterDelegate {
         }
         guard distance < threshold else { return false }
         hasNotified = true
-        notify(cache, distance: distance)
+        notify(target, distance: distance)
         return true
     }
 
@@ -126,14 +127,14 @@ final class ApproachNotifier: NSObject, UNUserNotificationCenterDelegate {
         hasNotified = true
     }
 
-    private func notify(_ cache: CacheSummary, distance: Double) {
+    private func notify(_ target: NavigationTarget, distance: Double) {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         guard !isDenied else { return }
         let content = UNMutableNotificationContent()
-        content.title = "Cache in der Nähe"
-        content.body = "\(cache.name) (\(cache.code)) – noch \(MapFormat.distance(distance))"
+        content.title = target.isWaypoint ? "Wegpunkt in der Nähe" : "Cache in der Nähe"
+        content.body = "\(target.name) (\(target.code)) – noch \(MapFormat.distance(distance))"
         content.sound = .default
-        let request = UNNotificationRequest(identifier: "approach." + cache.code, content: content, trigger: nil)
+        let request = UNNotificationRequest(identifier: "approach." + target.id, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
     }
 

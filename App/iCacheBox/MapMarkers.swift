@@ -16,6 +16,9 @@ struct MapMarker: Equatable, Identifiable {
     var longitude: Double
     /// The selected cache or one of its waypoints: always framed; the selected cache is always big and on top.
     var isSelected = false
+    /// The navigation target: drawn with the red frame of the selected cache (Cachebox draws the chosen waypoint
+    /// selected, too).
+    var isTarget = false
     /// A cache of the signed-in user (Cachebox `iAmTheOwner`, star icon).
     var isOwn = false
 
@@ -25,9 +28,13 @@ struct MapMarker: Equatable, Identifiable {
                          longitude: target.longitude, isSelected: isSelected, isOwn: isOwn)
     }
 
-    static func waypoint(_ waypoint: Waypoint, at coordinate: Coordinate) -> MapMarker {
+    static func waypoint(_ waypoint: Waypoint, at coordinate: Coordinate, isTarget: Bool = false) -> MapMarker {
         MapMarker(id: waypoint.id, content: .waypoint(waypoint), latitude: coordinate.latitude,
-                  longitude: coordinate.longitude, isSelected: true)
+                  longitude: coordinate.longitude, isSelected: true, isTarget: isTarget)
+    }
+
+    var waypoint: Waypoint? {
+        if case .waypoint(let waypoint) = content { waypoint } else { nil }
     }
 
     var cache: CacheSummary? {
@@ -62,7 +69,9 @@ struct MapMarker: Equatable, Identifiable {
             if isSelected { parts.append("gewählt") }
             return parts.joined(separator: ", ")
         case .waypoint(let waypoint):
-            return [waypoint.type.title, title, waypoint.code].joined(separator: ", ")
+            var parts = [waypoint.type.title, title, waypoint.code]
+            if isTarget { parts.append("Ziel") }
+            return parts.joined(separator: ", ")
         }
     }
 }
@@ -111,9 +120,9 @@ final class MarkerImages {
                           favorite: cache.isFavorite, disabled: cache.isArchived || !cache.isAvailable)
         case .waypoint(let waypoint):
             // Cachebox frames the waypoints of the selected cache at every zoom; at the smallest size the icon would
-            // cover the frame completely, so they stay medium there
-            return framed(waypoint.type.iconName, size: max(zoomSize, .medium), selected: false, favorite: false,
-                          disabled: false)
+            // cover the frame completely, so they stay medium there. The chosen target gets the red frame.
+            return framed(waypoint.type.iconName, size: marker.isTarget ? .large : max(zoomSize, .medium),
+                          selected: marker.isTarget, favorite: false, disabled: false)
         }
     }
 
@@ -228,6 +237,61 @@ struct CacheBubble: View {
                     .foregroundStyle(.tint)
             } else {
                 Button("Auswählen", systemImage: "checkmark.circle", action: onSelect)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+            }
+        }
+        .tint(.cachebox)
+        .padding(.bottom, 2)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+/// Content of the info bubble of a waypoint on the map (Cachebox shows a `WaypointViewItem` in the bubble):
+/// icon, code and type, coordinates and distance, description and clue, and the button that makes it the
+/// navigation target (Cachebox `GlobalCore.setSelectedWaypoint`). The title above it is the waypoint's name.
+struct WaypointBubble: View {
+    let waypoint: Waypoint
+    let coordinate: Coordinate
+    /// The waypoint is the navigation target.
+    let isTarget: Bool
+    /// Device position for the distance, if known.
+    let here: Coordinate?
+    let onSelectTarget: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 10) {
+                CacheboxIcon(name: waypoint.type.iconName, size: 34)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(waypoint.code) · \(waypoint.type.title)")
+                    Text(coordinate.formatted).monospacedDigit()
+                    if let here {
+                        Text(Format.distance(here.distance(to: coordinate)) + " entfernt")
+                    }
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            }
+            if !waypoint.comment.isEmpty {
+                Text(waypoint.comment)
+                    .font(.footnote)
+                    .lineLimit(4)
+            }
+            if !waypoint.clue.isEmpty {
+                Text("Hinweis: \(waypoint.clue)")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+            }
+            if isTarget {
+                Label("Ziel", systemImage: "scope")
+                    .font(.footnote)
+                    .foregroundStyle(.tint)
+            } else {
+                Button("Als Ziel", systemImage: "scope", action: onSelectTarget)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
             }

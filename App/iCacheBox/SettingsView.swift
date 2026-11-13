@@ -1,15 +1,30 @@
 import SwiftUI
 import UIKit
 
-/// Mehr › Einstellungen, in the Cachebox day skin. So far only the approach notification (Cachebox settings
+/// Mehr › Einstellungen, in the Cachebox day skin: the range of functions (Cachebox `SettingsShowExpert`,
+/// `SettingsShowAll`, which are hidden switches there) and the approach notification (Cachebox settings
 /// `SoundApproachDistance` and `switchViewApproach` under Misc).
 struct SettingsView: View {
     @Environment(AppState.self) private var state
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
+        @Bindable var app = state
         @Bindable var options = state.approach.options
         List {
+            CacheboxListText("Funktionsumfang", isHeader: true)
+            Picker(selection: $app.featureLevel) {
+                ForEach(FeatureLevel.allCases) { level in
+                    Text(level.title).tag(level)
+                }
+            } label: {
+                Label("Menüs zeigen", systemImage: "square.3.layers.3d")
+            }
+            .pickerStyle(.menu)
+            .cacheboxListRow(index: 0)
+            CacheboxListText("Je höher der Funktionsumfang, desto mehr steht in den Menüs. "
+                             + state.featureLevel.summary)
+            CacheboxDivider().cacheboxListDivider()
             CacheboxListText("Annäherung", isHeader: true)
             Picker(selection: $options.distance) {
                 ForEach(ApproachOptions.distances, id: \.self) { metres in
@@ -19,21 +34,21 @@ struct SettingsView: View {
                 Label("Benachrichtigung bei", systemImage: "bell.badge")
             }
             .pickerStyle(.menu)
-            .cacheboxListRow(index: 0)
-            CacheboxListText("Nähert man sich dem gewählten Cache auf diese Entfernung, meldet sich iCacheBox einmal "
-                             + "mit Ton und Vibration. Entfernt man sich wieder, kommt beim nächsten Mal eine neue "
-                             + "Benachrichtigung.")
+            .cacheboxListRow(index: 1)
+            CacheboxListText("Nähert man sich dem Ziel – dem gewählten Cache oder seinem gewählten Wegpunkt – auf "
+                             + "diese Entfernung, meldet sich iCacheBox einmal mit Ton und Vibration. Entfernt man "
+                             + "sich wieder, kommt beim nächsten Mal eine neue Benachrichtigung.")
             if options.isOn {
                 Toggle(isOn: $options.worksInBackground) {
                     Label("Auch bei gesperrtem Bildschirm", systemImage: "lock.iphone")
                 }
-                .cacheboxListRow(index: 1)
+                .cacheboxListRow(index: 2)
                 CacheboxListText("Dafür verfolgt iCacheBox die Position weiter, solange die App läuft; iOS zeigt "
                                  + "dann oben die blaue Standortanzeige. Das kostet Akku.")
                 Toggle(isOn: $options.switchesToCompass) {
                     Label("Auf Kompass umschalten", systemImage: "location.north.circle")
                 }
-                .cacheboxListRow(index: 2)
+                .cacheboxListRow(index: 3)
                 if state.approach.isDenied {
                     CacheboxDivider().cacheboxListDivider()
                     Button {
@@ -43,7 +58,7 @@ struct SettingsView: View {
                     } label: {
                         Label("Benachrichtigungen sind nicht erlaubt", systemImage: "exclamationmark.triangle")
                     }
-                    .cacheboxListRow(index: 3)
+                    .cacheboxListRow(index: 4)
                     CacheboxListText("Ohne Erlaubnis vibriert nur das Gerät, solange die App im Vordergrund ist. "
                                      + "In den Systemeinstellungen lässt sie sich erteilen.")
                 }

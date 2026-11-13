@@ -78,7 +78,7 @@ public final class FeatureCatalog {
                     new Feature("navigation-06", "Sonne und Mond anzeigen", true),
                     new Feature("navigation-07", "Angezeigte Elemente des Kompasses wählen", true),
                     new Feature("navigation-08", "Minikarte im Kompass", false),
-                    new Feature("navigation-09", "Beschreibung des Ziel-Wegpunkts anzeigen", false),
+                    new Feature("navigation-09", "Beschreibung des Ziel-Wegpunkts anzeigen", true),
                     new Feature("navigation-10", "Externe Navigation zum Ziel aufrufen (Apple Karten)", true),
                     new Feature("navigation-11", "Navigations-App wählen (Cachebox: Google Maps, OsmAnd, Waze …)", false),
                     new Feature("navigation-12", "Ton bei GPS-Verlust und GPS-Empfang", false),
@@ -133,9 +133,9 @@ public final class FeatureCatalog {
                     new Feature("cache-details-07", "Hinweis ver- und entschlüsseln (ROT13)", false),
                     new Feature("cache-details-08", "Wegpunkte mit Koordinaten, Kommentar und Entfernung anzeigen", true),
                     new Feature("cache-details-09", "Korrigierte Koordinaten anzeigen", true),
-                    new Feature("cache-details-10", "Wegpunkt als Ziel auswählen", false),
+                    new Feature("cache-details-10", "Wegpunkt als Ziel auswählen", true),
                     new Feature("cache-details-11", "Wegpunkte anlegen, bearbeiten und löschen, Koordinaten in Grad, Minuten, Sekunden oder UTM eingeben", true),
-                    new Feature("cache-details-17", "Wegpunkt per Projektion oder von der GPS-Position anlegen", false),
+                    new Feature("cache-details-17", "Wegpunkt per Projektion oder von der GPS-Position anlegen", true),
                     new Feature("cache-details-12", "Logs mit Logtyp, Verfasser, Datum und Text lesen", true),
                     new Feature("cache-details-13", "Logtext kopieren, Log im Browser öffnen, Finder anschreiben", false),
                     new Feature("cache-details-14", "Persönliche Notiz bearbeiten (bleibt beim Import erhalten)", true),
@@ -162,7 +162,8 @@ public final class FeatureCatalog {
                     new Feature("bedienung-09", "Einstellungen: Textvorlagen, Karte, GPS, Töne, Skin, Auto-Modus", false),
                     new Feature("bedienung-10", "Sprache wählen (Cachebox: acht Sprachen, iCachebox nur Deutsch)", false),
                     new Feature("bedienung-11", "Englische Maßeinheiten (Meilen, Fuß)", false),
-                    new Feature("bedienung-12", "Hilfe in der App", false))));
+                    new Feature("bedienung-12", "Hilfe in der App", false),
+                    new Feature("bedienung-13", "Funktionsumfang wählen: Standard, Erweitert oder Expert", true))));
 
     public static Set<String> openIds() {
         return SECTIONS.stream().flatMap(section -> section.features().stream())

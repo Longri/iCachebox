@@ -2,15 +2,16 @@ import CacheboxCore
 import SwiftUI
 
 // Main button 3 › Kompass, like the Cachebox `CompassView` without its small map (`CompassShowMap` off): on top a
-// box with the selected cache (symbol and name, coordinates and GC code, own position and height, direction to the
-// target, size/difficulty/terrain, last find, attributes), below it the compass. The compass rose turns with the
-// heading so that N points north; the arrow points to the target of the selected cache (corrected coordinates or the
-// final, as on the map), red while the device compass gives the heading, cyan while it comes from GPS. Above the
-// compass the distance to the target and the accuracy of the own position. Sun and moon stand at the edge of the
-// compass in their direction while they are above the horizon (off by default, as in Cachebox).
+// box with the navigation target (symbol and name, coordinates and GC code, the description of a chosen waypoint,
+// own position and height, direction to the target, size/difficulty/terrain, last find, attributes), below it the
+// compass. The target is the chosen waypoint of the selected cache, else the cache itself (`AppState.target`), and
+// symbol, name and coordinates follow it like Cachebox's `setCache` does. The compass rose turns with the heading so
+// that N points north; the arrow points to the target, red while the device compass gives the heading, cyan while it
+// comes from GPS. Above the compass the distance to the target and the accuracy of the own position. Sun and moon
+// stand at the edge of the compass in their direction while they are above the horizon (off by default, as in
+// Cachebox).
 //
-// Not taken over: the small map, the waypoint description (the app has no waypoint selection) and the satellite bar
-// chart (iOS does not report satellites).
+// Not taken over: the small map and the satellite bar chart (iOS does not report satellites).
 
 /// What the compass view shows (Cachebox settings `CompassShow…`, defaults as there), kept across launches.
 @MainActor
@@ -18,8 +19,8 @@ import SwiftUI
 final class CompassOptions {
     /// In the order of the Cachebox menu `CompassViewElementsMenuTitle`.
     enum Element: String, CaseIterable, Identifiable {
-        case name, icon, attributes, code, coordinates, position, sunMoon, targetDirection, sizeDifficultyTerrain,
-             lastFound
+        case name, icon, attributes, code, coordinates, waypointDescription, position, sunMoon, targetDirection,
+             sizeDifficultyTerrain, lastFound
 
         var id: Self { self }
 
@@ -30,6 +31,8 @@ final class CompassOptions {
             case .attributes: "Attribute"
             case .code: "GC-Code"
             case .coordinates: "Koordinaten"
+            // Cachebox `CompassShowWpDesc`: description and clue of the chosen waypoint
+            case .waypointDescription: "Wegpunktbeschreibung"
             // Cachebox `CompassShowSatInfos`: own position, height and the satellites, which iOS does not report
             case .position: "Eigene Position und Höhe"
             case .sunMoon: "Sonne und Mond"
@@ -162,36 +165,51 @@ private struct CompassInfo: View {
     var body: some View {
         let options = state.compass
         let iconSize = CompassLayout.iconSize(width: width)
-        if let cache = state.selectedCache {
+        if let cache = state.selectedCache, let target = state.target {
             VStack(alignment: .leading, spacing: 7) {
                 if options[.icon] || options[.name] {
+                    // Cachebox `setCache`: with a chosen waypoint its icon and title stand here instead of the cache
                     HStack(spacing: 10) {
                         if options[.icon] {
-                            CacheboxIcon(name: cache.type.iconName(solved: cache.isSolved), size: iconSize)
+                            CacheboxIcon(name: target.iconName, size: iconSize)
                         }
                         if options[.name] {
-                            Text(cache.name)
+                            Text(target.name)
                                 .font(.headline)
-                                .strikethrough(cache.isArchived)
+                                .strikethrough(cache.isArchived && !target.isWaypoint)
                                 .lineLimit(2)
                         }
                     }
                     .accessibilityElement(children: .combine)
                 }
+                if target.isWaypoint, options[.name] {
+                    Text("Wegpunkt von \(cache.name)")
+                        .font(.footnote)
+                        .lineLimit(1)
+                }
                 if options[.coordinates] || options[.code] {
                     // Cachebox: coordinates with a fixed width, the code behind them
                     ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 16) { coordinatesAndCode(cache, options) }
-                        VStack(alignment: .leading, spacing: 4) { coordinatesAndCode(cache, options) }
+                        HStack(spacing: 16) { coordinatesAndCode(target, cache, options) }
+                        VStack(alignment: .leading, spacing: 4) { coordinatesAndCode(target, cache, options) }
                     }
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
+                }
+                if options[.waypointDescription], target.isWaypoint {
+                    // Cachebox `lblDesc`: the description of the chosen waypoint; the clue is in it here, too
+                    VStack(alignment: .leading, spacing: 2) {
+                        if !target.comment.isEmpty { Text(target.comment) }
+                        if !target.clue.isEmpty { Text("Hinweis: \(target.clue)") }
+                    }
+                    .font(.footnote)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 if options[.position] {
                     OwnPositionInfo(location: state.location)
                 }
                 if options[.targetDirection] {
-                    TargetDirectionText(location: state.location, target: cache.target)
+                    TargetDirectionText(location: state.location, target: target.coordinate)
                 }
                 if options[.sizeDifficultyTerrain] {
                     SizeDifficultyTerrain(cache: cache)
@@ -218,15 +236,17 @@ private struct CompassInfo: View {
     }
 
     @ViewBuilder
-    private func coordinatesAndCode(_ cache: CacheSummary, _ options: CompassOptions) -> some View {
+    private func coordinatesAndCode(_ target: NavigationTarget, _ cache: CacheSummary,
+                                    _ options: CompassOptions) -> some View {
         if options[.coordinates] {
-            Text(MapFormat.coordinate(cache.target))
+            Text(MapFormat.coordinate(target.coordinate))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                .accessibilityLabel("Ziel \(cache.target.formatted)")
+                .accessibilityLabel("Ziel \(target.coordinate.formatted)")
         }
         if options[.code] {
-            Text(cache.code)
+            // Cachebox shows the GC code of the cache also for a waypoint; its own code stands in front of it
+            Text(target.isWaypoint ? "\(target.code) · \(cache.code)" : cache.code)
                 .lineLimit(1)
         }
     }
@@ -296,12 +316,12 @@ private struct CompassDial: View {
             let dialSize = max(0, min((min(size.height, size.width) - 2 * margin) * 0.95 - iconSize, room))
             let center = CGPoint(x: size.width / 2, y: size.height - margin - iconSize / 2 - dialSize / 2)
             ZStack(alignment: .top) {
-                DialFace(location: state.location, target: state.selectedCache?.target, size: dialSize)
+                DialFace(location: state.location, target: state.target?.coordinate, size: dialSize)
                     .position(center)
                 if sunMoon {
                     SunAndMoon(location: state.location, center: center, dialSize: dialSize, iconSize: iconSize)
                 }
-                DistancePanel(location: state.location, target: state.selectedCache?.target)
+                DistancePanel(location: state.location, target: state.target?.coordinate)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { panelHeight = $0 }
                     .padding(.horizontal, margin)
                     .padding(.top, margin)

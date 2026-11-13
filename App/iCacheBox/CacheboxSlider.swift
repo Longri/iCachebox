@@ -314,12 +314,13 @@ private struct SliderBar: View {
                 }
                 .layoutPriority(1)
                 Spacer(minLength: 0)
-                if let here = state.location.coordinate {
-                    let bearing = here.bearing(to: cache.target) - (state.location.heading ?? 0)
+                if let here = state.location.coordinate, let target = state.target {
+                    // arrow and distance go to the navigation target: the chosen waypoint, else the cache
+                    let bearing = here.bearing(to: target.coordinate) - (state.location.heading ?? 0)
                     VStack(spacing: 1) {
                         Image(systemName: "location.north.fill")
                             .rotationEffect(.degrees(bearing))
-                        Text(Format.distance(here.distance(to: cache.target)))
+                        Text(Format.distance(here.distance(to: target.coordinate)))
                             .font(.caption.weight(.semibold).monospacedDigit())
                             .lineLimit(1)
                     }
@@ -374,8 +375,9 @@ private struct SliderBar: View {
         guard let cache = state.selectedCache else { return "Kein Cache gewählt" }
         var text = "Gewählter Cache: \(cache.name), \(cache.code), Größe \(cache.container.title), "
             + "Schwierigkeit \(CacheSummary.rating(cache.difficulty)), Gelände \(CacheSummary.rating(cache.terrain))"
-        if let here = state.location.coordinate {
-            text += ", Entfernung \(Format.distance(here.distance(to: cache.target)))"
+        if let here = state.location.coordinate, let target = state.target {
+            text += ", Entfernung \(Format.distance(here.distance(to: target.coordinate)))"
+            if target.isWaypoint { text += " zum Wegpunkt \(target.name)" }
         }
         return text
     }
@@ -438,6 +440,10 @@ private struct SliderCacheInfo: View {
                                     .monospacedDigit()
                                     .accessibilityLabel(cache.target.formatted)
                                 Text(cache.code)
+                                // the chosen waypoint, which the compass and the arrows point to
+                                if let target = state.target, target.isWaypoint {
+                                    Text("Ziel: \(target.name) (\(target.code))")
+                                }
                                 if let date = lastFound {
                                     Text("Zuletzt gefunden: "
                                          + date.formatted(.dateTime.day(.twoDigits).month(.twoDigits).year(.twoDigits)))

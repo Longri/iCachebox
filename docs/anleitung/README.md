@@ -42,7 +42,8 @@ Die Knöpfe funktionieren wie in Cachebox:
 - **Lange drücken** öffnet das Menü mit allen Funktionen des Knopfs, egal welche Ansicht gerade zu sehen ist.
 
 Ist ein Filter in der Cacheliste gesetzt, ist der Cacheliste-Knopf **rot**. Ausgegraute Einträge im Menü gibt es
-noch nicht (siehe „Noch nicht enthalten“).
+noch nicht (siehe „Noch nicht enthalten“). Wie viel in den Menüs steht, bestimmt der **Funktionsumfang**
+(siehe unten): im voreingestellten „Standard“ fehlen selten gebrauchte Einträge wie „Tracks“ ganz.
 
 Während du tippst (Suche, Import), verschwinden die Knöpfe hinter der Tastatur.
 
@@ -187,8 +188,9 @@ Menü des Knopfs oder per Wischen (nach rechts Wegpunkte, nach unten Logs):
 - **Beschreibung:** Typ, Owner, Schwierigkeit und Gelände, Größe, Koordinaten, Versteckdatum, Region,
   Favoritenpunkte, Trackables, die Attribute als Symbole (durchgestrichen = trifft nicht zu, Tippen zeigt den Text)
   und die Beschreibung des Owners. Links in der Beschreibung öffnen Safari.
-- **Wegpunkte:** Der Cache selbst und alle zusätzlichen Wegpunkte mit Typ, Koordinaten, Kommentar und Entfernung.
-  Wegpunkte mit verborgenen Koordinaten sind als solche markiert. Eigene Wegpunkte legst du hier an (siehe unten).
+- **Wegpunkte:** Der Cache selbst und alle zusätzlichen Wegpunkte mit Typ, Koordinaten, Beschreibung, Hinweis und
+  Entfernung. Wegpunkte mit verborgenen Koordinaten sind als solche markiert und ausgegraut. Ein Tipp auf eine Zeile
+  macht sie zum **Ziel** (siehe unten); eigene Wegpunkte legst du hier an.
 - **Logs:** Die Logs aus der GPX-Datei, die neuesten zuerst.
 - **Spoiler:** Spoilerbilder lädt iCacheBox noch nicht.
 
@@ -197,6 +199,26 @@ außerdem: auf der Karte zeigen, als gefunden markieren, Favorit, **Notiz bearbe
 nächsten Import erhalten bleibt), Koordinaten kopieren, im Browser öffnen und den Cache aus der Liste löschen.
 Hinweis und Notiz erreichst du über den Cache-Knopf auch von jeder anderen Ansicht aus (lange drücken, oder nach links
 wischen für die Notiz).
+
+### Wegpunkt als Ziel wählen
+
+![Wegpunkte mit Station 1 als Ziel](bilder/wegpunkte.png)
+
+Bei einem Multi läufst du nicht zu den Cache-Koordinaten, sondern von Station zu Station. Darum lässt sich – wie in
+Cachebox – ein **Wegpunkt als Ziel** wählen:
+
+- In der Ansicht **Wegpunkte** auf die Zeile des Wegpunkts tippen. Das **Fadenkreuz** rechts zeigt, welcher Punkt
+  gerade das Ziel ist. Ein Tipp auf die oberste Zeile **Cache** nimmt das Ziel wieder zurück auf den Cache
+  (im Knopf-Menü heißt derselbe Eintrag „Ziel: der Cache“).
+- Auf der **Karte** auf das Symbol des Wegpunkts tippen und in der Blase **Als Ziel** wählen. Das Ziel hat auf der
+  Karte denselben **roten Rahmen** wie der gewählte Cache.
+- Wegpunkte ohne Koordinaten – etwa ein Final, das erst noch berechnet werden muss – sind ausgegraut und lassen sich
+  nicht als Ziel wählen.
+
+Entfernung und Pfeil in der Leiste oben, der Kompass, die Pfeile am Kartenrand, „Navigieren“ und die Benachrichtigung
+bei Annäherung beziehen sich danach auf diesen Wegpunkt. Im Kompass stehen Symbol, Name und Koordinaten des
+Wegpunkts, darunter seine **Beschreibung** und sein Hinweis; den GC-Code des Caches zeigt er weiter mit an.
+Wählst du einen anderen Cache, ist wieder dieser selbst das Ziel.
 
 ### Wegpunkte anlegen und ändern
 
@@ -208,7 +230,8 @@ Für Multis und Mysteries legst du wie in Cachebox eigene Wegpunkte an:
   Cache-Knopfs). Der neue Wegpunkt beginnt an der Koordinate des Caches.
 - Auf der **Karte** im Menü **WP vom Kartenmittelpunkt** wählen. Der neue Wegpunkt liegt dann in der Mitte des
   Kartenausschnitts.
-- **Lange drücken** auf einen Wegpunkt bietet **Anzeigen**, **Ändern** und – bei eigenen Wegpunkten – **Löschen**.
+- **Lange drücken** auf einen Wegpunkt bietet **Anzeigen**, **Ändern**, **Als Ziel wählen** und – bei eigenen
+  Wegpunkten – **Löschen**.
 
 Im Fenster stehen oben der Cache und der gelbe **Koordinaten-Knopf**, darunter der **Typ** (Referenzpunkt, Station,
 Parkplatz, Final …; bei einer Station zusätzlich „Start“), **Titel**, **Beschreibung** und **Hinweis**. Der Titel ist
@@ -224,6 +247,26 @@ Cachebox beginnt die Eingabe bei den Nachkommastellen der Breite, springt danach
 Grad – so tippst du bei einer Station in der Nähe meist nur die letzten Stellen. Ein Tipp auf **N/S** oder **E/W**
 wechselt die Halbkugel, ein Tipp auf eine Ziffer springt dorthin. Bei UTM kommen Ostwert, Nordwert, Zone und der
 Zonenbuchstabe (über die Tastatur) nacheinander.
+
+### Projektion und „Vom GPS“
+
+![Projektion](bilder/projektion.png)
+
+Diese beiden Wege stehen ab dem Funktionsumfang **Erweitert** in der Ansicht **Wegpunkte** und im Knopf-Menü:
+
+**Projektion** legt einen Wegpunkt an, der eine bestimmte Strecke in eine bestimmte Richtung vom Startpunkt entfernt
+liegt – so steht es oft im Listing („von Station 1 aus 250 Meter Richtung 135°“). Startpunkt ist der gewählte
+Wegpunkt, sonst der Cache; der gelbe Knopf oben zeigt ihn und lässt ihn mit einem Tipp ändern. Darunter gibst du
+**Richtung** in Grad (0 = Norden) und **Entfernung** in Metern ein; das Ergebnis steht sofort darunter. **OK** legt
+daraus einen Referenzpunkt an und macht ihn zum Ziel.
+
+![Position messen](bilder/vom-gps.png)
+
+**Vom GPS** misst deine eigene Position über mehrere Ortungen und mittelt sie – gedacht für den Moment, in dem du an
+der Dose stehst und die Koordinaten festhalten willst. Oben stehen die Zahl der Messungen und die Genauigkeit,
+darunter die gemittelte Koordinate; die Zeichnung zeigt, wie stark die Messungen streuen (die Kreise sind 2 und
+4 Meter). Wie in Cachebox verwirft iCacheBox nach jeder zehnten Messung Ausreißer, die mehr als drei Meter vom
+Mittelwert abweichen. Leg das iPhone hin, warte, bis sich die Koordinate beruhigt, und tippe dann **OK**.
 
 ## Offline-Karten
 
@@ -260,12 +303,18 @@ mit Koordinaten (etwa einen gelösten Mystery), steht er dort und bekommt das �
 Liste zählt dann ebenfalls bis dorthin.
 
 **Gewählter Cache:** Er hat einen roten Rahmen, ist immer groß und liegt obenauf. Dazu kommen seine zusätzlichen
-Wegpunkte (Parkplatz, Stationen, Final), soweit sie Koordinaten haben.
+Wegpunkte (Parkplatz, Stationen, Final), soweit sie Koordinaten haben. Ist einer davon das **Ziel**, trägt auch er
+den roten Rahmen.
 
 **Info-Blase:** Ein Tipp auf einen Cache – oder knapp daneben – öffnet seine Info-Blase: Art, GC-Code, Owner (bei
 Events auch das Datum), Koordinaten, mit Standort die Entfernung und darunter Größe, Schwierigkeit und Gelände als
 Symbole.
 **Auswählen** macht ihn zum gewählten Cache, der Info-Knopf öffnet seine Details.
+
+![Wegpunkt auf der Karte mit „Als Ziel“](bilder/karte-wegpunkt.jpg)
+
+**Wegpunkte auf der Karte:** Ein Tipp auf einen Wegpunkt zeigt Code und Typ, die Koordinaten, die Entfernung und
+seine Beschreibung samt Hinweis. **Als Ziel** macht ihn zum Navigationsziel; ist er es schon, steht dort nur „Ziel“.
 
 Die Karte springt zum Cache, wenn du einen anderen Cache wählst oder **Auf der Karte** nutzt: in der Liste nach
 rechts wischen, lange auf einen Cache oder die Leiste drücken oder im Cache-Menü **⋯ › Auf Karte zeigen**. Im
@@ -329,34 +378,55 @@ Höhenlinien: sonny.4lima.de.
 Den Kompass erreichst du über den Navigations-Knopf: nach rechts wischen oder antippen und **Kompass** wählen. Er
 sieht aus wie in Cachebox (Bild ganz oben):
 
-- **Oben** steht der gewählte Cache: Symbol und Name, die Koordinaten des Ziels und der GC-Code, darunter deine
+- **Oben** steht das Ziel: Symbol und Name, seine Koordinaten und der GC-Code, darunter deine
   eigene Position und die Höhe, die Größe als Buchstabe und Balken, Schwierigkeit (D) und Gelände (T) als Sterne,
-  wann er zuletzt gefunden wurde und seine Attribute. Passt nicht alles hin, lässt sich der Kasten scrollen.
+  wann der Cache zuletzt gefunden wurde und seine Attribute. Passt nicht alles hin, lässt sich der Kasten scrollen.
+  Ist ein **Wegpunkt** das Ziel, stehen oben sein Symbol, sein Name und seine Koordinaten, dazu „Wegpunkt von …“ und
+  seine Beschreibung.
 - **Darunter** die **Entfernung** zum Ziel und rechts daneben die Genauigkeit deiner Position.
 - **Der Kompass** dreht sich mit dem iPhone, sodass N immer nach Norden zeigt. Der Pfeil zeigt zum Ziel. Wie auf der
   Karte ist er **rot**, solange die Richtung vom Kompass kommt (im Stehen und langsam), und **türkis**, wenn sie aus
   deiner Bewegungsrichtung (GPS) kommt.
 
+![Kompass mit einem Wegpunkt als Ziel](bilder/kompass-wegpunkt.png)
+
 Ziel ist der gewählte Cache, bei korrigierten Koordinaten oder einem Final mit Koordinaten dieser Ort – derselbe,
-den die Karte zeigt.
+den die Karte zeigt. Hast du einen **Wegpunkt als Ziel** gewählt (siehe „Wegpunkt als Ziel wählen“), gilt dieser.
 
 **Ansicht anpassen:** Tippe bei offenem Kompass auf den Navigations-Knopf und wähle **Ansicht**. Dort schaltest du
-jedes Element einzeln an oder aus: Name, Symbol, Attribute, GC-Code, Koordinaten, eigene Position und Höhe, Sonne
-und Mond, Richtung zum Ziel (in Grad), Größe/Schwierigkeit/Gelände und „Zuletzt gefunden“. Die Wahl bleibt
+jedes Element einzeln an oder aus: Name, Symbol, Attribute, GC-Code, Koordinaten, **Wegpunktbeschreibung**, eigene
+Position und Höhe, Sonne und Mond, Richtung zum Ziel (in Grad), Größe/Schwierigkeit/Gelände und „Zuletzt gefunden“. Die Wahl bleibt
 gespeichert. **Sonne und Mond** stehen dann am Rand des Kompasses in ihrer Himmelsrichtung, solange sie über dem
 Horizont sind – praktisch, wenn der Kompass zwischen Gebäuden spinnt.
 
 **Navigieren:** Nach unten wischen über den Navigations-Knopf (oder **Navigieren** im Menü) öffnet Apple Karten mit
-einer Route zum gewählten Cache.
+einer Route zum Ziel – also zum gewählten Wegpunkt, sonst zum Cache.
 
 Im Querformat steht der Kasten links neben dem Kompass.
+
+## Funktionsumfang
+
+![Funktionsumfang wählen](bilder/funktionsumfang.png)
+
+Cachebox hat viele Funktionen – mehr, als man am Anfang braucht. Unter **Sonstiges › Mehr › Einstellungen ›
+Funktionsumfang** stellst du darum ein, wie viel in den Menüs steht:
+
+- **Standard** (voreingestellt): nur das, was man zum Suchen braucht – Liste, Filter, Import, Karte, Kompass,
+  Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen.
+- **Erweitert**: dazu **Projektion** und **Vom GPS**, „WP vom Kartenmittelpunkt“, **Nach Kompass ausrichten**,
+  die Theme-Auswahl, „Koordinaten kopieren“, „Im Browser öffnen“, „Caches löschen“ und „Aus der Liste löschen“.
+- **Expert**: alles, auch **Stil** und **Overlays** der Themes und die Einträge, die noch nicht gebaut sind
+  (Solver, Aktualisieren über die API, Foto, Video, Sprachnotiz).
+
+Die Einstellung blendet nur Menüeinträge ein und aus; an den Daten ändert sie nichts. In Cachebox gibt es dafür
+versteckte Schalter, die bestimmen, welche Einstellungen der Dialog zeigt.
 
 ## Benachrichtigung bei Annäherung
 
 ![Annäherung melden](bilder/annaeherung.png)
 
-Wie Cachebox meldet sich iCacheBox, wenn du dem **gewählten Cache** nahe kommst. Die Einstellungen stehen unter
-**Sonstiges › Mehr › Einstellungen › Annäherung**:
+Wie Cachebox meldet sich iCacheBox, wenn du dem **Ziel** nahe kommst – dem gewählten Cache oder seinem gewählten
+Wegpunkt. Die Einstellungen stehen unter **Sonstiges › Mehr › Einstellungen › Annäherung**:
 
 - **Benachrichtigung bei:** Aus, 2, 10, 25, 50, 100, 200, 500 oder 1.000 Meter – dieselben Stufen wie in Cachebox,
   voreingestellt sind 50 m. Unterschreitest du die Entfernung, kommt **einmal** eine Mitteilung mit Ton und
@@ -374,8 +444,8 @@ Beim ersten Mal fragt iCacheBox nach der Erlaubnis für Mitteilungen. Lehnst du 
 solange die App im Vordergrund ist; die Einstellungsseite zeigt dann einen Hinweis und führt in die
 iOS-Einstellungen.
 
-Ziel ist – wie bei Kompass und Karte – der gewählte Cache mit korrigierten Koordinaten beziehungsweise sein Final.
-Eine Benachrichtigung für einzelne Wegpunkte gibt es noch nicht, weil sich Wegpunkte noch nicht auswählen lassen.
+Ziel ist – wie bei Kompass und Karte – der gewählte Wegpunkt, sonst der Cache mit korrigierten Koordinaten
+beziehungsweise sein Final. Wechselst du das Ziel, fängt die Überwachung von vorn an.
 
 ## Fragen und Antworten
 
@@ -402,8 +472,8 @@ keine Caches. Ist die Datei beschädigt, nennt die Fehlermeldung die Zeile, an d
 ## Noch nicht enthalten
 
 Im Vergleich zu Cachebox für Android fehlen noch: Laden und Aktualisieren über die Geocaching-API, Spoilerbilder,
-die kleine Karte im Kompass, Wegpunkte als Ziel, die Kartenmodi WP, Lock und Car, Feldnotizen hochladen, Solver,
-Tracks, Trackables, Parkplatz, Foto, Video und Sprachnotiz, Projektion und „Vom GPS“ bei den Koordinaten, Schnell-Entwurf und automatisches Sortieren sowie eine
-eigene Auswahl der Zusatzknöpfe. Diese Einträge stehen in den Menüs und bei den Zusatzknöpfen schon ausgegraut an
-ihrem Platz. Den Tag-/Nachtmodus von Cachebox gibt es nicht; die Knöpfe und der Kompass bleiben auch im
+die kleine Karte im Kompass, die Kartenmodi WP, Lock und Car, Feldnotizen hochladen, Solver,
+Tracks, Trackables, Parkplatz, Foto, Video und Sprachnotiz, Schnell-Entwurf und automatisches Sortieren sowie eine
+eigene Auswahl der Zusatzknöpfe. Diese Einträge stehen – je nach Funktionsumfang – in den Menüs und bei den
+Zusatzknöpfen schon ausgegraut an ihrem Platz. Den Tag-/Nachtmodus von Cachebox gibt es nicht; die Knöpfe und der Kompass bleiben auch im
 dunklen Erscheinungsbild hell.

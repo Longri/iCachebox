@@ -11,6 +11,40 @@ struct MapFocus: Equatable {
     let id = UUID()
 }
 
+/// What the app navigates to: a chosen waypoint of the selected cache, else the cache itself (Cachebox
+/// `GlobalCore.getSelectedCoordinate`). The compass, the map arrow, the distances and the approach notification
+/// all use it.
+struct NavigationTarget: Equatable {
+    let coordinate: Coordinate
+    /// The chosen waypoint, if the target is one.
+    let waypoint: Waypoint?
+    let cache: CacheSummary
+
+    /// Name of the waypoint, else of the cache (Cachebox `CompassView`: `getTitleForGui`, else the cache name).
+    var name: String {
+        guard let waypoint else { return cache.name }
+        return waypoint.title.isEmpty ? waypoint.type.title : waypoint.title
+    }
+
+    /// Cachebox shows the GC code of the cache also for a waypoint; the waypoint has its own code besides.
+    var code: String { waypoint?.code ?? cache.code }
+
+    /// Icon of the waypoint type, else of the cache type (Cachebox `CompassView.setCache`).
+    var iconName: String {
+        waypoint?.type.iconName ?? cache.type.iconName(solved: cache.isSolved)
+    }
+
+    /// Description of the waypoint (Cachebox `CompassShowWpDesc`); a cache has none here.
+    var comment: String { waypoint?.comment ?? "" }
+
+    var clue: String { waypoint?.clue ?? "" }
+
+    var isWaypoint: Bool { waypoint != nil }
+
+    /// Tells targets apart for the approach notification.
+    var id: String { waypoint.map { $0.id } ?? cache.code }
+}
+
 /// App-wide UI state: the shown view and the selected cache (Cachebox: `ViewManager`, `GlobalCore.getSelectedCache`).
 @MainActor
 @Observable
@@ -22,6 +56,13 @@ final class AppState {
     private(set) var lastViews: [MainButton: MainView] = [:]
     /// The cache selected in the list; kept per cache list and selected again when the list is opened.
     private(set) var selectedCache: CacheSummary?
+    /// The chosen waypoint of the selected cache (Cachebox `GlobalCore.selectedWayPoint`): it becomes the
+    /// navigation target. Choosing another cache drops it, as in Cachebox.
+    private(set) var selectedWaypoint: Waypoint?
+    /// How much the menus offer (Mehr › Einstellungen › Funktionsumfang).
+    var featureLevel = FeatureLevel.saved {
+        didSet { featureLevel.save() }
+    }
     /// Where the map should go: set when the selection changes and by "Auf der Karte" (Cachebox `MapView`
     /// centers on a newly selected cache, too).
     private(set) var mapFocus: MapFocus?
@@ -45,6 +86,10 @@ final class AppState {
     var isTorchOn = false
     /// The waypoint shown in the `WaypointEditor` (Cachebox `EditWaypoint`).
     var waypointEditor: WaypointEditRequest?
+    /// Open projection of a new waypoint (Cachebox `ProjectionCoordinate`).
+    var projection: ProjectionRequest?
+    /// Open measurement of a new waypoint from the GPS fixes (Cachebox `MeasureCoordinate`).
+    var measuring: MeasureRequest?
     /// Asks before deleting a waypoint of the user (Cachebox `deleteWP`).
     var waypointToDelete: Waypoint?
     /// A waypoint could not be created or saved.
@@ -61,10 +106,40 @@ final class AppState {
         location.onPositionChanged = { [weak self] in self?.checkApproach() }
     }
 
-    /// Notifies when the selected cache is nearer than the set distance and, if asked for, shows the compass
+    /// Where compass, map arrows, distances and the approach notification point: the chosen waypoint of the
+    /// selected cache, else the cache itself (Cachebox `GlobalCore.getSelectedCoordinate`).
+    var target: NavigationTarget? {
+        guard let cache = selectedCache else { return nil }
+        if let waypoint = selectedWaypoint, let coordinate = waypoint.coordinate, coordinate.isValid {
+            return NavigationTarget(coordinate: coordinate, waypoint: waypoint, cache: cache)
+        }
+        return NavigationTarget(coordinate: cache.target, waypoint: nil, cache: cache)
+    }
+
+    /// Chooses a waypoint of the selected cache as the target, or the cache itself with `nil` (Cachebox
+    /// `GlobalCore.setSelectedWaypoint`). A waypoint without coordinates cannot be a target.
+    func selectWaypoint(_ waypoint: Waypoint?) {
+        guard waypoint?.cacheCode == nil || waypoint?.cacheCode == selectedCache?.code else { return }
+        selectedWaypoint = waypoint.flatMap { $0.coordinate?.isValid == true ? $0 : nil }
+        approach.reset()
+        checkApproach()
+        if let coordinate = selectedWaypoint?.coordinate {
+            mapFocus = MapFocus(coordinate: coordinate)
+        }
+    }
+
+    /// After the details were loaded again (edited, deleted or imported waypoints): keeps the target on the same
+    /// waypoint, with its new coordinates, and drops it when the waypoint is gone.
+    func refreshSelectedWaypoint() {
+        guard let chosen = selectedWaypoint else { return }
+        guard let waypoints = selectedDetails?.waypoints else { return }
+        selectedWaypoint = waypoints.first { $0.code == chosen.code && $0.coordinate?.isValid == true }
+    }
+
+    /// Notifies when the target is nearer than the set distance and, if asked for, shows the compass
     /// (Cachebox `switchViewApproach`).
     func checkApproach() {
-        guard approach.update(cache: selectedCache, here: location.coordinate) else { return }
+        guard approach.update(target: target, here: location.coordinate) else { return }
         if approach.options.switchesToCompass { show(.compass) }
     }
 
@@ -97,6 +172,8 @@ final class AppState {
         if cache.code != selectedCache?.code || view == .map {
             mapFocus = MapFocus(coordinate: cache.target, isExplicit: view == .map && !onMap)
         }
+        // another cache drops its predecessor's waypoint (Cachebox `setSelectedCache` → `setSelectedWaypoint(null)`)
+        if cache.code != selectedCache?.code { selectedWaypoint = nil }
         selectedCache = cache
         lists.rememberSelection(cache.code)
         checkApproach()
@@ -118,6 +195,7 @@ final class AppState {
         if let cache, cache.code != selectedCache?.code, !(isLaunch && MapCamera.saved != nil) {
             mapFocus = MapFocus(coordinate: cache.target)
         }
+        if cache?.code != selectedCache?.code { selectedWaypoint = nil }
         selectedCache = cache
         checkApproach()
     }

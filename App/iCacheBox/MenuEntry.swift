@@ -26,10 +26,13 @@ struct MenuEntry: Identifiable {
     /// Runs as soon as the entry is tapped. Other entries run once the popup has closed, because they may present a
     /// sheet or an alert, which UIKit refuses while the popup is still on screen.
     var runsImmediately = false
+    /// From which "Funktionsumfang" on the entry is shown (Mehr › Einstellungen).
+    var level: FeatureLevel = .standard
 
     init(_ title: String, systemImage: String? = nil, id: String? = nil, isDisabled: Bool = false,
          isChecked: Bool? = nil, role: ButtonRole? = nil, gesture: SwipeDirection? = nil,
-         keepsMenuOpen: Bool = false, runsImmediately: Bool = false, action: @escaping () -> Void) {
+         keepsMenuOpen: Bool = false, runsImmediately: Bool = false, level: FeatureLevel = .standard,
+         action: @escaping () -> Void) {
         self.id = id ?? title
         self.title = title
         self.systemImage = systemImage
@@ -40,15 +43,17 @@ struct MenuEntry: Identifiable {
         self.gesture = gesture
         self.keepsMenuOpen = keepsMenuOpen
         self.runsImmediately = runsImmediately
+        self.level = level
     }
 
     init(_ title: String, systemImage: String? = nil, id: String? = nil, isDisabled: Bool = false,
-         entries: [MenuEntry]) {
+         level: FeatureLevel = .standard, entries: [MenuEntry]) {
         self.id = id ?? title
         self.title = title
         self.systemImage = systemImage
         self.kind = .submenu(entries)
         self.isDisabled = isDisabled
+        self.level = level
     }
 
     /// A line between groups of entries; `id` must be unique within the menu.
@@ -60,6 +65,27 @@ struct MenuEntry: Identifiable {
 
     var isDivider: Bool {
         if case .divider = kind { true } else { false }
+    }
+}
+
+extension [MenuEntry] {
+    /// The entries of this "Funktionsumfang" (Mehr › Einstellungen): entries of a higher level are left out,
+    /// submenus are filtered as well and drop out when nothing is left, and lines that would end up at the start,
+    /// at the end or next to each other go too.
+    func shown(at level: FeatureLevel) -> [MenuEntry] {
+        var kept: [MenuEntry] = []
+        for entry in self where entry.level <= level {
+            var entry = entry
+            if case .submenu(let entries) = entry.kind {
+                let inner = entries.shown(at: level)
+                if inner.isEmpty { continue }
+                entry.kind = .submenu(inner)
+            }
+            if entry.isDivider, kept.last?.isDivider ?? true { continue }
+            kept.append(entry)
+        }
+        while kept.last?.isDivider == true { kept.removeLast() }
+        return kept
     }
 }
 

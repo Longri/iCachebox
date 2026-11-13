@@ -68,6 +68,8 @@ struct MapsforgeMapView: UIViewRepresentable {
     var onSelect: (CacheSummary) -> Void = { _ in }
     /// The details button in the info bubble of a cache.
     var onShowDetails: (CacheSummary) -> Void = { _ in }
+    /// "Als Ziel" in the info bubble of a waypoint (Cachebox `setSelectedWaypoint`).
+    var onSelectWaypoint: (Waypoint) -> Void = { _ in }
     /// The map came to rest at a new position (after panning, zooming or a jump).
     var onCameraChange: (MapCamera) -> Void = { _ in }
     /// The map center moved (also while panning); for the coordinates in the info panel.
@@ -109,6 +111,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         let c = context.coordinator
         c.onSelect = onSelect
         c.onShowDetails = onShowDetails
+        c.onSelectWaypoint = onSelectWaypoint
         c.onCameraChange = onCameraChange
         c.onCenterChange = onCenterChange
         c.onUserPan = onUserPan
@@ -162,6 +165,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         var centerID: UUID?
         var onSelect: (CacheSummary) -> Void = { _ in }
         var onShowDetails: (CacheSummary) -> Void = { _ in }
+        var onSelectWaypoint: (Waypoint) -> Void = { _ in }
         var onCameraChange: (MapCamera) -> Void = { _ in }
         var onCenterChange: (Coordinate) -> Void = { _ in }
         var onUserPan: () -> Void = {}
@@ -183,7 +187,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         private var markerSize = MarkerSize.large
         private let images = MarkerImages()
         /// Keeps the SwiftUI content of the open info bubble alive.
-        private var bubble: UIHostingController<CacheBubble>?
+        private var bubble: UIHostingController<AnyView>?
 
         // MARK: Markers
 
@@ -431,21 +435,33 @@ struct MapsforgeMapView: UIViewRepresentable {
 
         // MARK: Info bubble
 
-        /// The bubble content is built only for the tapped cache, not for every marker on the screen.
+        /// The bubble content is built only for the tapped marker, not for every one on the screen.
         func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
             guard let annotation = view.annotation as? MarkerAnnotation else { return }
-            guard let cache = annotation.marker.cache else {
+            let here = position?.coordinate
+            let host: UIHostingController<AnyView>
+            if let cache = annotation.marker.cache {
+                let content = CacheBubble(cache: cache, isSelected: annotation.marker.isSelected, here: here) {
+                    [weak self, weak mapView] in
+                    mapView?.deselectAnnotation(annotation, animated: true)
+                    self?.onSelect(cache)
+                }
+                host = UIHostingController(rootView: AnyView(content))
+            } else if let waypoint = annotation.marker.waypoint {
+                let coordinate = Coordinate(latitude: annotation.marker.latitude,
+                                            longitude: annotation.marker.longitude)
+                let content = WaypointBubble(waypoint: waypoint, coordinate: coordinate,
+                                             isTarget: annotation.marker.isTarget, here: here) {
+                    [weak self, weak mapView] in
+                    mapView?.deselectAnnotation(annotation, animated: true)
+                    self?.onSelectWaypoint(waypoint)
+                }
+                host = UIHostingController(rootView: AnyView(content))
+            } else {
                 view.detailCalloutAccessoryView = nil
                 view.rightCalloutAccessoryView = nil
                 return
             }
-            let here = position?.coordinate
-            let content = CacheBubble(cache: cache, isSelected: annotation.marker.isSelected, here: here) {
-                [weak self, weak mapView] in
-                mapView?.deselectAnnotation(annotation, animated: true)
-                self?.onSelect(cache)
-            }
-            let host = UIHostingController(rootView: content)
             host.safeAreaRegions = []   // near the screen edge SwiftUI would add the safe area as padding
             host.view.backgroundColor = .clear
             // a fixed size: with only an intrinsic size MapKit sometimes laid the callout out before SwiftUI had
@@ -456,9 +472,13 @@ struct MapsforgeMapView: UIViewRepresentable {
                                          host.view.heightAnchor.constraint(equalToConstant: ceil(size.height))])
             bubble = host
             view.detailCalloutAccessoryView = host.view
-            let details = UIButton(type: .detailDisclosure)
-            details.accessibilityLabel = "Details"
-            view.rightCalloutAccessoryView = details
+            if annotation.marker.cache != nil {
+                let details = UIButton(type: .detailDisclosure)
+                details.accessibilityLabel = "Details"
+                view.rightCalloutAccessoryView = details
+            } else {
+                view.rightCalloutAccessoryView = nil
+            }
         }
 
         func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {

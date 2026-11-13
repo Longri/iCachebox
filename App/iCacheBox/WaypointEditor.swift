@@ -308,6 +308,7 @@ struct CacheboxCheckBox: View {
 struct CacheboxTextField: View {
     @Binding var text: String
     var multiline = false
+    var keyboard: UIKeyboardType = .default
     let accessibilityLabel: String
     @FocusState private var focused: Bool
 
@@ -316,7 +317,7 @@ struct CacheboxTextField: View {
             if multiline {
                 TextField("", text: $text, axis: .vertical).lineLimit(1...8)
             } else {
-                TextField("", text: $text)
+                TextField("", text: $text).keyboardType(keyboard)
             }
         }
         .focused($focused)
@@ -351,14 +352,69 @@ extension AppState {
     }
 
     private func startNewWaypoint(of cache: CacheSummary, at coordinate: Coordinate) {
-        guard let database = lists.database(), let code = try? database.freeWaypointCode(cacheCode: cache.code) else {
-            waypointError = "Für \(cache.code) konnte kein Wegpunkt angelegt werden."
-            return
-        }
-        let waypoint = Waypoint(code: code, cacheCode: cache.code, title: code, type: .reference,
-                                coordinate: coordinate, isUserCreated: true)
+        guard let waypoint = newWaypoint(of: cache, at: coordinate) else { return }
         waypointEditor = WaypointEditRequest(waypoint: waypoint, cacheName: cache.name, showsCoordinateDialog: true,
                                              fallbackCoordinate: coordinate)
+    }
+
+    /// A reference point at `coordinate` with the next free code (Cachebox `createFreeGcCode`), not saved yet.
+    private func newWaypoint(of cache: CacheSummary, at coordinate: Coordinate, comment: String = "") -> Waypoint? {
+        guard let database = lists.database(), let code = try? database.freeWaypointCode(cacheCode: cache.code) else {
+            waypointError = "Für \(cache.code) konnte kein Wegpunkt angelegt werden."
+            return nil
+        }
+        return Waypoint(code: code, cacheCode: cache.code, title: code, comment: comment, type: .reference,
+                        coordinate: coordinate, isUserCreated: true)
+    }
+
+    /// Cachebox `WayPointsView.addProjection` (menu "Projektion"): projects from the chosen waypoint, else from the
+    /// cache, and without coordinates from the own position.
+    func startProjection() {
+        guard let cache = selectedCache else { return }
+        let from: Coordinate
+        let name: String
+        if let waypoint = selectedWaypoint, let coordinate = waypoint.coordinate, coordinate.isValid {
+            from = coordinate
+            name = waypoint.title.isEmpty ? waypoint.type.title : waypoint.title
+        } else if cache.target.isValid {
+            from = cache.target
+            name = cache.name
+        } else if let here = location.coordinate {
+            from = here
+            name = "Vom GPS"
+        } else {
+            waypointError = "Für die Projektion fehlt ein Startpunkt."
+            return
+        }
+        projection = ProjectionRequest(from: from, fromName: name)
+    }
+
+    /// Takes the projected point as a new waypoint and makes it the target (Cachebox `addProjection`, which writes
+    /// the waypoint straight into the database without the editor).
+    func saveProjection(_ coordinate: Coordinate) {
+        guard let cache = selectedCache,
+              let waypoint = newWaypoint(of: cache, at: coordinate, comment: "Projektion") else { return }
+        save(waypoint, asTarget: true)
+    }
+
+    /// Cachebox `WayPointsView.addMeasure` (menu "Vom GPS"): measures the own position and keeps the average.
+    func startMeasuring() {
+        guard selectedCache != nil else { return }
+        location.start()
+        measuring = MeasureRequest()
+    }
+
+    /// Takes the measured position as a new waypoint and makes it the target (Cachebox `addMeasure`).
+    func saveMeasured(_ coordinate: Coordinate) {
+        guard let cache = selectedCache,
+              let waypoint = newWaypoint(of: cache, at: coordinate, comment: "Gemessen") else { return }
+        save(waypoint, asTarget: true)
+    }
+
+    private func save(_ waypoint: Waypoint, asTarget: Bool) {
+        guard saveWaypoint(waypoint), asTarget else { return }
+        selectWaypoint(waypoint)
+        show(.waypoints)
     }
 
     /// Cachebox "Anzeigen" (`editWP(false)`) and "Ändern" (`editWP(true)`, with the coordinate input).
@@ -369,20 +425,25 @@ extension AppState {
                                              fallbackCoordinate: location.coordinate ?? cache.coordinate)
     }
 
-    func saveWaypoint(_ waypoint: Waypoint) {
+    @discardableResult
+    func saveWaypoint(_ waypoint: Waypoint) -> Bool {
         do {
             guard let database = lists.database() else { throw CocoaError(.fileNoSuchFile) }
             try database.saveUserWaypoint(waypoint)
         } catch {
             waypointError = "Der Wegpunkt konnte nicht gespeichert werden: \(error.localizedDescription)"
-            return
+            return false
         }
+        // the target keeps its new coordinates right away, before the details are read again
+        if selectedWaypoint?.code == waypoint.code { selectWaypoint(waypoint) }
         waypointsChanged()
+        return true
     }
 
-    /// Cachebox `deleteWP`, only for the user's waypoints.
+    /// Cachebox `deleteWP`, only for the user's waypoints; the target falls back to the cache.
     func deleteWaypoint(_ waypoint: Waypoint) {
         try? lists.database()?.deleteWaypoint(code: waypoint.code, cacheCode: waypoint.cacheCode)
+        if selectedWaypoint?.code == waypoint.code { selectWaypoint(nil) }
         waypointsChanged()
     }
 
@@ -396,13 +457,39 @@ extension AppState {
     }
 
     /// Context menu of the waypoint view (Cachebox `WayPointsView.getContextMenu`), followed by the cache menu.
+    /// Cachebox offers "Anzeigen", "Ändern" and "Löschen" for the chosen waypoint; here they are in the long-press
+    /// menu of each row as well, so that a waypoint can be changed without choosing it as the target first.
     func waypointEntries(_ cache: CacheSummary) -> [MenuEntry] {
-        [
+        var entries: [MenuEntry] = []
+        if let waypoint = selectedWaypoint {
+            entries += [
+                MenuEntry("Anzeigen", systemImage: "eye") { [weak self] in
+                    self?.editWaypoint(waypoint, showsCoordinateDialog: false)
+                },
+                MenuEntry("Ändern", systemImage: "pencil") { [weak self] in
+                    self?.editWaypoint(waypoint, showsCoordinateDialog: true)
+                },
+            ]
+            if waypoint.isUserCreated {
+                entries.append(MenuEntry("Löschen", systemImage: "trash", role: .destructive) { [weak self] in
+                    self?.waypointToDelete = waypoint
+                })
+            }
+            entries.append(MenuEntry("Ziel: der Cache", systemImage: "scope", runsImmediately: true) {
+                [weak self] in self?.selectWaypoint(nil)
+            })
+            entries.append(.divider("add"))
+        }
+        entries += [
             MenuEntry("Wegpunkt hinzufügen", systemImage: "plus.circle") { [weak self] in self?.addWaypoint() },
-            // TODO: Projektion und Messen vom GPS (Cachebox `addProjection`, `addMeasure`)
-            MenuEntry("Projektion", systemImage: "arrow.up.right.circle", isDisabled: true) {},
-            MenuEntry("Vom GPS", systemImage: "location.circle", isDisabled: true) {},
+            MenuEntry("Projektion", systemImage: "arrow.up.right.circle", level: .advanced) { [weak self] in
+                self?.startProjection()
+            },
+            MenuEntry("Vom GPS", systemImage: "location.circle", level: .advanced) { [weak self] in
+                self?.startMeasuring()
+            },
             .divider("cache"),
-        ] + cacheEntries(cache)
+        ]
+        return entries + cacheEntries(cache)
     }
 }

@@ -68,6 +68,21 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `CacheAttributes.swift` (Attribut-Icons wie Cachebox `DescriptionViewControl`: zutreffende zuerst, dann nicht
     zutreffende, Tipp zeigt Text; `Assets.xcassets/Attributes` = `att_<Cachebox-Ordinal>_1/_0`, GC 71/72 → 68/71;
     fehlt ein `_0`-Icon, wird das `_1`-Icon durchgestrichen, Cachebox lässt es weg)
+  - Wegpunkt als Ziel, Projektion und Messen (wie Cachebox `GlobalCore.setSelectedWaypoint`, `ProjectionCoordinate`,
+    `MeasureCoordinate`): `AppState.selectedWaypoint`/`target` (`NavigationTarget` = Koordinate, Name, Code, Icon,
+    Beschreibung; Cachebox `getSelectedCoordinate`), `selectWaypoint`/`refreshSelectedWaypoint`; Ziel wählen durch
+    Tippen einer Wegpunktzeile (`CacheDetailView`), über `WaypointBubble` auf der Karte (`MapMarkers.swift`,
+    roter Rahmen am Ziel) und im Knopf-Menü („Ziel: der Cache“). `ProjectionEditor.swift` (Richtung/Entfernung vom
+    gewählten Wegpunkt, sonst vom Cache; `Coordinate.projected(bearing:distance:)` in `Geo.swift` = Cachebox
+    `Coordinate.project`), `MeasureView.swift` (`MeasuredPositions` mittelt die Fixes und verwirft wie Cachebox
+    `clearDiscordantValue` alle 10 Messungen Ausreißer > 3 m; `LocationModel.fixCount` zählt die Fixes, weil
+    `coordinate` sich bei festem Ort nicht ändert). Kompass, Karte, Leiste, „Navigieren“ und Annäherung zielen auf
+    `AppState.target`
+  - Funktionsumfang (Cachebox `SettingsShowExpert`/`SettingsShowAll`, dort versteckt): `FeatureLevel.swift`
+    (`standard`/`advanced`/`expert`, UserDefaults `settings.featureLevel`), `MenuEntry.level` +
+    `[MenuEntry].shown(at:)` filtert die Menüs (auch Untermenüs und übrige Trennlinien), `MainAction.level` die
+    Knopf-Funktionen; Einstellung in `SettingsView`. „Ansicht“ im Kompass-Menü bleibt auf jeder Stufe, sonst hätte
+    der Knopf drei Punkte ohne Menü
   - Wegpunkt anlegen/ändern (wie Cachebox `EditWaypoint`/`EditCoord`): `WaypointEditor.swift` (Sheet: Cache-Name,
     Koordinaten-Knopf gelb wie `CoordinateButton`, Langdruck Kopieren/Einfügen, Typ-„Spinner“ mit Auswahldialog, „Start“
     nur bei Station, Titel/Beschreibung/Hinweis, OK/Abbruch; `AppState.addWaypoint`/`addWaypointAtMapCenter`/
@@ -199,7 +214,7 @@ kommen Karte, Theme, Stil, Mitte und Zoom wieder; die gemerkte Auswahl verschieb
 Im Simulator geprüft (301 Caches, Lasttest 5117 Caches bei z9 alle sichtbar). Nicht geprüft: Flüssigkeit mit
 tausenden sichtbaren Annotationen auf echtem Gerät. Nicht übernommen: Startwegpunkt von Multi/Mystery (Modell hat
 keinen), Cachebox-Optionen „eigene Funde ausblenden“, „alle Wegpunkte“, „Originalposition“, Namen/D/T-Sterne an
-den Symbolen, Distanzkreis, Wegpunkt-Auswahl.
+den Symbolen, Distanzkreis.
 
 Eigene Position, GPS/Free und Infofeld (seit 11.11.2026, wie Cachebox): Pfeil in Blickrichtung, Knopf GPS (grüne
 LED, Karte folgt) / Free (LED aus, nach Verschieben mit einem Finger; Tipp springt zur Position), Infofeld mit
@@ -216,11 +231,11 @@ OAM-Karten und Themes lädt in Cachebox der Nutzer selbst.
 Knöpfe und Kompass (seit 11.11.2026, wie Cachebox; Website-Kachel „Kompass & Navigation“ kein „Coming Soon“ mehr):
 Die Tab-Leiste ist durch die fünf Cachebox-Knöpfe ersetzt
 (Bilder der Android-Version, Verhalten von `GestureButton`; Belegung siehe `MainButton.functions`, nicht gebaute
-Funktionen ausgegraut). Kompass mit Infokasten (Name/Symbol, Ziel-Koordinaten + GC-Code, eigene Position + Höhe,
+Funktionen ausgegraut). Kompass mit Infokasten (Name/Symbol des Ziels, Koordinaten + GC-Code, Wegpunktbeschreibung, eigene Position + Höhe,
 Richtung zum Ziel, S/D/T mit Cachebox-Sternen, zuletzt gefunden, Attribute), Entfernung + Genauigkeit, Rose dreht mit
 der Richtung, Pfeil rot/türkis wie auf der Karte, Sonne/Mond; Optionen über Knopf-Menü › Ansicht. Abweichungen:
-keine Minikarte (erster Schritt), keine Satellitenbalken (iOS liefert keine) und keine Wegpunktbeschreibung (keine
-Wegpunktauswahl), Ziel = `CacheSummary.target`; Kompass verkleinert sich unter das Entfernungsfeld statt es zu
+keine Minikarte (erster Schritt) und keine Satellitenbalken (iOS liefert keine); Ziel = `AppState.target`
+(gewählter Wegpunkt, sonst Cache); Kompass verkleinert sich unter das Entfernungsfeld statt es zu
 überlappen; Querformat mit Kasten links (Cachebox nur Hochformat); Kontextmenü der Wegpunkte/Logs/Spoiler = das der
 Beschreibung; Tag/Nacht und Beenden entfallen, „Mehr“ steht für About/Credits. Im Simulator geprüft (Antippen,
 zweites Antippen, Wischen in alle Richtungen, Langdruck, Menüs mit Untermenüs, Hinweis/Notiz/Teilen/Kartendownload
@@ -278,16 +293,42 @@ Wegpunkt anlegen, Koordinateneingabe, gedrehte Karte).
 
 Annäherung melden (seit 13.11.2026, wie Cachebox `SoundApproachDistance`): Mehr › Einstellungen › Annäherung mit
 Entfernung (Cachebox-Stufen, Standard 50 m), „Auch bei gesperrtem Bildschirm“ und „Auf Kompass umschalten“
-(Cachebox `switchViewApproach`). Unterschreitet der gewählte Cache die Entfernung, kommt einmal eine lokale
-Mitteilung mit Ton und Vibration (Name, GC-Code, Entfernung); Berechtigung wird gefragt, sobald wirklich ein Cache
-überwacht wird. Abweichungen: statt Cachebox-Sounds (GPL) der Systemton, keine Lautstärke-Einstellung, kein
-Wegpunkt als Ziel (keine Wegpunktauswahl), Wiederholung nach Verlassen des Kreises (+20 m) statt nur bei neuer
+(Cachebox `switchViewApproach`). Unterschreitet das Ziel (gewählter Wegpunkt, sonst Cache) die Entfernung, kommt
+einmal eine lokale Mitteilung mit Ton und Vibration (Name, GC-Code, Entfernung); Berechtigung wird gefragt, sobald
+wirklich ein Ziel überwacht wird. Abweichungen: statt Cachebox-Sounds (GPL) der Systemton, keine
+Lautstärke-Einstellung, Wiederholung nach Verlassen des Kreises (+20 m) statt nur bei neuer
 Auswahl, Hintergrund nur solange die App läuft (iOS beendet sie im App-Umschalter; kein Region-Monitoring und kein
 „Immer“-Standort, damit die App-Prüfung bei Apple einfach bleibt – `UIBackgroundModes` = `location` wie bei anderen
 Navigations-Apps, abschaltbar und im Zwecktext erklärt). Im Simulator geprüft (Vordergrund, Hintergrund,
 gesperrter Bildschirm, nur einmal pro Annäherung, erneut nach Entfernen, alle Stufen inkl. „Aus“, Auswahl eines
 Caches im Umkreis bleibt still, Berechtigungsdialog). Nicht geprüft: echtes Gerät, Akkuverbrauch mit
 Hintergrundverfolgung, verweigerte Mitteilungen (nur Vibration), iPad, VoiceOver.
+
+Wegpunkt als Ziel, Projektion und „Vom GPS“ (seit 13.11.2026, wie Cachebox; Website-Wunsch „Multis besser
+bearbeiten“ damit erledigt): Ein Tipp auf eine Wegpunktzeile macht sie zum Ziel (Fadenkreuz in der Zeile), die
+oberste Zeile „Cache“ nimmt es zurück; auf der Karte geht es über die Wegpunkt-Blase („Als Ziel“), die auch
+Beschreibung und Hinweis zeigt. Das Ziel gilt für Kompass (Symbol, Name, Koordinaten und Beschreibung des
+Wegpunkts, neues Ansicht-Element „Wegpunktbeschreibung“ = Cachebox `CompassShowWpDesc`), Karte (roter Rahmen,
+Randpfeil, Infofeld), Leiste, „Navigieren“ und Annäherung. „Projektion“ und „Vom GPS“ legen ab Funktionsumfang
+„Erweitert“ neue Referenzpunkte an und wählen sie als Ziel (wie Cachebox ohne Editor, Kommentar „Projektion“ bzw.
+„Gemessen“). Abweichungen: Cachebox wählt die Zeile aus und zeigt „Anzeigen/Ändern/Löschen“ nur für die gewählte –
+hier stehen sie zusätzlich im Langdruck-Menü jeder Zeile; Wegpunkte ohne Koordinaten (unberechnetes Final) lassen
+sich nicht als Ziel wählen; Projektion nur als `projection` (Kreis und Punkt-zu-Punkt nutzt Cachebox nur im Solver),
+Systemtastatur statt `NumPad`, nur Meter; beim Messen keine Satellitenbalken, dafür die Genauigkeit; das Ziel wird
+nicht über den App-Start hinweg gemerkt (wie Cachebox). Im Simulator geprüft (Ziel wählen in Liste und Karte,
+zurück auf den Cache, Kompass/Leiste/Infofeld/Randpfeil folgen, Projektion von Station 1 aus (60°/100 m und
+135°/250 m nachgerechnet), Messen mit festem Ort, Anlegen + Auswahl des neuen Punkts, Löschen des Ziels, Neustart).
+Nicht geprüft: echtes Gerät, streuende Messungen unter freiem Himmel, iPad, VoiceOver, Querformat.
+
+Funktionsumfang Standard/Erweitert/Expert (seit 13.11.2026, nicht in Cachebox sichtbar): Mehr › Einstellungen ›
+Funktionsumfang blendet Menüeinträge stufenweise ein. Standard = Suchen (Liste, Filter, Import, Karte, Kompass,
+Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen), Erweitert = dazu Projektion, Vom GPS,
+WP vom Kartenmittelpunkt, Nach Kompass ausrichten, Theme-Auswahl, Koordinaten kopieren, Im Browser öffnen, Caches
+löschen, Aus der Liste löschen, Tracks/Parkplatz/Trackables (ausgegraut), Expert = alles (Stil, Overlays,
+Aktualisieren, Solver, Foto, Video, Sprachnotiz). Im Simulator geprüft (alle drei Stufen, Knopf- und ⋯-Menüs,
+Wegpunkt-Knöpfe, Neustart behält die Stufe). Nicht geprüft: echtes Gerät, VoiceOver.
+Anleitung samt Screenshots am 13.11.2026 erneut nachgezogen (Wegpunkt als Ziel, Projektion, Vom GPS,
+Funktionsumfang, Kompass mit Wegpunkt, Wegpunkt-Blase auf der Karte).
 
 Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
 Nachtmodus, Kachel-Cache auf Platte, Kartenrotation mit
