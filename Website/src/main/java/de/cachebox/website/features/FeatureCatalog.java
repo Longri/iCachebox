@@ -63,7 +63,7 @@ public final class FeatureCatalog {
                     new Feature("karte-21", "Infofeld mit Kompass, Entfernung zum Cache, Tempo und Koordinaten", true),
                     new Feature("karte-22", "Karte zoomen und Maßstab anzeigen", true),
                     new Feature("karte-23", "Gewählten Cache auf der Karte zeigen", true),
-                    new Feature("karte-24", "Karte nach Kompass ausrichten", false),
+                    new Feature("karte-24", "Karte nach Kompass ausrichten", true),
                     new Feature("karte-25", "Wegpunkt in der Kartenmitte anlegen", true),
                     new Feature("karte-26", "Ort oder Adresse suchen und auf der Karte anzeigen", false),
                     new Feature("karte-27", "Live-Karte: Caches beim Verschieben über die Geocaching-API nachladen", false),

@@ -29,7 +29,8 @@ struct ContentView: View {
             if let renderer = model.renderer {
                 MapsforgeMapView(renderer: renderer, center: model.center, markers: markers,
                                  location: state.location, target: state.selectedCache?.target,
-                                 followsPosition: mapState == .gps, chromeInsets: chromeInsets,
+                                 followsPosition: mapState == .gps, alignsToHeading: model.alignsToCompass,
+                                 chromeInsets: chromeInsets,
                                  onSelect: { state.select($0, show: .map, onMap: true) },
                                  onShowDetails: { state.select($0) },
                                  onCameraChange: { model.cameraChanged($0) },
@@ -237,6 +238,11 @@ final class MapModel {
     @ObservationIgnored var visibleCenter: Coordinate?
     /// Short message over the map, e.g. when no map covers the selected cache; hidden after a few seconds.
     var notice: String?
+    /// The map turns with the heading, so that the direction the user looks or moves points up (Cachebox
+    /// `MapViewBase.setAlignToCompass`, setting `MapNorthOriented` inverted, default off).
+    var alignsToCompass = UserDefaults.standard.bool(forKey: Keys.alignToCompass) {
+        didSet { UserDefaults.standard.set(alignsToCompass, forKey: Keys.alignToCompass) }
+    }
 
     let language = Locale.current.language.languageCode?.identifier ?? "en"
     private var generation = 0
@@ -261,6 +267,7 @@ final class MapModel {
         static let theme = "map.theme"
         static let style = "map.style"
         static let overlays = "map.overlays"
+        static let alignToCompass = "map.alignToCompass"
     }
 
     /// Starts with the map, theme, style and overlays of the last session (Cachebox `currentMapLayer`, theme and

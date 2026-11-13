@@ -84,6 +84,12 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `Assets.xcassets/CacheboxMap` = `small1…7`, `star`); `MapsforgeMapView.Coordinator` gleicht Annotationen per ID ab,
     baut die Blase erst bei Auswahl, Tipp neben ein Symbol wählt das nächste (≤ 30 pt). Position: `CacheSummary.target`
     (korrigiert, sonst Final mit Koordinaten – `summaries()` holt `finalCoordinate`), auch für Listen-Entfernungen
+  - Karte nach Kompass ausrichten (Cachebox `MapViewBase.setAlignToCompass`, Kartenmenü „AlignToCompass“):
+    `MapModel.alignsToCompass` (UserDefaults `map.alignToCompass`, Cachebox `MapNorthOriented` umgekehrt), Eintrag in
+    `AppState.mapEntries`; `MapsforgeMapView.alignsToHeading` → `Coordinator.alignToHeading` setzt
+    `camera.heading` = `LocationModel.heading` ohne Animation (ab 0,5° Abweichung), auch in Free, um die Kartenmitte;
+    solange an: Drehgeste und `MKCompassButton` aus (`CacheMapView.showsCompassButton`), aus → animiert nach Norden.
+    Labels drehen mit (wie Cachebox)
   - Letzte Karte: `MapModel` merkt Karte/Theme/Stil/Overlays (Pfad relativ zum Quellordner, UserDefaults `map.*`),
     `MapCamera` Mitte + Kachel-Zoom; `CacheMapView.setCenter(_:zoomLevel:)` korrigiert, weil MapKit
     `setVisibleMapRect` in die Safe Area einpasst (auch `centerCoordinate`/`setCenter` meinen die Mitte der Safe Area)
@@ -234,7 +240,6 @@ Info nur so hoch wie nötig; Zusatzknöpfe nicht konfigurierbar; Statusleisten-B
 schwarz. Im Simulator geprüft (Ziehen in alle Stufen und zurück, Antippen/Langdruck der Leiste, Hinweis/Logs über
 Zusatzknöpfe, Log-Farben, Zoomen bis 6 und 21, schnelle Mehrfach-Tipps, Verblassen, Hoch-/Querformat und zurück,
 hell/dunkel). Nicht geprüft: echtes Gerät, iPad, VoiceOver, sehr schmale Breiten (Zusatzknöpfe scrollen dann).
-Anleitungs-Screenshots zeigen noch die alte Leiste unten.
 
 Zoomen ohne schwarze Kacheln (seit 11.11.2026, wie Cachebox): im Simulator geprüft mit künstlich auf 1,5 s
 verlangsamtem Rendern (rein/raus über 3 Stufen, Theme-Wechsel, Dunkelmodus). Nicht geprüft: Speicher und
@@ -252,6 +257,13 @@ fokussierte Ziffer zusätzlich weiß umrandet, Minuten/Sekunden ≥ 60 und Breit
 Im Simulator geprüft (Min-Eingabe und Sprung, UTM hin/zurück, Zonenbuchstabe, ungültige Eingabe, Typwahl, Start,
 Speichern, Anzeigen, Löschen, Karte zeigt den Wegpunkt, Kartenmittelpunkt, Migration einer Version-1-Liste).
 Nicht geprüft: Einfügen aus der Zwischenablage im Simulator, Querformat, iPad, VoiceOver, echtes Gerät.
+
+Karte nach Kompass ausrichten (seit 13.11.2026, wie Cachebox): Kartenmenü bzw. Ebenen-Menü „Nach Kompass ausrichten“
+mit Häkchen, die Karte dreht mit der Richtung (Kompass im Stehen, GPS-Kurs in Bewegung), Pfeil zeigt nach oben.
+Abweichung: der Car-Modus fehlt weiter (er dreht in Cachebox immer, unter 20 km/h ohne neue Richtung). Im Simulator geprüft (simulierte Route mit GPS-Kurs, Ein/Aus, Zurückdrehen nach Norden, Zoomen,
+Neustart behält die Einstellung). Nicht geprüft: echter Kompass (Zittern, Querformat), echtes Gerät, Akku.
+Anleitung samt allen Screenshots am 13.11.2026 erneuert (Leiste oben, grüne Menüs, Zoom-Knöpfe, neu: Zusatzknöpfe,
+Wegpunkt anlegen, Koordinateneingabe, gedrehte Karte).
 
 Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
 Nachtmodus, Kachel-Cache auf Platte, Kartenrotation mit

@@ -59,6 +59,8 @@ struct MapsforgeMapView: UIViewRepresentable {
     var target: Coordinate?
     /// GPS mode: the map keeps the own position in the middle.
     var followsPosition = false
+    /// The map turns with the heading of the own position (Cachebox "Nach Kompass ausrichten").
+    var alignsToHeading = false
     /// Parts of the view covered by the info panel, the buttons and the bars; the edge arrows, the compass, the
     /// scale and the zoom buttons stay inside the rest.
     var chromeInsets = UIEdgeInsets.zero
@@ -115,6 +117,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         c.onTargetArrow = onTargetArrow
         // before the moves below: a jump caused by them must not be taken back by the GPS mode just left
         c.setFollowing(followsPosition)
+        c.setAligning(alignsToHeading, on: mapView)
         if mapView.chromeInsets != chromeInsets { mapView.chromeInsets = chromeInsets }
         if c.overlay?.renderer !== renderer {
             // new map/theme/style: replace the tile overlay (MapKit has no API to flush its tile cache)
@@ -147,6 +150,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         c.observe(location, on: mapView)
         c.target = target
         c.followPosition(on: mapView)
+        c.alignToHeading(on: mapView)
         c.refreshPositionViews(on: mapView)
     }
 
@@ -169,6 +173,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         private var position: OwnPosition?
         private var positionAnnotation: OwnPositionAnnotation?
         private var followsPosition = false
+        private var alignsToHeading = false
         /// Position the map was last centered on in GPS mode.
         private var followed: Coordinate?
         private var lastCenter: CLLocationCoordinate2D?
@@ -312,6 +317,7 @@ struct MapsforgeMapView: UIViewRepresentable {
             let moved = next?.coordinate != position?.coordinate
             updatePosition(next, on: mapView)
             followPosition(on: mapView)
+            alignToHeading(on: mapView)
             refreshPositionViews(on: mapView)
             if moved, let coordinate = next?.coordinate { onPositionChange(coordinate) }
         }
@@ -347,6 +353,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         func cameraApplied(on mapView: CacheMapView) {
             followed = nil
             followPosition(on: mapView)
+            alignToHeading(on: mapView)
         }
 
         /// GPS mode (Cachebox `MapState.GPS`): the map centers on every new position, keeping the zoom. Without
@@ -356,6 +363,39 @@ struct MapsforgeMapView: UIViewRepresentable {
                   !mapView.isSettingCamera else { return }
             followed = position.coordinate
             mapView.setCenter(position.clCoordinate, animated: false)
+        }
+
+        /// Switches "Nach Kompass ausrichten" on or off. While on, the heading turns the map, so the rotation
+        /// gesture and MapKit's compass button (which would turn it back to north) are off; the compass rose in the
+        /// info panel still shows north. Switched off, the map turns back to north (Cachebox: `mapHeading = 0`).
+        func setAligning(_ aligns: Bool, on mapView: CacheMapView) {
+            guard aligns != alignsToHeading else { return }
+            alignsToHeading = aligns
+            mapView.isRotateEnabled = !aligns
+            mapView.showsCompassButton = !aligns
+            if aligns {
+                alignToHeading(on: mapView)
+            } else if mapView.camera.heading != 0, !mapView.isSettingCamera {
+                let camera = mapView.camera.copy() as! MKMapCamera
+                camera.heading = 0
+                mapView.setCamera(camera, animated: true)
+            }
+        }
+
+        /// Turns the map so that the heading points up (Cachebox `MapViewBase.orientationChanged`: the camera
+        /// rotates by `mapHeading`, the position arrow then points up). Rotates around the middle of the map, also
+        /// in Free mode like Cachebox. Without a heading the map keeps its last rotation. Not animated: the compass
+        /// sends small steps (`headingFilter` 2°), and MapKit's animation would lag behind.
+        func alignToHeading(on mapView: CacheMapView) {
+            guard alignsToHeading, let heading = position?.heading, mapView.bounds.width > 0,
+                  !mapView.isSettingCamera else { return }
+            let current = mapView.camera.heading
+            var delta = (heading - current).truncatingRemainder(dividingBy: 360)
+            if delta < 0 { delta += 360 }
+            guard min(delta, 360 - delta) >= 0.5 else { return }
+            let camera = mapView.camera.copy() as! MKMapCamera
+            camera.heading = heading
+            mapView.setCamera(camera, animated: false)
         }
 
         /// Accuracy circle radius in points (Cachebox `pixelsPerMeter * accuracy`).
@@ -535,6 +575,10 @@ final class CacheMapView: MKMapView {
     private lazy var compassButton = MKCompassButton(mapView: self)
     private lazy var scaleView = MKScaleView(mapView: self)
     private let zoomButtons = ZoomButtonsView()
+    /// MapKit's compass button, shown while the map is rotated; hidden while the map follows the heading.
+    var showsCompassButton = true {
+        didSet { compassButton.compassVisibility = showsCompassButton ? .adaptive : .hidden }
+    }
     /// Called after a position set with `setCenter(_:zoomLevel:)` has been applied.
     var onCameraApplied: () -> Void = {}
     /// Parts covered by SwiftUI controls and bars.

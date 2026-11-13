@@ -20,6 +20,9 @@ Unten sitzen wie in Cachebox fünf Knöpfe. Jeder gehört zu einem Bereich mit m
 Der gewählte Cache steht oben als Leiste über jeder Ansicht. Ziehst du sie herunter, erscheinen darüber die
 **Zusatzknöpfe** (mehr dazu im Abschnitt „Der gewählte Cache und die Zusatzknöpfe“).
 
+Die Menüs sehen aus wie in Cachebox: ein grüner Kasten mit Titel, die Einträge als helle Felder, ein Häkchen
+vor dem, was eingeschaltet ist. Ein Pfeil `>` rechts öffnet ein Untermenü, `<` oben links führt zurück.
+
 ## Die fünf Knöpfe
 
 ![Menü des Navigations-Knopfs](bilder/menue.png)
@@ -143,6 +146,8 @@ angezeigten Caches aus der Liste. Ein erneuter Import holt sie zurück.
 
 ## Der gewählte Cache und die Zusatzknöpfe
 
+![Leiste heruntergezogen: Zusatzknöpfe und Cache-Info](bilder/slider.png)
+
 Wie in Cachebox gibt es immer einen gewählten Cache, mit dem du gerade unterwegs bist. Er steht oben als Leiste über
 jeder Ansicht:
 
@@ -183,7 +188,7 @@ Menü des Knopfs oder per Wischen (nach rechts Wegpunkte, nach unten Logs):
   Favoritenpunkte, Trackables, die Attribute als Symbole (durchgestrichen = trifft nicht zu, Tippen zeigt den Text)
   und die Beschreibung des Owners. Links in der Beschreibung öffnen Safari.
 - **Wegpunkte:** Der Cache selbst und alle zusätzlichen Wegpunkte mit Typ, Koordinaten, Kommentar und Entfernung.
-  Wegpunkte mit verborgenen Koordinaten sind als solche markiert.
+  Wegpunkte mit verborgenen Koordinaten sind als solche markiert. Eigene Wegpunkte legst du hier an (siehe unten).
 - **Logs:** Die Logs aus der GPX-Datei, die neuesten zuerst.
 - **Spoiler:** Spoilerbilder lädt iCacheBox noch nicht.
 
@@ -192,6 +197,33 @@ außerdem: auf der Karte zeigen, als gefunden markieren, Favorit, **Notiz bearbe
 nächsten Import erhalten bleibt), Koordinaten kopieren, im Browser öffnen und den Cache aus der Liste löschen.
 Hinweis und Notiz erreichst du über den Cache-Knopf auch von jeder anderen Ansicht aus (lange drücken, oder nach links
 wischen für die Notiz).
+
+### Wegpunkte anlegen und ändern
+
+![Wegpunkt anlegen](bilder/wegpunkt.png)
+
+Für Multis und Mysteries legst du wie in Cachebox eigene Wegpunkte an:
+
+- In der Ansicht **Wegpunkte** auf **Wegpunkt hinzufügen** tippen (dasselbe steht unter **⋯** und im Menü des
+  Cache-Knopfs). Der neue Wegpunkt beginnt an der Koordinate des Caches.
+- Auf der **Karte** im Menü **WP vom Kartenmittelpunkt** wählen. Der neue Wegpunkt liegt dann in der Mitte des
+  Kartenausschnitts.
+- **Lange drücken** auf einen Wegpunkt bietet **Anzeigen**, **Ändern** und – bei eigenen Wegpunkten – **Löschen**.
+
+Im Fenster stehen oben der Cache und der gelbe **Koordinaten-Knopf**, darunter der **Typ** (Referenzpunkt, Station,
+Parkplatz, Final …; bei einer Station zusätzlich „Start“), **Titel**, **Beschreibung** und **Hinweis**. Der Titel ist
+anfangs ein neuer Code wie „C0B119“. Langes Drücken auf den Koordinaten-Knopf kopiert die Koordinaten oder fügt
+welche aus der Zwischenablage ein. **OK** speichert, **Abbruch** verwirft.
+
+![Koordinaten eingeben](bilder/koordinaten.png)
+
+**Koordinaten eingeben:** Bei einem neuen Wegpunkt öffnet sich die Eingabe sofort, sonst mit einem Tipp auf den
+Koordinaten-Knopf. Oben wählst du das Format: **Dec** (Grad), **Min** (Grad und Minuten), **Sec** (Grad, Minuten,
+Sekunden) oder **UTM**. Jede Ziffer hat ein eigenes Feld; die grüne Ziffer ist die, die du gerade eingibst. Wie in
+Cachebox beginnt die Eingabe bei den Nachkommastellen der Breite, springt danach zu denen der Länge und dann zu den
+Grad – so tippst du bei einer Station in der Nähe meist nur die letzten Stellen. Ein Tipp auf **N/S** oder **E/W**
+wechselt die Halbkugel, ein Tipp auf eine Ziffer springt dorthin. Bei UTM kommen Ostwert, Nordwert, Zone und der
+Zonenbuchstabe (über die Tastatur) nacheinander.
 
 ## Offline-Karten
 
@@ -205,7 +237,8 @@ nötigen Speicherplatz. Der Download läuft weiter, wenn du die App verlässt; d
 Abspielsymbol setzt ihn fort. Mit der ersten Karte lädt iCacheBox das passende Design „Standard-Design V5“ mit.
 
 **Karte anzeigen:** Der Navigations-Knopf zeigt die **Karte**. Über das Ebenen-Symbol unter dem GPS-Knopf – oder im
-Menü des Navigations-Knopfs, wenn die Karte zu sehen ist – wählst du die Karte, das Theme und den Stil.
+Menü des Navigations-Knopfs, wenn die Karte zu sehen ist – wählst du die Karte, das Theme und den Stil, schaltest
+**Nach Kompass ausrichten** ein (siehe unten) oder legst einen Wegpunkt in der Kartenmitte an.
 Freizeitkarten bekommen automatisch ihr Design.
 
 **Zoomen und Maßstab:** Neben dem Zoomen mit zwei Fingern gibt es wie in Cachebox unten rechts zwei Knöpfe: links
@@ -265,6 +298,21 @@ Free; ein Tipp darauf sagt, wo du die Freigabe erteilst.
 - die **Entfernung** zum gewählten Cache und darunter deine **Geschwindigkeit**,
 - die **Koordinaten** der Kartenmitte. Das Symbol daneben sagt, woher sie kommen: Satellit für deine Position (GPS),
   Karte für die Mitte des Ausschnitts (Free).
+
+### Karte drehen
+
+![Karte nach Kompass ausgerichtet](bilder/karte-gedreht.jpg)
+
+Normalerweise ist Norden oben. Mit **Nach Kompass ausrichten** im Menü der Karte (Navigations-Knopf bei offener
+Karte antippen oder das Ebenen-Symbol) dreht sich die Karte wie in Cachebox mit dir: Was vor dir liegt, ist oben,
+und dein Pfeil zeigt immer nach oben. Die Richtung kommt wie beim Pfeil im Stehen vom Kompass und in Bewegung aus
+GPS. Wo Norden ist, zeigt dann der Kompass im Infofeld. Ein Häkchen im Menü zeigt, dass die Ausrichtung an ist;
+noch einmal antippen dreht die Karte zurück nach Norden. Die Einstellung bleibt auch nach einem Neustart.
+
+Die Drehung funktioniert in GPS und Free; die Karte dreht sich um ihre Mitte. Solange sie eingeschaltet ist, lässt
+sich die Karte nicht mit zwei Fingern drehen. Ohne Ausrichtung kannst du die Karte jederzeit mit zwei Fingern drehen;
+dann erscheint oben rechts eine kleine Kompassnadel, ein Tipp darauf stellt Norden wieder nach oben. Beschriftungen
+drehen sich wie in Cachebox mit der Karte.
 
 **Pfeile am Kartenrand:** Liegt deine Position außerhalb des sichtbaren Ausschnitts, zeigt ein **blauer Pfeil** am
 Rand in ihre Richtung; ein Tipp darauf springt zu dir und schaltet auf GPS. Ein **roter Pfeil** zeigt wie in
@@ -329,7 +377,7 @@ keine Caches. Ist die Datei beschädigt, nennt die Fehlermeldung die Zeile, an d
 
 Im Vergleich zu Cachebox für Android fehlen noch: Laden und Aktualisieren über die Geocaching-API, Spoilerbilder,
 die kleine Karte im Kompass, Wegpunkte als Ziel, die Kartenmodi WP, Lock und Car, Feldnotizen hochladen, Solver,
-Tracks, Trackables, Parkplatz, Foto, Video und Sprachnotiz, Schnell-Entwurf und automatisches Sortieren sowie eine
+Tracks, Trackables, Parkplatz, Foto, Video und Sprachnotiz, Projektion und „Vom GPS“ bei den Koordinaten, Schnell-Entwurf und automatisches Sortieren sowie eine
 eigene Auswahl der Zusatzknöpfe. Diese Einträge stehen in den Menüs und bei den Zusatzknöpfen schon ausgegraut an
 ihrem Platz. Den Tag-/Nachtmodus von Cachebox gibt es nicht; die Knöpfe und der Kompass bleiben auch im
 dunklen Erscheinungsbild hell.

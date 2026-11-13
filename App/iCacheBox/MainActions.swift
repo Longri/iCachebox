@@ -173,7 +173,8 @@ extension AppState {
         ]
     }
 
-    /// Map, theme, style and overlays (Cachebox `ShowMap.getContextMenu`: Layer, Renderthemes, overlays).
+    /// Map, theme, style and overlays, map rotation and a waypoint at the map center (Cachebox
+    /// `ShowMap.getContextMenu`: Layer, Renderthemes, overlays, AlignToCompass, CenterWP).
     var mapEntries: [MenuEntry] {
         let model = map
         var entries = [
@@ -203,9 +204,11 @@ extension AppState {
                 }))
             }
         }
-        // Cachebox `ShowMap.getContextMenu` › "CenterWP"
+        // Cachebox `ShowMap.getContextMenu` › "AlignToCompass", "CenterWP"
         entries += [
             .divider("waypoint"),
+            MenuEntry("Nach Kompass ausrichten", systemImage: "location.north.line", isChecked: model.alignsToCompass,
+                      runsImmediately: true) { model.alignsToCompass.toggle() },
             MenuEntry("WP vom Kartenmittelpunkt", systemImage: "mappin.and.ellipse", isDisabled: selectedCache == nil) {
                 [weak self] in self?.addWaypointAtMapCenter()
             },
