@@ -351,6 +351,32 @@ einer Route zum gewählten Cache.
 
 Im Querformat steht der Kasten links neben dem Kompass.
 
+## Benachrichtigung bei Annäherung
+
+![Annäherung melden](bilder/annaeherung.png)
+
+Wie Cachebox meldet sich iCacheBox, wenn du dem **gewählten Cache** nahe kommst. Die Einstellungen stehen unter
+**Sonstiges › Mehr › Einstellungen › Annäherung**:
+
+- **Benachrichtigung bei:** Aus, 2, 10, 25, 50, 100, 200, 500 oder 1.000 Meter – dieselben Stufen wie in Cachebox,
+  voreingestellt sind 50 m. Unterschreitest du die Entfernung, kommt **einmal** eine Mitteilung mit Ton und
+  Vibration; sie nennt Name, GC-Code und die Entfernung. Erst wenn du dich wieder entfernst (gut 20 m über die
+  eingestellte Grenze hinaus), meldet sie sich beim nächsten Mal erneut. Wählst du einen Cache, in dessen Umkreis
+  du schon stehst, bleibt es still.
+- **Auch bei gesperrtem Bildschirm:** Normalerweise hält iOS eine App im Hintergrund an, dann wird auch die
+  Entfernung nicht mehr geprüft. Mit dieser Einstellung verfolgt iCacheBox die Position weiter, solange die App
+  läuft – also auch in der Tasche und bei dunklem Bildschirm. iOS zeigt dafür oben die blaue Standortanzeige, und
+  es kostet Akku. Beendest du iCacheBox im App-Umschalter, endet auch die Überwachung.
+- **Auf Kompass umschalten:** Bei der Meldung wechselt die Ansicht auf den Kompass (Cachebox:
+  „Bei Annäherung auf Kompassansicht umschalten“, ebenfalls aus voreingestellt).
+
+Beim ersten Mal fragt iCacheBox nach der Erlaubnis für Mitteilungen. Lehnst du ab, vibriert das Gerät nur noch,
+solange die App im Vordergrund ist; die Einstellungsseite zeigt dann einen Hinweis und führt in die
+iOS-Einstellungen.
+
+Ziel ist – wie bei Kompass und Karte – der gewählte Cache mit korrigierten Koordinaten beziehungsweise sein Final.
+Eine Benachrichtigung für einzelne Wegpunkte gibt es noch nicht, weil sich Wegpunkte noch nicht auswählen lassen.
+
 ## Fragen und Antworten
 
 **Welche Version habe ich?**

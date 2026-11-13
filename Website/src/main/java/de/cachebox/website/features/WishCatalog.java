@@ -38,7 +38,7 @@ public final class WishCatalog {
                     "Online-Karten und weitere Kartenquellen nutzen und Orte suchen.",
                     List.of("karte-02", "karte-03", "karte-06", "karte-07", "karte-10", "karte-26")),
             new Wish("navigation", "Unterwegs leichter navigieren",
-                    "Zum Parkplatz zurückfinden, die Navigations-App wählen und Annäherungstöne nutzen.",
+                    "Zum Parkplatz zurückfinden, die Navigations-App wählen und Töne bei GPS-Verlust hören.",
                     List.of("navigation-11", "navigation-12", "navigation-13", "karte-24", "karte-28")),
             new Wish("logging", "Logs komfortabler schreiben",
                     "Schnellentwürfe, Textvorlagen und Bilder für persönliche Logs nutzen.",

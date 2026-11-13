@@ -72,6 +72,8 @@ private struct MainScreen: View {
             withAnimation(.easeOut(duration: 0.2)) { keyboardShown = false }
         }
         .task {
+            // the approach notification needs the position, also before a view asked for it
+            state.updateApproachWatching()
             await state.openList(state.lists.currentName)
         }
         // details of the selected cache for the cache views, the compass and the menus; again after a change of the

@@ -81,8 +81,9 @@ public final class FeatureCatalog {
                     new Feature("navigation-09", "Beschreibung des Ziel-Wegpunkts anzeigen", false),
                     new Feature("navigation-10", "Externe Navigation zum Ziel aufrufen (Apple Karten)", true),
                     new Feature("navigation-11", "Navigations-App wählen (Cachebox: Google Maps, OsmAnd, Waze …)", false),
-                    new Feature("navigation-12", "Ton bei Annäherung an den Cache, bei GPS-Verlust und -Empfang", false),
-                    new Feature("navigation-13", "Mein Parkplatz: Parkposition speichern, als Ziel wählen und löschen", false))),
+                    new Feature("navigation-12", "Ton bei GPS-Verlust und GPS-Empfang", false),
+                    new Feature("navigation-13", "Mein Parkplatz: Parkposition speichern, als Ziel wählen und löschen", false),
+                    new Feature("navigation-14", "Benachrichtigung bei Annäherung an den Cache, Entfernung einstellbar", true))),
             new Section("fieldnoteListIcon.png", "Loggen unterwegs",
                     "Funde, DNFs und Notizen als Entwurf festhalten und später in Ruhe hochladen.", List.of(
                     new Feature("loggen-01", "Log-Entwürfe anlegen: Gefunden, Nicht gefunden, Notiz, Wartung, Event, Webcam", false),

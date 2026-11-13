@@ -109,6 +109,16 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     (`CacheMapView.zoomRange`), schnelle Tipps addieren sich (`ZoomStep`: MapKit meldet während der Animation noch die
     alte Region, `camera` aber schon das Ziel – deshalb vom Ruhezustand aus gerechnet). Keine Render-Statistik mehr auf
     der Karte (Performance mit `mfdump bench` messen)
+  - Annäherung melden (Cachebox `SoundApproachDistance`/`switchViewApproach`, `GlobalLocationReceiver`):
+    `ApproachNotifier.swift` (`ApproachOptions` = Distanz wie `approachDistanceArray` (0 = aus, Standard 50 m),
+    Hintergrund, Kompass-Umschalten, UserDefaults `approach.*`; `ApproachNotifier.update` misst jeden Fix gegen
+    `CacheSummary.target`, meldet einmal je Annäherung wie `approachSoundCompleted`, setzt beim Auswahlwechsel wie
+    `resetApproach` zurück und – anders als Cachebox – auch beim Verlassen des Kreises (20 m Hysterese); statt
+    `Approach.ogg` eine lokale `UNNotificationRequest` mit Systemton + `UINotificationFeedbackGenerator`,
+    `willPresent` zeigt sie auch im Vordergrund), `SettingsView.swift` (Mehr › Einstellungen, grün wie die Liste),
+    `AppState.checkApproach`/`updateApproachWatching`, `LocationModel.onPositionChanged`/`setBackgroundUpdates`
+    (`allowsBackgroundLocationUpdates` + `pausesLocationUpdatesAutomatically = false` nur solange „Auch bei
+    gesperrtem Bildschirm“ an ist; dafür `UIBackgroundModes` = `location` in der Info.plist)
   - Kartendownload: `MapCatalog.swift` (Freizeitkarte-Repository-XML), `MapLibrary.swift` (Hintergrund-`URLSession`,
     MD5-Prüfung, Entpacken nach `Documents/Maps` bzw. `Documents/Themes`), `ZipArchive.swift`, `MapDownloadView.swift`
   - Version `1.0.0.<Commits>`: `MARKETING_VERSION` = 1.0.0, Build-Phase „Version aus Git“ (läuft nach der
@@ -120,7 +130,8 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     oben das Logo `CacheboxUI/ICacheBoxLogo` = Kopie von `Website/…/images/icachebox-logo.svg` ohne `<use>`
     (bei Änderungen nachziehen)
   - `App/iCacheBox-Info.plist` wird mit der generierten Info.plist zusammengeführt (ATS-Ausnahme nur für
-    `repository.freizeitkarte-osm.de`, der Katalog gibt es nur per HTTP; Dateien kommen per HTTPS)
+    `repository.freizeitkarte-osm.de`, der Katalog gibt es nur per HTTP; Dateien kommen per HTTPS;
+    `UIBackgroundModes` = `location` für die Annäherungsmeldung bei gesperrtem Bildschirm)
 - `TestData/` – Testdaten (nicht im Git):
   - `bremen.map`, `expected-bremen-tiles.json` aus `/Users/Shared/LongriShare/@Work/MapsforgeKit/resources/`
     (erzeugt mit mapsforge 0.21.0, Java-Referenz dort)
@@ -264,6 +275,19 @@ Abweichung: der Car-Modus fehlt weiter (er dreht in Cachebox immer, unter 20 km/
 Neustart behält die Einstellung). Nicht geprüft: echter Kompass (Zittern, Querformat), echtes Gerät, Akku.
 Anleitung samt allen Screenshots am 13.11.2026 erneuert (Leiste oben, grüne Menüs, Zoom-Knöpfe, neu: Zusatzknöpfe,
 Wegpunkt anlegen, Koordinateneingabe, gedrehte Karte).
+
+Annäherung melden (seit 13.11.2026, wie Cachebox `SoundApproachDistance`): Mehr › Einstellungen › Annäherung mit
+Entfernung (Cachebox-Stufen, Standard 50 m), „Auch bei gesperrtem Bildschirm“ und „Auf Kompass umschalten“
+(Cachebox `switchViewApproach`). Unterschreitet der gewählte Cache die Entfernung, kommt einmal eine lokale
+Mitteilung mit Ton und Vibration (Name, GC-Code, Entfernung); Berechtigung wird gefragt, sobald wirklich ein Cache
+überwacht wird. Abweichungen: statt Cachebox-Sounds (GPL) der Systemton, keine Lautstärke-Einstellung, kein
+Wegpunkt als Ziel (keine Wegpunktauswahl), Wiederholung nach Verlassen des Kreises (+20 m) statt nur bei neuer
+Auswahl, Hintergrund nur solange die App läuft (iOS beendet sie im App-Umschalter; kein Region-Monitoring und kein
+„Immer“-Standort, damit die App-Prüfung bei Apple einfach bleibt – `UIBackgroundModes` = `location` wie bei anderen
+Navigations-Apps, abschaltbar und im Zwecktext erklärt). Im Simulator geprüft (Vordergrund, Hintergrund,
+gesperrter Bildschirm, nur einmal pro Annäherung, erneut nach Entfernen, alle Stufen inkl. „Aus“, Auswahl eines
+Caches im Umkreis bleibt still, Berechtigungsdialog). Nicht geprüft: echtes Gerät, Akkuverbrauch mit
+Hintergrundverfolgung, verweigerte Mitteilungen (nur Vibration), iPad, VoiceOver.
 
 Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
 Nachtmodus, Kachel-Cache auf Platte, Kartenrotation mit

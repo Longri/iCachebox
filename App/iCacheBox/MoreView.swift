@@ -34,7 +34,12 @@ struct MoreView: View {
                 }
                 .cacheboxListRow(index: 2)
                 row("Schnellzugriffe", "rectangle.grid.1x2", index: 3)
-                row("Einstellungen", "gearshape", index: 4)
+                NavigationLink {
+                    SettingsView()
+                } label: {
+                    Label("Einstellungen", systemImage: "gearshape")
+                }
+                .cacheboxListRow(index: 4)
                 CacheboxDivider().cacheboxListDivider()
                 row("Hilfe", "questionmark.circle", index: 5)
                 Button {

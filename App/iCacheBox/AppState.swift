@@ -37,6 +37,8 @@ final class AppState {
     let map = MapModel()
     /// What the compass view shows (Cachebox `CompassShow…` settings).
     let compass = CompassOptions()
+    /// Notifies when the selected cache comes near (Cachebox `SoundApproachDistance`).
+    let approach = ApproachNotifier()
     /// Main button 3 › "Karten und Themes" shows the download as a sheet.
     var showMapDownload = false
     /// The torch is on (main button 5 › "Taschenlampe", Cachebox `SwitchTorch`).
@@ -55,6 +57,25 @@ final class AppState {
     init() {
         // whenever a list is (re)opened, also after an import, its remembered cache becomes the selection
         lists.onOpen = { [weak self] in self?.restoreSelection() }
+        // every fix is measured against the selected cache (Cachebox `GlobalLocationReceiver.positionChanged`)
+        location.onPositionChanged = { [weak self] in self?.checkApproach() }
+    }
+
+    /// Notifies when the selected cache is nearer than the set distance and, if asked for, shows the compass
+    /// (Cachebox `switchViewApproach`).
+    func checkApproach() {
+        guard approach.update(cache: selectedCache, here: location.coordinate) else { return }
+        if approach.options.switchesToCompass { show(.compass) }
+    }
+
+    /// Starts or stops watching the distance to the selected cache; called at launch and after a change of the
+    /// approach settings.
+    func updateApproachWatching() {
+        location.setBackgroundUpdates(approach.options.isOn && approach.options.worksInBackground)
+        if approach.options.isOn { location.start() }
+        // measure against the known position at once, so that a changed setting does not first have to wait for a
+        // fix — standing outside the circle now, the next approach notifies
+        checkApproach()
     }
 
     /// Shows a view and remembers it for its main button (Cachebox `CB_TabView.showView`).
@@ -78,6 +99,7 @@ final class AppState {
         }
         selectedCache = cache
         lists.rememberSelection(cache.code)
+        checkApproach()
         if let view { show(view) } else { showCacheDetails() }
     }
 
@@ -97,6 +119,7 @@ final class AppState {
             mapFocus = MapFocus(coordinate: cache.target)
         }
         selectedCache = cache
+        checkApproach()
     }
 
     /// Updates the selected cache after its flags changed in the list.

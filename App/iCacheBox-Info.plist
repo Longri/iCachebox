@@ -17,7 +17,13 @@
 		</dict>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>iCacheBox zeigt Entfernung und Richtung zu den Caches und sortiert die Cacheliste nach Entfernung.</string>
+	<string>iCacheBox zeigt Entfernung und Richtung zu den Caches, sortiert die Cacheliste nach Entfernung und meldet sich, wenn du dem gewählten Cache nahe kommst – auf Wunsch auch bei gesperrtem Bildschirm.</string>
+	<!-- Approach notification with the screen locked ("Mehr › Einstellungen › Annäherung"): iOS stops the position
+	     updates of a backgrounded app without this mode. It is only switched on while that setting is on. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<!-- "Open in iCacheBox" for GPX files and pocket query ZIPs (Files, Mail, Safari downloads). -->
 	<key>CFBundleDocumentTypes</key>
 	<array>

@@ -30,11 +30,16 @@ final class LocationModel: NSObject, CLLocationManagerDelegate {
     /// Below this speed the compass gives the heading (Cachebox setting `HardwareCompassLevel`, 5 km/h).
     static let compassSpeedLimit = 5.0 / 3.6
 
+    /// Called after every new fix (Cachebox `PositionChangedListeners`), for the approach notification.
+    @ObservationIgnored var onPositionChanged: (() -> Void)?
+
     @ObservationIgnored private let manager = CLLocationManager()
     /// Last heading of each source; −1/nil = none yet.
     @ObservationIgnored private var compassHeading: Double?
     @ObservationIgnored private var course: Double?
     @ObservationIgnored private var isUpdating = false
+    /// The approach notification asked for background updates; applied as soon as there is permission.
+    @ObservationIgnored private var wantsBackgroundUpdates = false
     @ObservationIgnored private let hasCompass = CLLocationManager.headingAvailable()
 
     override init() {
@@ -67,6 +72,21 @@ final class LocationModel: NSObject, CLLocationManagerDelegate {
         default:
             break
         }
+    }
+
+    /// Keeps the position updates running while the app is in the background, so that the approach notification
+    /// also comes with the screen locked (`ApproachOptions.worksInBackground`). Needs the background mode
+    /// `location` in `iCacheBox-Info.plist`; iOS shows its blue location indicator while this is on and stops the
+    /// updates again as soon as the user quits the app.
+    func setBackgroundUpdates(_ enabled: Bool) {
+        wantsBackgroundUpdates = enabled
+        let authorized = manager.authorizationStatus == .authorizedWhenInUse
+            || manager.authorizationStatus == .authorizedAlways
+        let value = enabled && authorized
+        guard manager.allowsBackgroundLocationUpdates != value else { return }
+        manager.allowsBackgroundLocationUpdates = value
+        // iOS may pause the updates for good when it thinks the user stopped moving
+        manager.pausesLocationUpdatesAutomatically = !value
     }
 
     /// The compass measures relative to the top of the device; in landscape the top of the screen is a side of
@@ -114,6 +134,7 @@ final class LocationModel: NSObject, CLLocationManagerDelegate {
                 self.updateHeading()
             }
             self.start()
+            self.setBackgroundUpdates(self.wantsBackgroundUpdates)
         }
     }
 
@@ -131,6 +152,7 @@ final class LocationModel: NSObject, CLLocationManagerDelegate {
             if self.altitude != altitude { self.altitude = altitude }
             self.course = course
             self.updateHeading()
+            self.onPositionChanged?()
         }
     }
 
