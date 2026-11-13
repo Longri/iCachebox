@@ -25,7 +25,7 @@ public class FeaturesView extends Page {
                         + "was iCachebox schon kann (Stand: 12. November 2026).");
 
         addClassName("features");
-        RouterLink vote = new RouterLink("Offene Funktionen priorisieren →", ComingSoonView.class);
+        RouterLink vote = new RouterLink("Für die nächsten Funktionspakete abstimmen →", ComingSoonView.class);
         vote.addClassName("button");
         addComponentAtIndex(2, vote);
         for (var section : FeatureCatalog.SECTIONS) {

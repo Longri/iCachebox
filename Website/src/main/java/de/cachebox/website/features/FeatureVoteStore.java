@@ -33,27 +33,52 @@ public class FeatureVoteStore {
                         feature_id VARCHAR(80) NOT NULL,
                         PRIMARY KEY (voter_id, feature_id))
                     """);
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS wish_votes (
+                        voter_id VARCHAR(36) NOT NULL,
+                        feature_id VARCHAR(80) NOT NULL,
+                        PRIMARY KEY (voter_id, feature_id))
+                    """);
         }
     }
 
+    public synchronized Set<String> wishChoices(String voter) throws SQLException {
+        return choices(voter, "wish_votes", WishCatalog.openIds());
+    }
+
+    public synchronized Map<String, Long> wishTotals() throws SQLException {
+        return totals("wish_votes", WishCatalog.openIds());
+    }
+
+    public synchronized void saveWishes(String voter, Collection<String> choices) throws SQLException {
+        save(voter, choices, "wish_votes", WishCatalog.openIds());
+    }
+
     public synchronized Set<String> choices(String voter) throws SQLException {
+        return choices(voter, "feature_votes", FeatureCatalog.openIds());
+    }
+
+    private Set<String> choices(String voter, String table, Set<String> open) throws SQLException {
         validateVoter(voter);
         Set<String> result = new HashSet<>();
-        try (var query = connection.prepareStatement("SELECT feature_id FROM feature_votes WHERE voter_id=?")) {
+        try (var query = connection.prepareStatement("SELECT feature_id FROM " + table + " WHERE voter_id=?")) {
             query.setString(1, voter);
             try (var rows = query.executeQuery()) {
                 while (rows.next()) result.add(rows.getString(1));
             }
         }
-        result.retainAll(FeatureCatalog.openIds());
+        result.retainAll(open);
         return Set.copyOf(result);
     }
 
     public synchronized Map<String, Long> totals() throws SQLException {
+        return totals("feature_votes", FeatureCatalog.openIds());
+    }
+
+    private Map<String, Long> totals(String table, Set<String> open) throws SQLException {
         Map<String, Long> result = new HashMap<>();
-        Set<String> open = FeatureCatalog.openIds();
         try (var query = connection.createStatement();
-             var rows = query.executeQuery("SELECT feature_id, COUNT(*) FROM feature_votes GROUP BY feature_id")) {
+             var rows = query.executeQuery("SELECT feature_id, COUNT(*) FROM " + table + " GROUP BY feature_id")) {
             while (rows.next()) {
                 String id = rows.getString(1);
                 if (open.contains(id)) result.put(id, rows.getLong(2));
@@ -63,18 +88,23 @@ public class FeatureVoteStore {
     }
 
     public synchronized void save(String voter, Collection<String> choices) throws SQLException {
+        save(voter, choices, "feature_votes", FeatureCatalog.openIds());
+    }
+
+    // table wird ausschließlich durch die festen Tabellennamen der öffentlichen Methoden bestimmt.
+    private void save(String voter, Collection<String> choices, String table, Set<String> open) throws SQLException {
         validateVoter(voter);
         Set<String> unique = Set.copyOf(choices);
-        if (unique.size() > MAX_CHOICES || !FeatureCatalog.openIds().containsAll(unique)) {
+        if (unique.size() > MAX_CHOICES || !open.containsAll(unique)) {
             throw new IllegalArgumentException("Bitte höchstens drei offene Funktionen auswählen.");
         }
         connection.setAutoCommit(false);
         try {
-            try (var delete = connection.prepareStatement("DELETE FROM feature_votes WHERE voter_id=?")) {
+            try (var delete = connection.prepareStatement("DELETE FROM " + table + " WHERE voter_id=?")) {
                 delete.setString(1, voter);
                 delete.executeUpdate();
             }
-            try (var insert = connection.prepareStatement("INSERT INTO feature_votes VALUES (?, ?)")) {
+            try (var insert = connection.prepareStatement("INSERT INTO " + table + " VALUES (?, ?)")) {
                 for (String feature : unique) {
                     insert.setString(1, voter);
                     insert.setString(2, feature);

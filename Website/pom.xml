@@ -137,6 +137,8 @@
                 <vaadin.dev.scope>test</vaadin.dev.scope>
             </properties>
             <build>
+                <!-- IntelliJ und lokale Starts behalten target/classes mit unkomprimierten Ressourcen. -->
+                <directory>${project.basedir}/target/production</directory>
                 <plugins>
                     <plugin>
                         <groupId>com.vaadin</groupId>

@@ -5,7 +5,7 @@
 #   Website/deploy.sh --dry-run  nur bauen und den Server prüfen (SSH, Verzeichnis, Dienst), nichts ändern
 #
 # Ablauf:
-#   1. mvn clean package -Pproduction, Jar in target/cachebox-website.jar umbenennen
+#   1. mvn clean package -Pproduction, Jar in target/production/cachebox-website.jar umbenennen
 #   2. Server prüfen – bricht ab, bevor auf dem Server etwas geändert wird
 #   3. Jar als ~/cachebox-website.jar.upload ins Home des SSH-Benutzers laden; der Dienst läuft noch
 #   4. Dienst stoppen, alte Jar → cachebox-website.jar.bak, neue Jar einsetzen, Dienst starten
@@ -56,11 +56,11 @@ step "Baue Produktions-Jar (mvn clean package -Pproduction)"
 mvn -B -q clean package -Pproduction || fail "Maven-Build fehlgeschlagen"
 
 shopt -s nullglob
-jars=(target/cachebox-website-*.jar)
+jars=(target/production/cachebox-website-*.jar)
 shopt -u nullglob
-[ "${#jars[@]}" -eq 1 ] || fail "erwartet genau eine Jar target/cachebox-website-*.jar, gefunden: ${jars[*]:-keine}"
-mv -f "${jars[0]}" "target/$JAR_NAME"
-JAR="$WEBSITE_DIR/target/$JAR_NAME"
+[ "${#jars[@]}" -eq 1 ] || fail "erwartet genau eine Jar target/production/cachebox-website-*.jar, gefunden: ${jars[*]:-keine}"
+mv -f "${jars[0]}" "target/production/$JAR_NAME"
+JAR="$WEBSITE_DIR/target/production/$JAR_NAME"
 
 # Nur eine Produktions-Jar hochladen (ohne -Pproduction fehlt das Frontend-Bundle)
 # (Spring Boot legt META-INF aus den Ressourcen an die Wurzel der Jar)

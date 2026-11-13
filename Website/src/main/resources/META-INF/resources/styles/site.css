@@ -375,3 +375,14 @@ a:focus-visible { outline: 3px solid var(--cb-orange); outline-offset: 2px; }
   .roadmap-position { flex-basis: 2.5ch; }
   .roadmap-votes { flex-basis: 6ch; font-size: 0.8rem; }
 }
+
+/* Kurze Wunschliste mit optionalen technischen Details. */
+.roadmap-essentials { margin: 20px 0; padding: 16px 20px; border-left: 4px solid var(--cb-green-dark); background: rgba(255,255,255,0.86); border-radius: 12px; }
+.roadmap-essentials h2 { margin-top: 0; }
+.roadmap-ranking { margin: 20px 0; }
+.roadmap-row { align-items: flex-start; }
+.roadmap-detail > p { margin: 4px 0 8px; color: var(--cb-ink-soft); }
+.roadmap-detail vaadin-checkbox::part(label) { font-weight: 700; }
+.roadmap vaadin-details { max-width: 100%; overflow-wrap: anywhere; }
+.roadmap ul { padding-inline-start: 22px; }
+.roadmap li { margin-block: 6px; }

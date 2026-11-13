@@ -10,12 +10,12 @@ Promotion-Website für [iCachebox](https://github.com/Longri/iCachebox) (Cachebo
 cd Website && mvn
 ```
 
-Danach http://localhost:8080 öffnen. Im Entwicklungsmodus wird kein Node.js benötigt.
+Danach http://localhost:8082 öffnen. Im Entwicklungsmodus wird kein Node.js benötigt.
 
 Produktions-Build (lädt Node.js bei Bedarf automatisch nach `~/.vaadin`):
 
 ```bash
-cd Website && mvn clean package -Pproduction && java -jar target/cachebox-website-1.0-SNAPSHOT.jar
+cd Website && mvn clean package -Pproduction && java -jar target/production/cachebox-website-1.0-SNAPSHOT.jar
 ```
 
 ## Auf den Server bringen
@@ -25,7 +25,7 @@ Website/deploy.sh            # bauen, hochladen, Cachebox.service neu starten
 Website/deploy.sh --dry-run  # nur bauen und den Server prüfen, nichts ändern
 ```
 
-Baut die Produktions-Jar, benennt sie in `target/cachebox-website.jar` um und lädt sie per SSH als `matrix-admin`
+Baut die Produktions-Jar, benennt sie in `target/production/cachebox-website.jar` um und lädt sie per SSH als `matrix-admin`
 auf `167.235.237.115` hoch (erst ins Home als `cachebox-website.jar.upload`, der Dienst läuft so lange weiter).
 Dann stoppt es `Cachebox.service`, sichert die alte Jar in `/Vaadin/iCacheboxWeb` als `cachebox-website.jar.bak`,
 setzt die neue ein und startet den Dienst; `systemctl` und das Tauschen laufen über `sudo` (fragt ggf. einmal nach
@@ -49,30 +49,33 @@ Die Startseite zeigt unten „Stand: …“ – die Build-Zeit aus `META-INF/bui
 - `src/main/resources/META-INF/resources/images/` – Bilder aus dem Cachebox-Repo
   (`SkinPacker/Icons/default/day/UI_IconPack`)
 
-Nach einem Produktions-Build liegen vorkomprimierte `*.gz`-Dateien in `target/classes`. Der Entwicklungsmodus
-liefert sie weiter aus, CSS-Änderungen erscheinen dann nicht: vorher `mvn clean` ausführen.
+Lokale Starts, IntelliJ und Tests verwenden wie üblich `target/classes`. Das Profil `production`
+baut separat nach `target/production`; dort liegt auch die Produktions-Jar. Dadurch gelangen komprimierte
+Produktionsressourcen nicht in die lokale Vorschau. Nach einem Produktions-Build kann die Website direkt
+wieder lokal gestartet werden. Nach Änderungen an der `pom.xml` das Maven-Projekt in IntelliJ neu einlesen.
 
 Neue Seite: View-Klasse mit `@Route(value = "...", layout = MainLayout.class)` anlegen, von `Page` erben
 und in `MainLayout.createNav()` verlinken.
 
 ## Coming Soon! und Funktionsabstimmung
 
-`/coming-soon` listet alle offenen Funktionen, absteigend nach Stimmen; Suche und Themenfilter ändern
-nur den Ausschnitt, nicht die Rangfolge. Bis zu drei Funktionen erhalten je eine gleichwertige Stimme.
-Besucher können die Auswahl speichern, später ersetzen oder mit leerer Auswahl zurückziehen.
-Wiederholtes Speichern erzeugt keine zusätzlichen Stimmen. Gleiche Stimmenzahlen teilen sich einen Rang;
-Funktionen ohne Stimmen stehen am Ende in Katalogreihenfolge.
+`/coming-soon` zeigt zehn verständliche Funktionspakete mit kurzem Nutzen und aufklappbaren
+Details. Bis zu drei Pakete erhalten je eine gleichwertige Stimme. Die Reihenfolge richtet sich nach
+Stimmen; Gleichstände teilen einen Rang. Die Auswahl lässt sich ersetzen oder vollständig zurückziehen.
+Caches direkt laden und einfache Log-Entwürfe werden als geplante Grundlagen vor der Veröffentlichung
+separat erklärt. Der vollständige offene Funktionskatalog bleibt unter „Alle offenen Funktionen im Detail“ erreichbar.
 
-Der gemeinsame Stand steht in `src/main/java/de/cachebox/website/features/FeatureCatalog.java`:
-`done=true` hakt eine Funktion auf `/funktionen` ab und entfernt sie aus der Abstimmung.
-Karten ohne erledigten Punkt erhalten automatisch den „Coming Soon!“-Streifen. Die ausdrücklich vergebenen
-Funktions-IDs bei Textänderungen und Umgruppierungen beibehalten; neue Funktionen bekommen neue IDs.
-Gelöschte IDs nicht für andere Funktionen wiederverwenden.
+`WishCatalog.java` definiert dauerhaft stabile Paket-IDs und die zugehörigen IDs aus `FeatureCatalog.java`.
+Nur noch offene Einzelpunkte erscheinen in den Paketdetails; vollständig erledigte Pakete scheiden aus.
+`FeatureCatalog.java` bleibt die gemeinsame Quelle für den Umsetzungsstand auf `/funktionen`.
+`done=true` kennzeichnet eine umgesetzte Funktion. IDs bei Textänderungen beibehalten und nicht wiederverwenden.
 
-Stimmzettel liegen in `feature-votes.mv.db` im selben konfigurierten Datenverzeichnis wie die Statistik
-(`ANALYTICS_DIRECTORY`). Dieses Verzeichnis muss auch bei Deployments erhalten bleiben und sollte gesichert
-werden. Erledigte oder entfernte Funktionen werden beim Lesen der Auswahl und beim Zählen ausgeblendet.
-Die Speicherung ist unabhängig von den Statistikaggregaten und deren Aufbewahrungsfrist.
+Die Paket-Abstimmung ist eine neue Runde in der Tabelle `wish_votes`. Frühere Einzelstimmen in
+`feature_votes` bleiben unverändert erhalten und werden separat aufgeklappt angezeigt, einschließlich
+der eigenen früheren Auswahl und einer Möglichkeit zum Zurückziehen. Sie werden niemals in Paketstimmen
+umgerechnet. Beide Runden liegen in `feature-votes.mv.db` im Datenverzeichnis (`ANALYTICS_DIRECTORY`),
+das auch bei Deployments erhalten bleiben und gesichert werden muss. Die Tabellen werden beim Start
+bei Bedarf angelegt; eine manuelle Migration ist nicht erforderlich.
 
 Ein HttpOnly-Cookie `cachebox-feature-voter` mit zufälliger Kennung ordnet die Auswahl für ein Jahr dem
 Browser zu (SameSite=Lax, bei HTTPS zusätzlich Secure). Es wird erst beim Öffnen der Abstimmungsseite gesetzt.
