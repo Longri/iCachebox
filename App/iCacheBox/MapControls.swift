@@ -30,22 +30,7 @@ struct MapStateButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 0) {
-                Text(state == .gps ? "GPS" : "Free")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(Color(white: 0.08))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .frame(maxHeight: .infinity)
-                // Cachebox `toggle-led-gr`, tinted with the state color
-                Capsule()
-                    .fill(state == .gps ? Color(red: 0, green: 0.94, blue: 0) : Color(white: 0.46))
-                    .overlay(Capsule().strokeBorder(Color.black.opacity(0.25), lineWidth: 0.5))
-                    .shadow(color: state == .gps ? Color(red: 0, green: 1, blue: 0).opacity(0.8) : .clear, radius: 2)
-                    .frame(height: 5)
-                    .padding(.horizontal, 9)
-                    .padding(.bottom, 9)
-            }
+            CacheboxToggleLabel(title: state == .gps ? "GPS" : "Free", isOn: state == .gps)
         }
         .buttonStyle(CacheboxButtonStyle())
         .frame(width: MapLayout.buttonSize, height: MapLayout.buttonSize)
@@ -53,6 +38,31 @@ struct MapStateButton: View {
         .accessibilityValue(state == .gps ? "GPS, die Karte folgt der eigenen Position" : "Frei")
         .accessibilityHint(state == .gps ? "Zentriert die Karte auf die eigene Position"
                                          : "Springt zur eigenen Position und folgt ihr")
+    }
+}
+
+/// Label of a Cachebox `MultiToggleButton`: the title and an LED below it, green when on and grey when off
+/// (`toggle-led-gr`, tinted with the state colour).
+struct CacheboxToggleLabel: View {
+    let title: String
+    let isOn: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(title)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(Color(white: 0.08))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .frame(maxHeight: .infinity)
+            Capsule()
+                .fill(isOn ? Color(red: 0, green: 0.94, blue: 0) : Color(white: 0.46))
+                .overlay(Capsule().strokeBorder(Color.black.opacity(0.25), lineWidth: 0.5))
+                .shadow(color: isOn ? Color(red: 0, green: 1, blue: 0).opacity(0.8) : .clear, radius: 2)
+                .frame(height: 5)
+                .padding(.horizontal, 9)
+                .padding(.bottom, 9)
+        }
     }
 }
 

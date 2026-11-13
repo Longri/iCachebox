@@ -77,7 +77,7 @@ private struct MainScreen: View {
         // details of the selected cache for the cache views, the compass and the menus; again after a change of the
         // selection or its flags and after an import
         .task(id: DetailsKey(cache: state.selectedCache, list: state.lists.currentName,
-                             imported: state.lists.current?.lastImport)) {
+                             imported: state.lists.current?.lastImport, waypoints: state.waypointRevision)) {
             let list = state.lists.currentName.map { state.lists.store.url(of: $0) }
             await state.details.load(code: state.selectedCache?.code, list: list)
         }
@@ -93,6 +93,24 @@ private struct MainScreen: View {
                     state.details.noteChanged(note, code: cache.code)
                 }
             }
+        }
+        // waypoint editor of the waypoint view and the map (Cachebox `EditWaypoint`)
+        .sheet(item: $app.waypointEditor) { request in
+            WaypointEditor(request: request) { state.saveWaypoint($0) }
+        }
+        .alert("Wegpunkt löschen", isPresented: Binding(get: { state.waypointToDelete != nil },
+                                                        set: { if !$0 { state.waypointToDelete = nil } }),
+               presenting: state.waypointToDelete) { waypoint in
+            Button("Löschen", role: .destructive) { state.deleteWaypoint(waypoint) }
+            Button("Abbrechen", role: .cancel) {}
+        } message: { waypoint in
+            Text("Willst du diesen Wegpunkt wirklich löschen?\n\n\(waypoint.title.isEmpty ? waypoint.code : waypoint.title)")
+        }
+        .alert("Wegpunkt", isPresented: Binding(get: { state.waypointError != nil },
+                                                set: { if !$0 { state.waypointError = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(state.waypointError ?? "")
         }
         .sheet(isPresented: $app.showMapDownload) {
             NavigationStack {
@@ -126,6 +144,7 @@ private struct MainScreen: View {
         let cache: CacheSummary?
         let list: String?
         let imported: Date?
+        let waypoints: Int
     }
 }
 

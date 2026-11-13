@@ -18,7 +18,11 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
   - `Model.swift` (Geocache, Waypoint, CacheLog, Typen), `GPXParser.swift` (Groundspeak 1.0/1.0.1/1.0.2 in GPX 1.0/1.1,
     GSAK-Erweiterung, Wegpunkt-Zuordnung über `gsak:Parent` oder Präfix), `GPXImporter.swift` (GPX/ZIP, Wegpunktdateien
     zuletzt, Abbruch), `CacheDatabase.swift` (eine SQLite-Datei je Liste, Upsert behält Notiz/Favorit/Fund/korrigierte
-    Koordinaten), `CacheListStore.swift` (Listen anlegen/umbenennen/löschen), `ZipArchive.swift`, `SQLite.swift`
+    Koordinaten; Schema 2: Wegpunkte mit `clue`/`is_start`, `saveUserWaypoint`, `freeWaypointCode` wie Cachebox
+    `createFreeGcCode`), `CacheListStore.swift` (Listen anlegen/umbenennen/löschen), `ZipArchive.swift`, `SQLite.swift`,
+    `CoordinateEntry.swift` (Logik der Koordinateneingabe = Cachebox `EditCoord`: Zellen je Ziffer, Formate Dec/Min/Sec/UTM,
+    Fokus-Sprung `setNextFocus`/`focusStartLon`), `UTM.swift` (eigene Krüger-Reihe, Zonen/Bänder wie Cachebox
+    `UTMConvert`), `CoordinateParser.swift` (`Coordinate(parsing:)` für Einfügen, wie `Coordinate.parseCoordinate`)
   - Tests mit erfundenen Testdaten unter `Tests/CacheboxCoreTests/Resources` (PQ-GPX, -wpts, ZIP, GPX 1.1)
 - `App/` – iOS-App (Xcode-Projekt, synchronisierter Ordner `App/iCacheBox/`), `MKTileOverlay` mit Mapsforge-Kacheln
   - Fünf Knöpfe unten wie Cachebox (`ViewManager`/`GestureButton`/`CB_TabView`), kein `TabView` mehr:
@@ -64,6 +68,13 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `CacheAttributes.swift` (Attribut-Icons wie Cachebox `DescriptionViewControl`: zutreffende zuerst, dann nicht
     zutreffende, Tipp zeigt Text; `Assets.xcassets/Attributes` = `att_<Cachebox-Ordinal>_1/_0`, GC 71/72 → 68/71;
     fehlt ein `_0`-Icon, wird das `_1`-Icon durchgestrichen, Cachebox lässt es weg)
+  - Wegpunkt anlegen/ändern (wie Cachebox `EditWaypoint`/`EditCoord`): `WaypointEditor.swift` (Sheet: Cache-Name,
+    Koordinaten-Knopf gelb wie `CoordinateButton`, Langdruck Kopieren/Einfügen, Typ-„Spinner“ mit Auswahldialog, „Start“
+    nur bei Station, Titel/Beschreibung/Hinweis, OK/Abbruch; `AppState.addWaypoint`/`addWaypointAtMapCenter`/
+    `editWaypoint`/`saveWaypoint`/`deleteWaypoint`, `waypointRevision` lädt Details/Karte/Liste neu),
+    `CoordinateEditor.swift` (liegt im selben Sheet über dem Editor; Formatknöpfe mit LED = `CacheboxToggleLabel`,
+    Zellen per `WeightedRow` = Cachebox `addNext(view, weight)` – keine gemessene Breite, die schaukelte sich in UTM
+    zu einer Layout-Endlosschleife auf; Zahlenfeld, Leertaste nur UTM, Zonenbuchstabe über verstecktes Textfeld)
   - Gewählter Cache: `AppState` (Auswahl je Liste, `mapFocus`; `CacheListModel.onOpen` stellt die Auswahl nach jedem
     Öffnen/Import wieder her), Leiste im `CacheboxSlider`, Zentrieren in `ContentView.swift`
     (`MapModel.focus`, wählt eine Karte, die den Ort abdeckt) und `MapsforgeMapView.swift` (`MapCenterRequest`)
@@ -228,6 +239,19 @@ Anleitungs-Screenshots zeigen noch die alte Leiste unten.
 Zoomen ohne schwarze Kacheln (seit 11.11.2026, wie Cachebox): im Simulator geprüft mit künstlich auf 1,5 s
 verlangsamtem Rendern (rein/raus über 3 Stufen, Theme-Wechsel, Dunkelmodus). Nicht geprüft: Speicher und
 Flüssigkeit auf echtem Gerät (Cache bis ca. 150 MB bei @3x), iPad.
+
+Wegpunkt anlegen (seit 13.11.2026, wie Cachebox `EditWaypoint`/`EditCoord`): Wegpunkte-Ansicht › Menü/⋯ „Wegpunkt
+hinzufügen“ (dazu ein Knopf unter der Liste – nicht in Cachebox) und Kartenmenü „WP vom Kartenmittelpunkt“; neuer
+Wegpunkt = Referenzpunkt an der Cache-Koordinate bzw. Kartenmitte, Titel = neuer Code (C0…), Koordinateneingabe
+öffnet sofort. Eingabe: Fokus startet auf der ersten Nachkommastelle, springt nach der Breite auf die Nachkommastellen
+der Länge, danach auf die Grad der Breite; UTM: Ost-, Nordwert, Zone, Buchstabe (Tastatur), dann wieder Ostwert.
+Langdruck auf eine Wegpunkt-Zeile: Anzeigen, Ändern (mit Koordinateneingabe), Löschen (nur eigene). Abweichungen:
+fokussierte Ziffer zusätzlich weiß umrandet, Minuten/Sekunden ≥ 60 und Breite > 90° ungültig, Rundung mit Übertrag
+(Cachebox konnte „60.000“ zeigen), „Start“ nur für Stationen gespeichert, kein „Ausschneiden“, kein Nissan-CSV
+(Doppeltipp Dec), neuer Wegpunkt wird nicht ausgewählt (keine Wegpunktauswahl), Projektion/Vom GPS ausgegraut.
+Im Simulator geprüft (Min-Eingabe und Sprung, UTM hin/zurück, Zonenbuchstabe, ungültige Eingabe, Typwahl, Start,
+Speichern, Anzeigen, Löschen, Karte zeigt den Wegpunkt, Kartenmittelpunkt, Migration einer Version-1-Liste).
+Nicht geprüft: Einfügen aus der Zwischenablage im Simulator, Querformat, iPad, VoiceOver, echtes Gerät.
 
 Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
 Nachtmodus, Kachel-Cache auf Platte, Kartenrotation mit

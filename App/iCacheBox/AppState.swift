@@ -41,6 +41,14 @@ final class AppState {
     var showMapDownload = false
     /// The torch is on (main button 5 › "Taschenlampe", Cachebox `SwitchTorch`).
     var isTorchOn = false
+    /// The waypoint shown in the `WaypointEditor` (Cachebox `EditWaypoint`).
+    var waypointEditor: WaypointEditRequest?
+    /// Asks before deleting a waypoint of the user (Cachebox `deleteWP`).
+    var waypointToDelete: Waypoint?
+    /// A waypoint could not be created or saved.
+    var waypointError: String?
+    /// Counts changes of waypoints, so that details and map read them again.
+    var waypointRevision = 0
     /// The selection was taken from a list at least once (the first time is the app launch).
     private var hasRestoredSelection = false
 

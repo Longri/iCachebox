@@ -107,7 +107,7 @@ extension WaypointType {
         case .stage: "Station"
         case .question: "Frage"
         case .final: "Final"
-        case .trailhead: "Startpunkt"
+        case .trailhead: "Ausgangspunkt"   // Cachebox; "Start" is the start of a multi
         case .reference: "Referenzpunkt"
         case .other: "Wegpunkt"
         }

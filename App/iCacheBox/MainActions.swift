@@ -84,7 +84,10 @@ extension AppState {
         switch view {
         case .cacheList:
             return ViewContextMenu(title: lists.currentName ?? "Cacheliste", entries: cacheListEntries)
-        case .description, .waypoints, .logs, .spoiler:
+        case .waypoints:
+            guard let cache = selectedCache else { return nil }
+            return ViewContextMenu(title: "Wegpunkt", entries: waypointEntries(cache))
+        case .description, .logs, .spoiler:
             guard let cache = selectedCache else { return nil }
             return ViewContextMenu(title: cache.name, entries: cacheEntries(cache))
         case .map:
@@ -200,6 +203,13 @@ extension AppState {
                 }))
             }
         }
+        // Cachebox `ShowMap.getContextMenu` › "CenterWP"
+        entries += [
+            .divider("waypoint"),
+            MenuEntry("WP vom Kartenmittelpunkt", systemImage: "mappin.and.ellipse", isDisabled: selectedCache == nil) {
+                [weak self] in self?.addWaypointAtMapCenter()
+            },
+        ]
         return entries
     }
 

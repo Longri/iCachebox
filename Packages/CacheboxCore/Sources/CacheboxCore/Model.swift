@@ -215,21 +215,29 @@ public struct Waypoint: Identifiable, Hashable, Codable, Sendable {
     public var cacheCode: String
     public var id: String { cacheCode + "/" + code }
     public var title: String
+    /// GPX `<cmt>`; the description in the waypoint editor (Cachebox `Waypoint.description`).
     public var comment: String
+    /// The user's clue for this waypoint (Cachebox `Waypoint.clue`); GPX files from geocaching.com have none.
+    public var clue: String
     public var type: WaypointType
     public var coordinate: Coordinate?
-    /// Created by the user in the app (not from a GPX file); never replaced by an import.
+    /// Created or changed by the user in the app (Cachebox `isUserWaypoint`); never replaced by an import.
     public var isUserCreated: Bool
+    /// The stage where a multi cache starts (Cachebox `isStartWaypoint`); at most one per cache.
+    public var isStart: Bool
 
-    public init(code: String, cacheCode: String, title: String, comment: String = "", type: WaypointType = .other,
-                coordinate: Coordinate? = nil, isUserCreated: Bool = false) {
+    public init(code: String, cacheCode: String, title: String, comment: String = "", clue: String = "",
+                type: WaypointType = .other, coordinate: Coordinate? = nil, isUserCreated: Bool = false,
+                isStart: Bool = false) {
         self.code = code
         self.cacheCode = cacheCode
         self.title = title
         self.comment = comment
+        self.clue = clue
         self.type = type
         self.coordinate = coordinate
         self.isUserCreated = isUserCreated
+        self.isStart = isStart
     }
 }
 

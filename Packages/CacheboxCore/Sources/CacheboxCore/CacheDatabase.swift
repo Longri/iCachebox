@@ -8,7 +8,8 @@ public final class CacheDatabase {
     let db: SQLiteConnection
 
     /// Schema version stored in `PRAGMA user_version`.
-    static let schemaVersion = 1
+    /// 1: first schema; 2: waypoints got `clue` and `is_start` (waypoint editor).
+    static let schemaVersion = 2
 
     public init(url: URL) throws {
         self.url = url
@@ -20,6 +21,18 @@ public final class CacheDatabase {
     private func migrate() throws {
         guard db.userVersion < Self.schemaVersion else { return }
         try db.transaction {
+            // read again under the write lock: another connection may have migrated meanwhile
+            let version = db.userVersion
+            guard version < Self.schemaVersion else { return }
+            if version >= 1 {
+                // version 1 lists keep their data
+                try db.execute("""
+                    ALTER TABLE waypoints ADD COLUMN clue TEXT NOT NULL DEFAULT '';
+                    ALTER TABLE waypoints ADD COLUMN is_start INTEGER NOT NULL DEFAULT 0;
+                    PRAGMA user_version = \(Self.schemaVersion);
+                    """)
+                return
+            }
             try db.execute("""
                 CREATE TABLE IF NOT EXISTS caches (
                     code TEXT PRIMARY KEY,
@@ -63,6 +76,8 @@ public final class CacheDatabase {
                     latitude REAL,
                     longitude REAL,
                     user_created INTEGER NOT NULL DEFAULT 0,
+                    clue TEXT NOT NULL DEFAULT '',
+                    is_start INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY (cache_code, code)
                 );
                 CREATE TABLE IF NOT EXISTS logs (
@@ -165,13 +180,13 @@ public final class CacheDatabase {
 
     public func waypoints(cacheCode: String) throws -> [Waypoint] {
         try db.prepare("""
-            SELECT code, title, comment, type, latitude, longitude, user_created
+            SELECT code, title, comment, type, latitude, longitude, user_created, clue, is_start
             FROM waypoints WHERE cache_code = ? ORDER BY code
             """).rows([cacheCode]) { r in
             Waypoint(code: r.string(0), cacheCode: cacheCode, title: r.string(1), comment: r.string(2),
-                     type: WaypointType(rawValue: r.string(3)) ?? .other,
+                     clue: r.string(7), type: WaypointType(rawValue: r.string(3)) ?? .other,
                      coordinate: r.isNull(4) ? nil : Coordinate(latitude: r.double(4), longitude: r.double(5)),
-                     isUserCreated: r.bool(6))
+                     isUserCreated: r.bool(6), isStart: r.bool(8))
         }
     }
 
@@ -290,6 +305,46 @@ public final class CacheDatabase {
         guard let statement = upsertWaypointStatement else { throw SQLiteError(code: -1, message: "prepare waypoint") }
         try statement.run([waypoint.cacheCode, waypoint.code, waypoint.title, waypoint.comment, waypoint.type.rawValue,
                            waypoint.coordinate?.latitude, waypoint.coordinate?.longitude, waypoint.isUserCreated])
+    }
+
+    // MARK: - Waypoints of the user (waypoint editor)
+
+    /// Writes a waypoint the user created or changed (Cachebox `WaypointDAO.writeToDatabase`/`updateDatabase`).
+    /// It is marked as the user's, so that an import keeps it. A start waypoint takes the start from the other
+    /// waypoints of its cache (Cachebox `resetStartWaypoint`).
+    public func saveUserWaypoint(_ waypoint: Waypoint) throws {
+        try db.transaction {
+            try db.prepare("""
+                INSERT OR REPLACE INTO waypoints
+                    (cache_code, code, title, comment, clue, type, latitude, longitude, user_created, is_start)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                """).run([waypoint.cacheCode, waypoint.code, waypoint.title, waypoint.comment, waypoint.clue,
+                          waypoint.type.rawValue, waypoint.coordinate?.latitude, waypoint.coordinate?.longitude,
+                          waypoint.isStart])
+            if waypoint.isStart {
+                try db.prepare("UPDATE waypoints SET is_start = 0 WHERE cache_code = ? AND code <> ?")
+                    .run([waypoint.cacheCode, waypoint.code])
+            }
+        }
+    }
+
+    public func deleteWaypoint(code: String, cacheCode: String) throws {
+        try db.prepare("DELETE FROM waypoints WHERE cache_code = ? AND code = ?").run([cacheCode, code])
+    }
+
+    /// A waypoint code that is not used in this list yet, for a new waypoint of `cacheCode` (Cachebox
+    /// `WaypointDAO.createFreeGcCode`): two characters in front of the cache code without its "GC", trying the
+    /// first character in the order C, B, X, A, D … 9 and the second in the order 0 … 9, A … Z.
+    public func freeWaypointCode(cacheCode: String) throws -> String {
+        let suffix = cacheCode.count > 2 ? String(cacheCode.dropFirst(2)) : cacheCode
+        let used = Set(try db.prepare("SELECT code FROM waypoints").rows { $0.string(0).uppercased() })
+        for first in "CBXADEFGHIJKLMNOPQRSTUVWYZ0123456789" {
+            for second in "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
+                let code = "\(first)\(second)\(suffix)"
+                if !used.contains(code.uppercased()) { return code }
+            }
+        }
+        throw SQLiteError(code: -1, message: "no free waypoint code for \(cacheCode)")
     }
 
     private lazy var upsertLogStatement = try? db.prepare("""

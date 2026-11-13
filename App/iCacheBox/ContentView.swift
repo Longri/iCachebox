@@ -33,7 +33,10 @@ struct ContentView: View {
                                  onSelect: { state.select($0, show: .map, onMap: true) },
                                  onShowDetails: { state.select($0) },
                                  onCameraChange: { model.cameraChanged($0) },
-                                 onCenterChange: { viewport.center = $0 },
+                                 onCenterChange: {
+                                     viewport.center = $0
+                                     model.visibleCenter = $0
+                                 },
                                  onUserPan: { mapState = .free },
                                  onPositionChange: { here in
                                      // walking off the map in GPS mode: change to a map that covers the position
@@ -170,7 +173,8 @@ struct ContentView: View {
 
     /// Reloads the waypoints for another cache, another list and after an import.
     private var waypointKey: [String?] {
-        [state.selectedCache?.code, state.lists.currentName, state.lists.current?.lastImport?.description]
+        [state.selectedCache?.code, state.lists.currentName, state.lists.current?.lastImport?.description,
+         String(state.waypointRevision)]
     }
 
     private func loadWaypoints() async {
@@ -229,6 +233,8 @@ final class MapModel {
     /// Map file of the current renderer (the selection may already point to the next one).
     private(set) var loadedMap: URL?
     private(set) var center = MapCenterRequest(latitude: 53.0758, longitude: 8.8072, resetZoom: true)
+    /// Centre of the visible map, for "WP vom Kartenmittelpunkt"; not observed, it changes while panning.
+    @ObservationIgnored var visibleCenter: Coordinate?
     /// Short message over the map, e.g. when no map covers the selected cache; hidden after a few seconds.
     var notice: String?
 

@@ -112,7 +112,9 @@ struct CacheDetailView: View {
                 Button("Hinweis", systemImage: "lightbulb") { state.perform(.hint) }
                     .disabled(!state.isEnabled(.hint))
                 CacheboxMenuButton {
-                    ViewContextMenu(title: summary.name, entries: state.cacheEntries(summary))
+                    // the menu of the shown part, as on the cache button (waypoints: add, then the cache menu)
+                    state.contextMenu(for: part.wrappedValue)
+                        ?? ViewContextMenu(title: summary.name, entries: state.cacheEntries(summary))
                 } label: {
                     Label("Aktionen", systemImage: "ellipsis.circle")
                 }
@@ -258,17 +260,35 @@ struct CacheDetailView: View {
                 ForEach(details.waypoints) { waypoint in
                     waypointRow(icon: waypoint.type.iconName,
                                 title: waypoint.title.isEmpty ? waypoint.type.title : waypoint.title,
-                                code: "\(waypoint.code) · \(waypoint.type.title)",
-                                coordinate: waypoint.coordinate, comment: waypoint.comment)
+                                code: "\(waypoint.code) · \(waypoint.type.title)"
+                                    + (waypoint.isStart ? " · Start" : "") + (waypoint.isUserCreated ? " · eigener" : ""),
+                                coordinate: waypoint.coordinate, comment: waypoint.comment, clue: waypoint.clue)
+                    // Cachebox `WayPointsView.getContextMenu` for the selected waypoint (here: the pressed one)
+                    .contextMenu {
+                        Button("Anzeigen", systemImage: "eye") {
+                            state.editWaypoint(waypoint, showsCoordinateDialog: false)
+                        }
+                        Button("Ändern", systemImage: "pencil") {
+                            state.editWaypoint(waypoint, showsCoordinateDialog: true)
+                        }
+                        if waypoint.isUserCreated {
+                            Button("Löschen", systemImage: "trash", role: .destructive) {
+                                state.waypointToDelete = waypoint
+                            }
+                        }
+                    }
                 }
             } footer: {
                 if details.waypoints.isEmpty { Text("Keine zusätzlichen Wegpunkte.") }
+            }
+            Section {
+                Button("Wegpunkt hinzufügen", systemImage: "plus.circle") { state.addWaypoint() }
             }
         }
     }
 
     private func waypointRow(icon: String, title: String, code: String, coordinate: Coordinate?,
-                             comment: String) -> some View {
+                             comment: String, clue: String = "") -> some View {
         HStack(alignment: .top, spacing: 12) {
             CacheboxIcon(name: icon, size: 32)
             VStack(alignment: .leading, spacing: 2) {
@@ -279,6 +299,9 @@ struct CacheDetailView: View {
                     .foregroundStyle(coordinate == nil ? .secondary : .primary)
                 if !comment.isEmpty {
                     Text(comment).font(.caption).foregroundStyle(.secondary)
+                }
+                if !clue.isEmpty {
+                    Text("Hinweis: \(clue)").font(.caption).foregroundStyle(.secondary)
                 }
             }
             Spacer()
