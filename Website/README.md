@@ -57,6 +57,60 @@ wieder lokal gestartet werden. Nach Änderungen an der `pom.xml` das Maven-Proje
 Neue Seite: View-Klasse mit `@Route(value = "...", layout = MainLayout.class)` anlegen, von `Page` erben
 und in `MainLayout.createNav()` verlinken.
 
+## Geocaching-Zugang für iCachebox
+
+`/api-key` („Geocaching-Zugang“ in der Navigation) holt nach Freigabe bei Geocaching.com einen persönlichen
+Access Token und Refresh Token. Der Ablauf verwendet den aktuellen
+[Groundspeak OAuth-2-Authorization-Code-Flow mit PKCE/S256](https://api.groundspeak.com/documentation#authorization).
+Die Anmeldung beim Website-Admin ist davon unabhängig.
+
+**Voraussetzung sind von Groundspeak freigeschaltete Partner-Zugangsdaten für iCachebox.** Diese Website kann
+keine Client-ID und kein Client-Secret erzeugen. Das bereitgestellte alte PHP-Skript verwendete OAuth 1.0a
+und verpackte den erhaltenen Benutzertoken mit RC4/Base64 für damalige Cachebox-Versionen. Für die geplante
+iOS-Anmeldung wird dieser alte Ablauf nicht verwendet. Die im ZIP enthaltenen Zugangsdaten wurden nicht
+in den Quellcode oder die lokale Konfiguration übernommen. Ob frühere Partner-Zugangsdaten auch für
+iCachebox/iOS verwendet werden dürfen und freigeschaltet sind, muss Groundspeak bestätigen.
+
+In der bestehenden `.env` ergänzen:
+
+```properties
+GROUNDSPEAK_CLIENT_ID=
+GROUNDSPEAK_CLIENT_SECRET=
+GROUNDSPEAK_REDIRECT_URI=https://deine-domain.de/oauth/groundspeak/callback
+GROUNDSPEAK_STAGING=false
+```
+
+Die Callback-URL muss bei Groundspeak **exakt so** registriert sein; sie wird absichtlich nicht aus
+eingehenden Host-/Proxy-Headern abgeleitet. Bei Betrieb unter einem Unterpfad gehört dieser ebenfalls in
+die URL, etwa `https://deine-domain.de/website/oauth/groundspeak/callback`. Für lokale Tests ist
+`http://localhost:8082/oauth/groundspeak/callback` erlaubt; auch dafür sind passende Zugangsdaten und eine
+registrierte Rücksprungadresse erforderlich. Mit `GROUNDSPEAK_STAGING=true` werden ausschließlich die
+offiziellen Staging-Endpunkte verwendet; dafür die zugehörigen Staging-Zugangsdaten eintragen.
+Nach Konfigurationsänderungen neu starten. Ohne vollständige Konfiguration bleibt die Seite erreichbar
+und erklärt, dass die Verbindung noch nicht eingerichtet ist.
+
+Der Browser ruft `/oauth/groundspeak/start` auf; der Server speichert zufälligen `state` und PKCE-Verifier
+kurzzeitig in dessen HTTP-Sitzung. Nach der externen Freigabe prüft `/oauth/groundspeak/callback` die
+Sitzungszuordnung und tauscht den Code serverseitig gegen die Token. Die Anmeldung verfällt nach zehn Minuten;
+ein neuer Start ersetzt den bisherigen Versuch. Ein Callback ist nur einmal nutzbar. Fehler und Abbruch
+führen mit verständlichem Hinweis zurück auf `/api-key`. Netzwerkaufrufe prüfen TLS-Zertifikate und folgen
+keinen Weiterleitungen. Client-Secret und PKCE-Verifier gelangen nicht in den Browser.
+
+Token stehen weder in Redirect-URLs noch in Anwendungslogs oder Datenbank. Das Ergebnis wird einmalig
+aus der HTTP-Sitzung in die Vaadin-Seite übernommen (höchstens fünf Minuten nach dem Callback) und kann
+dort kopiert oder geschlossen werden. Neuladen oder erneutes Öffnen zeigt es nicht nochmals. Bis zum
+Schließen/Neuladen/Sitzungsablauf liegt die Anzeige im flüchtigen Vaadin-Sitzungszustand. Bei einem Neustart
+gehen laufende Anmeldungen und Anzeigen verloren. Die Callback-Antwort ist nicht cachebar und unterdrückt
+den Referer; Spring Security setzt auch für die Vaadin-Antworten die bestehenden Cache-Schutzheader.
+
+Die Seite zeigt den Ablaufzeitpunkt des Access Tokens und den für eine spätere Erneuerung benötigten
+Refresh Token. Sie erneuert Token nicht im Hintergrund. Die direkte Übernahme und Anmeldung in der
+iOS-App ist ein eigener Schritt; `App/iCacheBox/GeocachingAccount.swift` ist weiterhin ein Platzhalter.
+
+Tests: `mvn test`. Die OAuth-Tests prüfen PKCE, Sitzungsbindung, Ablauf, Wiederholung, Abbruch und den
+Token-Austausch mit einem lokalen Testanbieter. Ein echter Groundspeak-Login benötigt die freigeschalteten
+Partner-Zugangsdaten und lässt sich ohne sie nicht abschließend prüfen.
+
 ## Coming Soon! und Funktionsabstimmung
 
 `/coming-soon` zeigt zehn verständliche Funktionspakete mit kurzem Nutzen und aufklappbaren

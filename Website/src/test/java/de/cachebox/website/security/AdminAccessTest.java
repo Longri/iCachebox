@@ -57,6 +57,15 @@ class AdminAccessTest {
     }
 
     @Test
+    void groundspeakEndpointsArePublicAndKeepTheAdminLoginIndependent() throws Exception {
+        mvc.perform(get("/oauth/groundspeak/start"))
+                .andExpect(status().isSeeOther()).andExpect(redirectedUrl("/api-key"));
+        mvc.perform(get("/oauth/groundspeak/callback").param("state", "invalid").param("code", "invalid"))
+                .andExpect(status().isSeeOther()).andExpect(redirectedUrl("/api-key"));
+        mvc.perform(get("/admin")).andExpect(redirectedUrl("/login"));
+    }
+
+    @Test
     void invalidCredentialsFailAndConfiguredCredentialsWork() throws Exception {
         mvc.perform(formLogin().user("test-owner").password("wrong")).andExpect(unauthenticated());
         var result = mvc.perform(formLogin().user("test-owner").password("test-password-only-12345"))

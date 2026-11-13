@@ -22,6 +22,7 @@ public class SecurityConfiguration {
         // Secrets and statistics must never be served as static resources.
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/.env", "/.env/**", "/data/**").denyAll()
+                .requestMatchers("/oauth/groundspeak/start", "/oauth/groundspeak/callback").permitAll()
                 .requestMatchers("/styles/**", "/images/**", "/anleitung/bilder/**").permitAll());
         http.with(VaadinSecurityConfigurer.vaadin(), config -> config.loginView(LoginView.class).defaultSuccessUrl("/admin"));
         http.rememberMe(remember -> remember.key(state.rememberMeKey())

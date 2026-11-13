@@ -16,6 +16,7 @@ import com.vaadin.flow.router.HighlightConditions;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.router.RouterLink;
 import de.cachebox.website.views.AboutView;
+import de.cachebox.website.views.ApiKeyView;
 import de.cachebox.website.views.FeaturesView;
 import de.cachebox.website.views.ComingSoonView;
 import de.cachebox.website.views.ManualView;
@@ -78,6 +79,7 @@ public class MainLayout extends Div implements RouterLayout {
                 navLink("Coming Soon!", ComingSoonView.class),
                 navLink("Offline-Karten", MapsView.class),
                 navLink("Anleitung", ManualView.class),
+                navLink("Geocaching-Zugang", ApiKeyView.class),
                 navLink("Projekt", AboutView.class));
         nav.addClassName("site-nav");
         return nav;
