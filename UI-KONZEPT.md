@@ -54,6 +54,9 @@ Teile waren nicht lesbar oder nur sekundär belegt; das ist unten markiert. Kein
   Cachebox steht nicht auf der Partnerliste der iOS-Apps. **Vor weiterer Arbeit mit HQ klären.**
 - **Login-Technik:** `ASWebAuthenticationSession` statt eingebettetem WebView (Google blockiert WebView-OAuth,
   die Seite bietet Social-Logins). Cachebox nutzt dagegen WebView plus Proxy `gc-oauth.longri.de` mit Token-Scraping.
+  **Seit 15.11.2026 gebaut** (`Packages/CacheboxCore/Sources/CacheboxCore/Geocaching/`, `GeocachingAccount.swift`):
+  OAuth 2.0 mit PKCE, Tokens im Schlüsselbund, automatischer Refresh; es fehlt nur der Schlüssel von HQ.
+  Der alte PHP-Proxy lief noch auf OAuth 1.0a – das hat Groundspeak am 1.4.2024 abgeschaltet.
 - **Nicht portieren:** HTML-Scraping von geocaching.com (`GroundspeakAPI.java:326-374`, `ContactOwner.java`, `GCVote.java`),
   BeanShell-Layer, GCVote-Login per HTTP-GET, Tokens im Log.
 - **GPL:** Cachebox-Dateien tragen GPL-Header ohne Version, keine LICENSE-Datei. Ein Zeile-für-Zeile-Port wäre ein

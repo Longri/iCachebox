@@ -93,3 +93,6 @@ build/
 .vscode/
 *.swp
 *~
+
+# Geocaching-API-Schlüssel: nie ins Git (Vorlage: GeocachingKeys-Beispiel.plist)
+/App/iCacheBox/GeocachingKeys.plist

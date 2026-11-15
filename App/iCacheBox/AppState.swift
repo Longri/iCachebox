@@ -211,6 +211,10 @@ final class AppState {
 enum StorageKey {
     /// The welcome page was finished (signed in or started without an account).
     static let onboardingCompleted = "onboardingCompleted"
+    /// Name and membership of the Geocaching.com account of the last sign-in, so that the account shows up
+    /// without a network call. The tokens themselves live in the keychain.
+    static let geocachingUsername = "geocaching.username"
+    static let geocachingPremium = "geocaching.premium"
 }
 
 extension Color {

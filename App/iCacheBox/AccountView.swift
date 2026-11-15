@@ -1,3 +1,4 @@
+import CacheboxCore
 import SwiftUI
 
 /// Mehr › Geocaching-Konto: sign-in state and sign-in/sign-out, in the Cachebox day skin.
@@ -13,18 +14,47 @@ struct AccountView: View {
                 CacheboxListText("Mit einem Geocaching.com-Konto holst du Caches aufs Gerät und lädst Feldnotizen hoch.")
                 SignInButton()
                     .cacheboxListRow(index: 0)
+                if !state.account.isConfigured {
+                    CacheboxListText("Für iOS gibt es noch keinen API-Schlüssel von Geocaching HQ. "
+                        + "Die Anmeldung ist fertig eingebaut und wartet nur auf den Schlüssel.")
+                }
             case .signedIn(let username, let premium):
-                LabeledContent("Benutzer", value: username)
-                    .cacheboxListRow(index: 0)
-                LabeledContent("Mitgliedschaft", value: premium ? "Premium" : "Basic")
-                    .cacheboxListRow(index: 1)
-                CacheboxDivider().cacheboxListDivider()
-                Button("Abmelden", role: .destructive) { state.account.signOut() }
-                    .cacheboxListRow(index: 0)
+                signedIn(username: username, premium: premium)
             }
         }
         .cacheboxPage()
         .navigationTitle("Geocaching-Konto")
+        .refreshable { await state.account.refreshUser() }
+    }
+
+    @ViewBuilder
+    private func signedIn(username: String, premium: Bool) -> some View {
+        let user = state.account.user
+        LabeledContent("Benutzer", value: username)
+            .cacheboxListRow(index: 0)
+        LabeledContent("Mitgliedschaft", value: user?.membership.name ?? (premium ? "Premium" : "Basic"))
+            .cacheboxListRow(index: 1)
+        if let user {
+            LabeledContent("Funde", value: user.findCount.formatted())
+                .cacheboxListRow(index: 2)
+            LabeledContent("Eigene Caches", value: user.hideCount.formatted())
+                .cacheboxListRow(index: 3)
+            LabeledContent("Favoritenpunkte", value: user.favoritePoints.formatted())
+                .cacheboxListRow(index: 4)
+            if let joined = user.joinedDate {
+                LabeledContent("Dabei seit", value: joined.formatted(date: .abbreviated, time: .omitted))
+                    .cacheboxListRow(index: 5)
+            }
+        }
+        if state.account.isStaging {
+            CacheboxListText("Testzugang (Staging): die App sieht nur Testdaten von Geocaching HQ, "
+                + "nicht die echten Caches.")
+        }
+        CacheboxDivider().cacheboxListDivider()
+        Button("Abmelden", role: .destructive) { Task { await state.account.signOut() } }
+            .cacheboxListRow(index: 0)
+        CacheboxListText("Abmelden löscht den Zugang nur auf diesem Gerät. Den Zugriff ganz entziehen kannst "
+            + "du in deinem Profil auf geocaching.com.")
     }
 }
 
@@ -36,8 +66,9 @@ struct SignInButton: View {
     var onSuccess: () -> Void = {}
 
     @Environment(AppState.self) private var state
-    @State private var signingIn = false
     @State private var error: AccountError?
+
+    private var signingIn: Bool { state.account.isWorking }
 
     var body: some View {
         Button {
@@ -58,15 +89,15 @@ struct SignInButton: View {
     }
 
     private func signIn() async {
-        signingIn = true
-        defer { signingIn = false }
         do {
             try await state.account.signIn()
             onSuccess()
+        } catch AccountError.cancelled {
+            // the user closed the sign-in window; nothing to report
         } catch let accountError as AccountError {
             error = accountError
         } catch {
-            // ASWebAuthenticationSession cancellation etc. arrives here later; nothing to report yet.
+            self.error = .failed(error.localizedDescription, recovery: nil)
         }
     }
 }

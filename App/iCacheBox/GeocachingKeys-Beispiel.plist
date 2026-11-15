@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Vorlage für den Geocaching-API-Schlüssel.
+
+     So wird sie benutzt:
+       1. Diese Datei neben sich als GeocachingKeys.plist kopieren
+          (App/iCacheBox/GeocachingKeys.plist – liegt in .gitignore, kommt also nicht ins Git).
+       2. ClientID und ClientSecret eintragen, wie von Geocaching HQ vergeben.
+       3. RedirectURI muss exakt die bei HQ registrierte sein; das Schema davon steht
+          in iCacheBox-Info.plist unter CFBundleURLTypes.
+       4. Environment: "staging" für den Test-Token, "production" für den Live-Token.
+
+     Ohne diese Datei sagt die Anmeldung "Kein Geocaching-API-Schlüssel hinterlegt";
+     der Rest der App läuft normal weiter. -->
+<plist version="1.0">
+<dict>
+	<key>ClientID</key>
+	<string>HIER-CONSUMER-KEY-EINTRAGEN</string>
+	<key>ClientSecret</key>
+	<string>HIER-CONSUMER-SECRET-EINTRAGEN</string>
+	<key>RedirectURI</key>
+	<string>icachebox://oauth</string>
+	<key>Environment</key>
+	<string>staging</string>
+	<!-- Nur zum Testen: stehen diese drei Schlüssel drin, gelten sie statt Environment.
+	     Damit lässt sich die Anmeldung gegen einen eigenen Server durchspielen.
+	<key>AuthorizationURL</key>
+	<string>http://127.0.0.1:8765/oauth/authorize.aspx</string>
+	<key>TokenURL</key>
+	<string>http://127.0.0.1:8765/token</string>
+	<key>APIBaseURL</key>
+	<string>http://127.0.0.1:8765</string>
+	-->
+</dict>
+</plist>

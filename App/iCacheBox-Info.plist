@@ -24,6 +24,22 @@
 	<array>
 		<string>location</string>
 	</array>
+	<!-- Redirect of the Geocaching.com sign-in (OAuth 2.0 with PKCE): geocaching.com sends the browser back
+	     to icachebox://oauth, which ASWebAuthenticationSession catches. The URI has to be registered with
+	     Geocaching HQ exactly like this; the key itself is in GeocachingKeys.plist (not in the repository). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>de.team-cachebox.icachebox.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>icachebox</string>
+			</array>
+		</dict>
+	</array>
 	<!-- "Open in iCacheBox" for GPX files and pocket query ZIPs (Files, Mail, Safari downloads). -->
 	<key>CFBundleDocumentTypes</key>
 	<array>

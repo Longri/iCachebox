@@ -23,7 +23,15 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `CoordinateEntry.swift` (Logik der Koordinateneingabe = Cachebox `EditCoord`: Zellen je Ziffer, Formate Dec/Min/Sec/UTM,
     Fokus-Sprung `setNextFocus`/`focusStartLon`), `UTM.swift` (eigene Krüger-Reihe, Zonen/Bänder wie Cachebox
     `UTMConvert`), `CoordinateParser.swift` (`Coordinate(parsing:)` für Einfügen, wie `Coordinate.parseCoordinate`)
-  - Tests mit erfundenen Testdaten unter `Tests/CacheboxCoreTests/Resources` (PQ-GPX, -wpts, ZIP, GPX 1.1)
+  - `Geocaching/` – Anmeldung an der Geocaching-API (OAuth 2.0 mit PKCE, RFC 7636): `GeocachingOAuth.swift`
+    (Autorisierungs-URL, Callback lesen, Token- und Refresh-Anfrage, Antwort auswerten – alles ohne Netz und
+    damit testbar), `GeocachingTokenStore.swift` (`GeocachingTokens`, Schlüsselbund, Speicher für Tests),
+    `GeocachingAuthenticator.swift` (Actor: hält die Tokens, erneuert sie bei mehreren Wartenden nur einmal,
+    wirft einen abgelehnten Refresh-Token weg), `GeocachingAPI.swift` (`GET /v1/users/me`, Wiederholung nach
+    401, 429 = Ratelimit)
+  - Tests mit erfundenen Testdaten unter `Tests/CacheboxCoreTests/Resources` (PQ-GPX, -wpts, ZIP, GPX 1.1);
+    die Anmeldung zusätzlich einmal komplett über echtes HTTP gegen einen Test-Server im Test selbst
+    (`GeocachingEndToEndTests.swift`, `TinyHTTPServer` auf 127.0.0.1)
 - `App/` – iOS-App (Xcode-Projekt, synchronisierter Ordner `App/iCacheBox/`), `MKTileOverlay` mit Mapsforge-Kacheln
   - Fünf Knöpfe unten wie Cachebox (`ViewManager`/`GestureButton`/`CB_TabView`), kein `TabView` mehr:
     `MainButtons.swift` (`MainButton` mit `functions` = Cachebox `addAction`: Ansicht/Funktion, Default, Wischrichtung;
@@ -134,6 +142,11 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `AppState.checkApproach`/`updateApproachWatching`, `LocationModel.onPositionChanged`/`setBackgroundUpdates`
     (`allowsBackgroundLocationUpdates` + `pausesLocationUpdatesAutomatically = false` nur solange „Auch bei
     gesperrtem Bildschirm“ an ist; dafür `UIBackgroundModes` = `location` in der Info.plist)
+  - Geocaching-Konto: `GeocachingAccount.swift` (Anmeldung über `ASWebAuthenticationSession` statt Cachebox'
+    WebView, Zustand für die Ansichten, `AccountError`), `GeocachingKeys.swift` (liest Schlüssel und Secret aus
+    `GeocachingKeys.plist` im Bundle, sonst aus der Info.plist; Vorlage `GeocachingKeys-Beispiel.plist`, die
+    echte Datei steht in `.gitignore`), `AccountView.swift` (Mehr › Geocaching-Konto, `SignInButton`);
+    Rückleitung `icachebox://oauth` als `CFBundleURLTypes` in `iCacheBox-Info.plist`
   - Kartendownload: `MapCatalog.swift` (Freizeitkarte-Repository-XML), `MapLibrary.swift` (Hintergrund-`URLSession`,
     MD5-Prüfung, Entpacken nach `Documents/Maps` bzw. `Documents/Themes`), `ZipArchive.swift`, `MapDownloadView.swift`
   - Version `1.0.0.<Commits>`: `MARKETING_VERSION` = 1.0.0, Build-Phase „Version aus Git“ (läuft nach der
@@ -329,6 +342,31 @@ Aktualisieren, Solver, Foto, Video, Sprachnotiz). Im Simulator geprüft (alle dr
 Wegpunkt-Knöpfe, Neustart behält die Stufe). Nicht geprüft: echtes Gerät, VoiceOver.
 Anleitung samt Screenshots am 13.11.2026 erneut nachgezogen (Wegpunkt als Ziel, Projektion, Vom GPS,
 Funktionsumfang, Kompass mit Wegpunkt, Wegpunkt-Blase auf der Karte).
+
+Anmeldung an der Geocaching-API (seit 15.11.2026, bewusst anders als Cachebox): Cachebox holt den Schlüssel
+über `gc-oauth.longri.de` – eine PHP-Seite, die den ganzen OAuth-Tanz auf dem Server macht und die Tokens in
+die HTML schreibt, die der WebView anschließend wieder herausschneidet (`GcApiLogin.MyJavaScriptInterface`).
+Dieser Umweg entfällt, iCacheBox macht den Fluss selbst. Der alte PHP-Code (`oAuth_Cachebox/index.php`) benutzte
+OAuth 1.0a (`OAuth/mobileoauth.ashx`, HMAC-SHA1, RC4-verschleierter Token); Groundspeak hat das am 1.4.2024
+abgeschaltet – die API läuft heute über OAuth 2.0 mit PKCE: Autorisierung
+`https://www.geocaching.com/oauth/authorize.aspx` (`client_id`, `response_type=code`, `scope=*`, `redirect_uri`,
+`state`, `code_challenge`, `code_challenge_method=S256`), Token `https://oauth.geocaching.com/token`
+(`authorization_code` bzw. `refresh_token`, Formular-POST mit `client_secret`), API `https://api.groundspeak.com/v1/…`
+mit `Authorization: bearer …`; Staging unter `staging.geocaching.com`/`oauth-staging.geocaching.com`/
+`staging.api.groundspeak.com`. Tokens liegen im Schlüsselbund (`kSecAttrAccessibleAfterFirstUnlock`, damit auch
+bei gesperrtem Bildschirm erneuert werden kann), das Zugriffstoken wird eine Minute vor Ablauf selbst erneuert,
+der Refresh-Token hält laut Doku ein Jahr. **Es fehlt nur der Schlüssel:** Geocaching HQ hat für iOS keinen
+vergeben (der Android-Key von Cachebox deckt iOS nicht ab, Lizenz §4.3), deshalb sagt die Anmeldung
+„Kein Geocaching-API-Schlüssel hinterlegt“. Sobald er da ist, reicht `App/iCacheBox/GeocachingKeys.plist`
+(Vorlage daneben) – und die bei HQ registrierte Redirect-URI muss zu `CFBundleURLTypes` passen.
+Geprüft: 83 Tests im Paket, darunter der RFC-7636-Testvektor für PKCE, Form-Kodierung (`%20` statt `+`),
+State-Prüfung, abgelehnter Refresh-Token, acht gleichzeitige Anfragen lösen genau einen Refresh aus,
+Schlüsselbund-Durchlauf, dazu der komplette Fluss über echtes HTTP gegen einen Test-Server im Test; im Simulator
+der ganze Weg mit einem lokalen Testserver statt geocaching.com (Einwilligungsdialog, Autorisierungsseite,
+Rückleitung, Token-Tausch mit PKCE-Prüfung durch den Server, Nutzerdaten, Neustart holt die Anmeldung aus dem
+Schlüsselbund, Abmelden). Nicht geprüft: die echte Anmeldung bei geocaching.com (kein Schlüssel), echtes Gerät,
+iPad, VoiceOver, Verhalten bei abgelaufenem Refresh-Token nach einem Jahr. Nicht übernommen: die
+RC4-Verschleierung des Tokens (sie schützte nur den Weg über die Webseite) und der Proxy selbst.
 
 Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
 Nachtmodus, Kachel-Cache auf Platte, Kartenrotation mit

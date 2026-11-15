@@ -18,6 +18,9 @@ struct RootView: View {
         .environment(state)
         // GPX/ZIP opened with "Share › iCacheBox" from Files, Mail or Safari: import into the open list
         .onOpenURL { url in
+            // only files are imported; icachebox:// belongs to the sign-in and is caught by
+            // ASWebAuthenticationSession itself
+            guard url.isFileURL else { return }
             let fromInbox = url.path.contains("/Inbox/")
             state.lists.importFiles([url], into: state.lists.currentName, removeAfterImport: fromInbox)
             state.show(.cacheList)
@@ -74,6 +77,8 @@ private struct MainScreen: View {
         .task {
             // the approach notification needs the position, also before a view asked for it
             state.updateApproachWatching()
+            // the sign-in of the last launch: name from UserDefaults, numbers from the API
+            Task { await state.account.restore() }
             await state.openList(state.lists.currentName)
         }
         // details of the selected cache for the cache views, the compass and the menus; again after a change of the
