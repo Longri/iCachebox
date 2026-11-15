@@ -179,6 +179,39 @@ struct AuthorizationURLTests {
         https.redirectURI = "https://www.geocaching.com"
         #expect(https.callbackScheme == nil)
     }
+
+    /// With a registered https redirect that only hands the code on (Cachebox's `gc-oauth.longri.de`), the
+    /// app waits for its own scheme while `redirect_uri` stays that page in both requests.
+    @Test func keepsTheRegisteredRedirectWithItsOwnScheme() throws {
+        let credentials = GeocachingCredentials(clientID: "12345",
+                                                clientSecret: "s3cr3t",
+                                                redirectURI: "https://gc-oauth.longri.de/index.php?Version=ACB",
+                                                callbackSchemeOverride: "icachebox")
+        #expect(credentials.callbackScheme == "icachebox")
+
+        let authorization = try GeocachingOAuth.authorization(with: credentials, state: "s", pkce: PKCECode())
+        #expect(authorization.url.queryFields["redirect_uri"] == "https://gc-oauth.longri.de/index.php?Version=ACB")
+        // The query of the redirect has to survive the escaping, otherwise HQ sees another URI.
+        #expect(authorization.url.absoluteString.contains("Version%3DACB"))
+
+        let token = GeocachingOAuth.tokenRequest(with: credentials, code: "c", verifier: "v")
+        #expect(token.formFields["redirect_uri"] == "https://gc-oauth.longri.de/index.php?Version=ACB")
+        let refresh = GeocachingOAuth.refreshRequest(with: credentials, refreshToken: "r")
+        #expect(refresh.formFields["redirect_uri"] == "https://gc-oauth.longri.de/index.php?Version=ACB")
+
+        // The callback itself arrives under the app's own scheme.
+        let callback = URL(string: "icachebox://oauth?code=abc&state=s")!
+        #expect(try GeocachingOAuth.authorizationCode(from: callback, expecting: "s") == "abc")
+    }
+
+    /// An empty override is as good as none.
+    @Test func ignoresAnEmptyOverride() {
+        var credentials = testCredentials
+        credentials.callbackSchemeOverride = ""
+        #expect(credentials.callbackScheme == "icachebox")
+        credentials.callbackSchemeOverride = "ICacheBox"
+        #expect(credentials.callbackScheme == "icachebox")
+    }
 }
 
 // MARK: - Step 2: the callback

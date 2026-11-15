@@ -24,11 +24,13 @@ enum GeocachingKeys {
         guard !clientID.isEmpty, !clientID.hasPrefix("HIER") else { return nil }
         let redirect = string(values["RedirectURI"]).trimmingCharacters(in: .whitespacesAndNewlines)
         let environment = self.environment(from: values)
+        let callbackScheme = string(values["CallbackScheme"]).trimmingCharacters(in: .whitespacesAndNewlines)
         return GeocachingCredentials(
             clientID: clientID,
             clientSecret: string(values["ClientSecret"]).trimmingCharacters(in: .whitespacesAndNewlines),
             redirectURI: redirect.isEmpty ? defaultRedirectURI : redirect,
-            environment: environment)
+            environment: environment,
+            callbackSchemeOverride: callbackScheme.isEmpty ? nil : callbackScheme)
     }
 
     /// `production`/`staging`, or the three URLs written out - the latter only to test the sign-in against
@@ -53,7 +55,7 @@ enum GeocachingKeys {
 
     /// The `ICBGeocaching…` keys of the Info.plist, without the prefix.
     private static func infoValues(in bundle: Bundle) -> [String: Any]? {
-        let names = ["ClientID", "ClientSecret", "RedirectURI", "Environment"]
+        let names = ["ClientID", "ClientSecret", "RedirectURI", "Environment", "CallbackScheme"]
         var values: [String: Any] = [:]
         for name in names {
             if let value = bundle.object(forInfoDictionaryKey: "ICBGeocaching" + name) {

@@ -64,21 +64,33 @@ public struct GeocachingCredentials: Sendable, Equatable {
     public var environment: GeocachingEnvironment
     /// The API knows one scope only: `*`.
     public var scope: String
+    /// The scheme `ASWebAuthenticationSession` waits for, when it is not the one of `redirectURI`.
+    ///
+    /// Needed when the URI registered with Geocaching HQ is an `https` page that only hands the code on to
+    /// the app - the way Cachebox's `gc-oauth.longri.de` works. `redirect_uri` then has to stay that page in
+    /// both requests (HQ compares it character by character), while the browser ends up at `icachebox://…`.
+    public var callbackSchemeOverride: String?
 
     public init(clientID: String,
                 clientSecret: String = "",
                 redirectURI: String,
                 environment: GeocachingEnvironment = .production,
-                scope: String = "*") {
+                scope: String = "*",
+                callbackSchemeOverride: String? = nil) {
         self.clientID = clientID
         self.clientSecret = clientSecret
         self.redirectURI = redirectURI
         self.environment = environment
         self.scope = scope
+        self.callbackSchemeOverride = callbackSchemeOverride
     }
 
-    /// The URL scheme of `redirectURI`, needed by `ASWebAuthenticationSession`; nil for an `https` redirect.
+    /// The URL scheme `ASWebAuthenticationSession` waits for: the override if there is one, else the scheme
+    /// of `redirectURI`; nil when neither gives an app scheme.
     public var callbackScheme: String? {
+        if let callbackSchemeOverride, !callbackSchemeOverride.isEmpty {
+            return callbackSchemeOverride.lowercased()
+        }
         guard let scheme = URLComponents(string: redirectURI)?.scheme?.lowercased(),
               scheme != "http", scheme != "https" else { return nil }
         return scheme

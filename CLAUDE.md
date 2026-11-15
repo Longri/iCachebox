@@ -359,6 +359,10 @@ der Refresh-Token hält laut Doku ein Jahr. **Es fehlt nur der Schlüssel:** Geo
 vergeben (der Android-Key von Cachebox deckt iOS nicht ab, Lizenz §4.3), deshalb sagt die Anmeldung
 „Kein Geocaching-API-Schlüssel hinterlegt“. Sobald er da ist, reicht `App/iCacheBox/GeocachingKeys.plist`
 (Vorlage daneben) – und die bei HQ registrierte Redirect-URI muss zu `CFBundleURLTypes` passen.
+Ist die registrierte URI dagegen eine `https`-Seite, die den Code nur weiterreicht (so arbeitet
+`gc-oauth.longri.de` für das Android-Cachebox), bleibt sie als `RedirectURI` stehen – HQ vergleicht sie
+Zeichen für Zeichen – und `CallbackScheme` sagt der App, auf welches Schema sie warten soll; die Seite muss
+dann per `Location: icachebox://oauth?code=…&state=…` weiterleiten.
 Geprüft: 83 Tests im Paket, darunter der RFC-7636-Testvektor für PKCE, Form-Kodierung (`%20` statt `+`),
 State-Prüfung, abgelehnter Refresh-Token, acht gleichzeitige Anfragen lösen genau einen Refresh aus,
 Schlüsselbund-Durchlauf, dazu der komplette Fluss über echtes HTTP gegen einen Test-Server im Test; im Simulator

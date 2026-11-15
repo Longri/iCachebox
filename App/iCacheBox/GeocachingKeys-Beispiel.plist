@@ -22,6 +22,13 @@
 	<string>icachebox://oauth</string>
 	<key>Environment</key>
 	<string>staging</string>
+	<!-- Nur nötig, wenn die bei HQ registrierte RedirectURI eine https-Seite ist, die den Code bloß an die
+	     App weiterreicht (so macht es gc-oauth.longri.de für das Android-Cachebox). Dann bleibt RedirectURI
+	     diese Seite – HQ vergleicht sie Zeichen für Zeichen – und die App wartet auf dieses Schema hier.
+	     Steht nichts drin, wird das Schema aus RedirectURI genommen.
+	<key>CallbackScheme</key>
+	<string>icachebox</string>
+	-->
 	<!-- Nur zum Testen: stehen diese drei Schlüssel drin, gelten sie statt Environment.
 	     Damit lässt sich die Anmeldung gegen einen eigenen Server durchspielen.
 	<key>AuthorizationURL</key>
