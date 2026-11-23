@@ -10,7 +10,8 @@ import SwiftUI
 // - Holding a button opens the list of its functions (the long click of earlier Cachebox versions).
 //
 // The button of the shown view is drawn pressed (yellow); if the view has a context menu, three dots in the corner
-// say so (`cmIcon`, red `MENUFILTERED` on the list and navigation buttons while a filter is set). The images are
+// say so (`cmIcon`, red `MENUFILTERED` only on the list button while a filter is set, like the red button itself;
+// Cachebox marks the navigation button as well). The images are
 // the Cachebox day skin (`Assets.xcassets/CacheboxButtons`, rights: see UI-KONZEPT.md).
 
 /// A main button (Cachebox `ViewManager.mainBtn1` … `mainBtn5`).
@@ -335,10 +336,11 @@ struct MainButtonView: View {
         return pressed ? button.imageName + "-pressed" : button.imageName
     }
 
-    /// The dots for a view with a context menu; red while a filter is set (Cachebox `isFiltered` on buttons 1 and 3).
+    /// The dots for a view with a context menu; red only on the list button while a filter is set,
+    /// wie der rote Knopf selbst (Cachebox zeigt `MENUFILTERED` auch auf dem Navigationsknopf).
     private var contextMark: String? {
         guard state.hasContextMenu(state.view) else { return nil }
-        let filtered = (button == .caches || button == .navigation) && state.lists.filter.isActive
+        let filtered = button == .caches && state.lists.filter.isActive
         return filtered ? "MENUFILTERED" : "cmIcon"
     }
 
