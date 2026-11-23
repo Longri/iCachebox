@@ -227,6 +227,10 @@ struct MapsforgeMapView: UIViewRepresentable {
                 let view = mapView.dequeueReusableAnnotationView(withIdentifier: id) as? OwnPositionView
                     ?? OwnPositionView(annotation: annotation, reuseIdentifier: id)
                 view.annotation = annotation
+                // MapKit sets `zPriority` back to `.defaultUnselected` while the view waits in the reuse queue
+                // (measured), so it has to be set again after every dequeue, not only in `init`: otherwise the
+                // arrow ends up under the waypoints and caches once the map was moved away from it and back.
+                view.zPriority = .max
                 if let position { view.update(position: position, mapHeading: mapView.camera.heading,
                                               accuracyRadius: accuracyRadius(of: position, on: mapView)) }
                 return view

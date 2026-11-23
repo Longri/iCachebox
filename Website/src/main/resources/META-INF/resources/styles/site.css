@@ -223,6 +223,27 @@ a:focus-visible { outline: 3px solid var(--cb-orange); outline-offset: 2px; }
 .api-key-result [role="status"] { color: var(--cb-green-dark); }
 .api-key .card a.button-primary { color: #fff; }
 
+/* Tickets verwenden dieselben Karten, Farben und Abstände wie die übrige Website. */
+.tickets > h1 { margin-top: 16px; overflow-wrap: anywhere; }
+.ticket-form { display: flex; flex-direction: column; gap: 14px; max-width: 780px; }
+.ticket-form > vaadin-text-field, .ticket-form > vaadin-password-field,
+.ticket-form > vaadin-text-area { width: 100%; }
+.ticket-form > vaadin-button { align-self: flex-start; }
+.ticket-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 18px 0; }
+.ticket-controls > span { align-self: center; }
+.ticket-detail > .card, .ticket-detail > vaadin-details { margin: 20px 0; }
+.ticket-detail h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); }
+.ticket-prose p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ticket-message h3 { margin-top: 0; font-size: 1rem; }
+.ticket-note { background: rgba(255, 241, 190, 0.96); border-left: 5px solid var(--cb-orange); }
+.ticket-conflict { background: rgba(255, 241, 225, 0.96); border-left: 5px solid #b65f16; }
+.ticket-screenshots { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+.ticket-screenshots img { width: 100%; max-height: 220px; object-fit: contain; border-radius: 8px; background: #fff; }
+.ticket-screenshots span { display: block; overflow-wrap: anywhere; font-size: .85rem; }
+.ticket-paste { margin: 16px 0; padding: 16px; border-radius: 12px; background: var(--cb-card); border: 2px dashed var(--cb-green); }
+.ticket-paste:focus { outline: 3px solid var(--cb-orange); }
+.tickets vaadin-grid { background: rgba(255, 255, 255, .9); border-radius: 12px; }
+
 .card a {
   display: block;
   width: fit-content;

@@ -22,6 +22,7 @@ import de.cachebox.website.views.ComingSoonView;
 import de.cachebox.website.views.ManualView;
 import de.cachebox.website.views.MapsView;
 import de.cachebox.website.views.StartView;
+import de.cachebox.website.views.TicketsView;
 
 /**
  * Rahmen aller Seiten: Kopfzeile mit Navigation, Inhalt, Fußzeile.
@@ -79,6 +80,7 @@ public class MainLayout extends Div implements RouterLayout {
                 navLink("Coming Soon!", ComingSoonView.class),
                 navLink("Offline-Karten", MapsView.class),
                 navLink("Anleitung", ManualView.class),
+                navLink("Tickets", TicketsView.class),
                 navLink("Geocaching-Zugang", ApiKeyView.class),
                 navLink("Projekt", AboutView.class));
         nav.addClassName("site-nav");

@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import com.vaadin.flow.router.RouterLink;
 
 @Route(value = "admin", layout = MainLayout.class)
 @PageTitle("Website-Statistik | iCachebox")
@@ -46,6 +47,7 @@ public class AdminView extends Div {
                 new Button("Abmelden", e -> auth.logout()));
         controls.addClassName("analytics-controls");
         add(new H1("Website-Statistik"), new Paragraph("Aufrufe und Besuche der öffentlichen Seiten · Zeitzone Europa/Berlin"), controls);
+        add(new RouterLink("Tickets und Arbeitsliste öffnen", TicketsView.class));
         if (!countries.available()) add(new Paragraph("Ländererkennung noch nicht eingerichtet: GEOIP_DATABASE in der .env auf eine lokale GeoLite2-Country.mmdb setzen. Bis dahin: Unbekannt."));
         add(results, new Paragraph("Ein Aufruf zählt eine angezeigte öffentliche Seite, einschließlich Navigation und Neuladen. "
                 + "Ein Besuch beginnt beim ersten öffentlichen Aufruf einer Sitzung (30 Minuten Inaktivität). Besuche sind keine eindeutigen Personen. "

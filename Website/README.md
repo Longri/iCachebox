@@ -111,6 +111,107 @@ Tests: `mvn test`. Die OAuth-Tests prüfen PKCE, Sitzungsbindung, Ablauf, Wieder
 Token-Austausch mit einem lokalen Testanbieter. Ein echter Groundspeak-Login benötigt die freigeschalteten
 Partner-Zugangsdaten und lässt sich ohne sie nicht abschließend prüfen.
 
+## Tickets, Benutzerkonten und GitHub
+
+`/tickets` ist die gemeinsame Ticketseite. Ohne Anmeldung führt sie zum vorhandenen `/login`;
+unter `/registrieren` können Benutzer ein Ticketkonto mit Benutzername und Passwort anlegen.
+Benutzernamen enthalten 3–40 Zeichen aus Buchstaben, Ziffern, Punkt, Unterstrich und Bindestrich und werden
+kleingeschrieben. Das Passwort benötigt mindestens zehn Zeichen und darf höchstens 72 UTF-8-Bytes lang sein.
+Gespeichert wird ausschließlich ein BCrypt-Hash. Der konfigurierte Adminname und Systemnamen sind reserviert.
+Die bestehende Admin-Anmeldung aus der `.env` bleibt erhalten. Benutzer landen nach Anmeldung bei ihren Tickets,
+Administratoren weiterhin bei `/admin`; dort ist die Ticket-Arbeitsliste verlinkt.
+
+Benutzer können Fehler und Featurewünsche mit Titel und Beschreibung erstellen, bearbeiten und durch weitere
+Nachrichten ergänzen. Sie sehen nur ihre eigenen Tickets und die dazugehörigen Antworten. Administratoren sehen
+alle Tickets, einschließlich der von GitHub importierten Issues, und können Antworten oder ausdrücklich
+**interne Notizen** speichern. Die Notizen werden bereits bei der Datenabfrage für normale Benutzer ausgeschlossen.
+Auch der GitHub-Abgleich liest ausschließlich öffentliche Nachrichten. Die Status sind Neu, Rückfrage, Geplant,
+In Arbeit und Erledigt. Titel/Beschreibungen haben einen Schutz vor dem Überschreiben zwischenzeitlicher Änderungen.
+
+Die Adminliste unterstützt Suche nach Titel, Beschreibung oder Ticketnummer sowie Filter nach Typ und Status.
+Tickets werden per Drag-and-drop oder mit den Pfeilknöpfen in der Zeile priorisiert. Jeder Verschiebevorgang
+speichert die Reihenfolge sofort als eine Datenbanktransaktion. Auch bei gefilterter Ansicht bleibt die vollständige
+Arbeitsliste erhalten; neue Tickets werden hinten angefügt. GitHub verändert diese Reihenfolge nicht.
+
+### Screenshots und Speicherung
+
+Nach dem Erstellen können Screenshots am Ticket hinzugefügt werden: Mehrfachauswahl, Drag-and-drop oder Einfügen
+mit ⌘V/Strg+V im markierten Uploadbereich. Pro Ticket sind zehn Bilder erlaubt, pro Bild maximal 8 MiB und
+24 Megapixel. Der Server prüft Dateigröße, Bildinhalt und Dimensionen unabhängig von Dateiname und MIME-Angabe.
+Nur PNG und JPEG werden angenommen und vor der Speicherung neu kodiert; SVG und sonstige Dateien werden abgelehnt.
+Die Anzeige über `/ticket-attachments/{id}` prüft bei jedem Abruf die Anmeldung und Ticketberechtigung und ist
+nicht cachebar. Es gibt keine anonymen Bild-URLs und keine Freigabe der Uploads als statische Dateien.
+
+`TICKETS_DIRECTORY` ist standardmäßig `data/tickets` unter dem bestehenden Datenverzeichnis. Die H2-Datei
+`tickets.mv.db` enthält Konten, Tickets, Nachrichten, interne Notizen, Screenshotdaten, Reihenfolge und die
+GitHub-Zuordnungen. Sie bleibt außerhalb der Jar und wird beim Deployment nicht ersetzt. Das Ticketverzeichnis
+wird auf POSIX-Dateisystemen auf nur für den Dienstbenutzer zugänglich gesetzt. Für ein konsistentes Backup den
+Dienst stoppen und die gesamte Datei geschützt sichern. Die Anwendung benötigt exklusiven Zugriff auf die Datei.
+Der reguläre Build und Deploy-Befehl bleibt unverändert. Die erste Ausführung legt die Tabellen automatisch an.
+
+Die Registrierung sammelt keine E-Mail-Adresse. E-Mail-Benachrichtigungen, Bestätigungsmails und ein automatisches
+„Passwort vergessen“ gehören daher nicht zu dieser Umsetzung. Passwörter sicher im eigenen Passwortmanager aufbewahren.
+
+### Synchronisation mit Longri/iCachebox aktivieren
+
+Die GitHub-Verbindung in diesem Chat und die Zugangsdaten des laufenden Website-Servers sind getrennt.
+Die Anwendung benötigt einen eigenen Fine-grained PAT: Resource owner `Longri`, Repository `iCachebox`,
+Repository permission **Issues: Read and write**, sowie die automatisch enthaltene Metadata-Leseberechtigung.
+Der Token benötigt keinen Zugriff auf den Quellcode. Den Token ausschließlich in der geschützten `.env` hinterlegen:
+
+```properties
+TICKETS_DIRECTORY=./data/tickets
+TICKETS_GITHUB_ENABLED=true
+TICKETS_GITHUB_TOKEN=
+TICKETS_PUBLIC_URL=https://deine-domain.de
+TICKETS_GITHUB_INTERVAL_MS=120000
+```
+
+`TICKETS_PUBLIC_URL` ist optional und enthält die eigene HTTPS-Adresse, bei Bedarf einschließlich Unterpfad.
+Sie wird für Links aus dem GitHub-Issue zum geschützten Website-Ticket verwendet. Ohne Adresse steht nur die
+Website-Ticketnummer im Issue. Nach Konfigurationsänderungen neu starten. Solange Synchronisation deaktiviert
+ist oder der Token fehlt, funktioniert das gesamte lokale Ticketsystem und der Abgleichknopf ist deaktiviert.
+Bei eingerichteter Verbindung läuft der Abgleich alle zwei Minuten und zusätzlich über „GitHub jetzt abgleichen“
+in der Adminliste. Fehler beim Abgleich lassen die lokalen Daten erhalten; ein Hinweis erscheint in der Adminliste.
+
+Das Ziel ist ausdrücklich `Longri/iCachebox`, unabhängig davon, welches Git-Remote der Website-Quellcode verwendet.
+Da das Repository öffentlich ist, veröffentlicht die Website nur Tickets, deren Ersteller der Weitergabe von
+Titel, Beschreibung, Benutzername und öffentlichen Antworten ausdrücklich zugestimmt hat. Diese Freigabe ist
+bei der Erstellung oder später im Ticket möglich. Ein Administrator kann die Freigabe eines fremden Tickets
+nicht stellvertretend erteilen. Bereits veröffentlichte Inhalte können auf GitHub kopiert worden sein; die Website
+bietet deshalb keine irreführende Funktion zum nachträglichen „Privatmachen“ an.
+
+### Abgleichregeln und Konflikte
+
+Die Umsetzung verwendet die offiziellen [GitHub-Issue-Endpunkte](https://docs.github.com/en/rest/issues/issues)
+und [Kommentar-Endpunkte](https://docs.github.com/en/rest/issues/comments). Issues und Kommentare werden vollständig
+seitenweise geladen; Pull Requests werden herausgefiltert. Eine unvollständige Gesamtliste wird nicht als Grundlage
+für neue Issues verwendet. Website-Tickets und -Nachrichten erhalten dauerhafte UUIDs, die als unsichtbare Marker
+in GitHub-Beschreibungen bzw. -Kommentaren stehen. Vor dem Anlegen wird nach diesen Markern gesucht, sodass ein
+wiederholter Abgleich auch nach verlorener HTTP-Antwort keine normalen Duplikate erzeugt. Diese Marker sollten
+auf GitHub erhalten bleiben. Gelöschte oder nicht erreichbare verknüpfte Issues werden nicht automatisch neu angelegt.
+
+Titel, Beschreibung und Offen-/Geschlossen-Status werden über einen Vergleich mit dem letzten erfolgreichen Stand
+in beide Richtungen abgeglichen. Änderungen an unterschiedlichen Feldern werden zusammengeführt. Unterschiedliche
+Änderungen desselben Feldes auf beiden Seiten erzeugen einen Konflikt; der Admin sieht die Website-Fassung und
+die GitHub-Fassung und entscheidet ausdrücklich. Zwischenzeitliche Änderungen verhindern auch hier ein veraltetes
+Überschreiben. Nur „Erledigt“ entspricht GitHub „closed“; die übrigen Website-Status entsprechen „open“.
+Die feineren Status bleiben bei bloßen Textänderungen erhalten. Ein Wiederöffnen eines zuvor erledigten Tickets
+auf GitHub setzt es auf „Neu“.
+
+Öffentliche Website-Antworten werden einmalig als GitHub-Kommentare übertragen und mit dem ursprünglichen
+Website-Benutzernamen gekennzeichnet; GitHub zeigt als tatsächlichen API-Autor den Tokeninhaber an. Antworten
+und Kommentaränderungen von GitHub werden zurückgelesen. Website-Nachrichten werden ergänzt und nicht nachträglich
+editiert oder gelöscht. Das Löschen von GitHub-Kommentaren wird nicht in die Website übernommen.
+Bestehende externe GitHub-Issues werden einmalig in die Adminliste importiert und keinem Website-Benutzer zugänglich
+gemacht. Interne Notizen, manuelle Reihenfolge und Screenshotdaten werden niemals an GitHub übertragen.
+Screenshots werden dort über den Link zum geschützten Website-Ticket referenziert und erfordern auch dort eine
+passende Website-Anmeldung; GitHub bekommt keine öffentlichen oder mit Zugriffstoken versehenen Bild-URLs.
+
+Prüfen: `mvn test`. Tests decken Berechtigungen, Registrierung, Bildprüfung, Neustart, Sortierung, Konflikte,
+beidseitige Änderungen, Kommentaränderungen, Wiederholungen und verlorene Antworten ab. Die HTTP-Tests verwenden
+einen lokalen GitHub-Testanbieter. Ein echter schreibender Serverabgleich benötigt den separat konfigurierten PAT.
+
 ## Coming Soon! und Funktionsabstimmung
 
 `/coming-soon` zeigt zehn verständliche Funktionspakete mit kurzem Nutzen und aufklappbaren

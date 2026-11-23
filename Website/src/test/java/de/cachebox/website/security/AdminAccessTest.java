@@ -1,6 +1,9 @@
 package de.cachebox.website.security;
 
 import de.cachebox.website.Application;
+import de.cachebox.website.tickets.TicketAccounts;
+import de.cachebox.website.tickets.TicketStore;
+import de.cachebox.website.tickets.TicketModels.*;
 import java.nio.file.Files;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class AdminAccessTest {
     @Autowired WebApplicationContext context;
+    @Autowired TicketAccounts accounts;
+    @Autowired TicketStore tickets;
     MockMvc mvc;
 
     @DynamicPropertySource
@@ -63,6 +68,22 @@ class AdminAccessTest {
         mvc.perform(get("/oauth/groundspeak/callback").param("state", "invalid").param("code", "invalid"))
                 .andExpect(status().isSeeOther()).andExpect(redirectedUrl("/api-key"));
         mvc.perform(get("/admin")).andExpect(redirectedUrl("/login"));
+    }
+
+    @Test
+    void ticketUsersShareTheLoginButCannotReadAdminPagesOrForeignScreenshots() throws Exception {
+        accounts.register("ticket-user", "ticket-password-12345");
+        mvc.perform(formLogin().user("ticket-user").password("ticket-password-12345"))
+                .andExpect(authenticated().withRoles("USER")).andExpect(redirectedUrl("/tickets"));
+        mvc.perform(get("/admin").with(user("ticket-user").roles("USER"))).andExpect(status().isForbidden());
+        var ticket = tickets.create(new Actor("ticket-user", false), "Privates Ticket", "Ein Screenshot für mein eigenes Ticket.", Kind.BUG, false);
+        tickets.attach(new Actor("ticket-user", false), ticket.id(), "screen.png", "image/png", new byte[]{1,2,3});
+        String url = "/ticket-attachments/" + tickets.attachments(new Actor("ticket-user", false), ticket.id()).getFirst().id();
+        mvc.perform(get(url)).andExpect(status().is3xxRedirection());
+        mvc.perform(get(url).with(user("other-user").roles("USER"))).andExpect(status().isForbidden());
+        mvc.perform(get(url).with(user("ticket-user").roles("USER"))).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store")).andExpect(content().bytes(new byte[]{1,2,3}));
+        mvc.perform(get(url).with(user("test-owner").roles("ADMIN"))).andExpect(status().isOk());
     }
 
     @Test

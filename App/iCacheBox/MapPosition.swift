@@ -61,7 +61,9 @@ final class OwnPositionView: MKAnnotationView {
         canShowCallout = false
         isEnabled = false   // taps go to the map and the caches below
         displayPriority = .required
-        zPriority = .max   // above the caches, like Cachebox draws it after them
+        // above the caches and waypoints, like Cachebox draws the position last; reuse clears this, so the
+        // delegate sets it again after every dequeue
+        zPriority = .max
         clipsToBounds = false
         // blue fill (alpha 50/255) and blue ring like `AccuracyDrawable`
         accuracyLayer.fillColor = UIColor(red: 0, green: 0, blue: 1, alpha: 50 / 255).cgColor

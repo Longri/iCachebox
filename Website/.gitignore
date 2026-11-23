@@ -61,3 +61,6 @@ application-local.properties
 # Persistenter Admin-Hash und Remember-Me-Schlüssel (auch bei abweichendem Datenverzeichnis)
 admin-login.properties
 admin-login-*.tmp
+
+# Lokale Arbeitsergebnisse (z. B. erzeugte Ticketvorlagen aus dem Funktionskatalog)
+/output/

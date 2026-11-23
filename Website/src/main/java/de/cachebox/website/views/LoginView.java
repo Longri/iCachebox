@@ -13,6 +13,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import de.cachebox.website.MainLayout;
+import com.vaadin.flow.router.RouterLink;
 
 @Route(value = "login", layout = MainLayout.class)
 @PageTitle("Anmelden | iCachebox")
@@ -23,7 +24,7 @@ public class LoginView extends Div implements BeforeEnterObserver {
     public LoginView(@Value("${website.admin.remember-me-days:14}") int rememberMeDays) {
         addClassName("page");
         var i18n = LoginI18n.createDefault();
-        i18n.getForm().setTitle("Statistikbereich");
+        i18n.getForm().setTitle("Dein iCachebox-Konto");
         i18n.getForm().setUsername("Benutzername");
         i18n.getForm().setPassword("Passwort");
         i18n.getForm().setSubmit("Anmelden");
@@ -37,11 +38,15 @@ public class LoginView extends Div implements BeforeEnterObserver {
         rememberMe.getElement().setAttribute("name", "remember-me");
         rememberMe.getElement().setProperty("value", "true");
         login.getElement().appendChild(rememberMe.getElement());
-        add(new H1("Anmelden"), new Paragraph("Geschützter Bereich für die Website-Auswertung."), login);
+        add(new H1("Anmelden"), new Paragraph("Melde dich für deine Tickets oder den Adminbereich an."), login,
+                new RouterLink("Noch kein Konto? Registrieren", RegisterView.class));
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         login.setError(event.getLocation().getQueryParameters().getParameters().containsKey("error"));
+        if (event.getLocation().getQueryParameters().getParameters().containsKey("registered")) {
+            addComponentAtIndex(1, new Paragraph("Dein Konto wurde erstellt. Du kannst dich jetzt anmelden."));
+        }
     }
 }
