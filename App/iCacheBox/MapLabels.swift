@@ -66,8 +66,10 @@ final class MapLabelStore: @unchecked Sendable {
 /// (`TileDependencies` is not needed then). Every label is rendered into an image once and shown by a `CALayer`
 /// of its own, so that moving the map only moves layers instead of drawing text again.
 ///
-/// First step towards labels that keep their own direction while the map is turned: the labels still move and
-/// scale exactly with the map, as they did inside the tiles.
+/// While the map is turned, the names of towns, districts and points keep their direction and stay readable
+/// (Cachebox does this in its old vector renderer, `TileGL_RotateDrawables`); names of ways turn with the map,
+/// but are drawn the other way round as soon as they would be upside down (`MapElementContainer.inverts(at:)`),
+/// which needs their image again – that happens only when the turn passes the right angle to the way.
 @MainActor
 final class MapLabelsView: UIView {
     private let store: MapLabelStore
@@ -76,11 +78,27 @@ final class MapLabelsView: UIView {
     private var zoom = -1
     private var tiles: [TileKey] = []
     private var version = -1
-    /// The labels on screen with the part of the absolute pixel plane their image covers.
-    private var placed: [(label: MapElementContainer, bounds: CGRect, layer: CALayer)] = []
+    /// Turn of the map the labels were last drawn for (radians); a new one may turn texts round.
+    private var rotation: CGFloat = 0
+    private var placed: [Placed] = []
     /// Rendered labels of the current set, `nil` for a label with nothing to draw.
-    private var images: [MapElementContainer: (image: CGImage, bounds: CGRect)?] = [:]
+    private var images: [MapElementContainer: Rendered?] = [:]
     private var updateScheduled = false
+
+    /// A label on the screen: its image covers `bounds` of the absolute pixel plane around `label.anchor`.
+    private struct Placed {
+        let label: MapElementContainer
+        var bounds: CGRect
+        var inverted: Bool
+        let layer: CALayer
+    }
+
+    private struct Rendered {
+        let image: CGImage
+        let bounds: CGRect
+        /// Which way round the text was drawn, so that it can be drawn again when the map turns far enough.
+        let inverted: Bool
+    }
 
     init(store: MapLabelStore) {
         self.store = store
@@ -102,6 +120,7 @@ final class MapLabelsView: UIView {
         tiles = []
         zoom = -1
         version = -1
+        rotation = 0
     }
 
     /// Tiles were rendered, so there may be new labels. Coalesced: many tiles finish at about the same time.
@@ -117,36 +136,40 @@ final class MapLabelsView: UIView {
 
     /// Puts the visible labels together again if the view moved to other tiles, and places them.
     func update(on mapView: MKMapView) {
-        guard bounds.width > 0, bounds.height > 0, let z = store.currentZoom, z >= 0, z <= 21 else { return }
+        guard bounds.width > 0, bounds.height > 0, let z = store.currentZoom, z >= 0, z <= 21,
+              let t = transform(on: mapView, zoom: z) else { return }
+        // the turn of the map, taken from the transformation itself
+        let turn = atan2(t.b, t.a)
         let keys = TileKey.covering(mapView.visibleMapRect, zoom: z)
         let (labels, version) = store.labels(for: keys)
         if z != zoom || keys != tiles || version != self.version {
             zoom = z
             tiles = keys
             self.version = version
-            rebuild(labels)
+            rotation = turn
+            rebuild(labels, rotation: turn)
         }
-        position(on: mapView)
+        place(with: t, rotation: turn)
     }
 
     /// mapsforge `LabelLayer`: of the labels of all visible tiles the clashing ones are dropped, the rest is drawn
     /// lowest priority first, so that the more important ones end up on top.
-    private func rebuild(_ labels: [MapElementContainer]) {
+    private func rebuild(_ labels: [MapElementContainer], rotation: CGFloat) {
         let scale = max(traitCollection.displayScale, 1)
         let ordered = collisionFreeOrdered(withoutDuplicateCaptions(labels)).sorted { $0.priority < $1.priority }
-        var cache: [MapElementContainer: (image: CGImage, bounds: CGRect)?] = [:]
+        var cache: [MapElementContainer: Rendered?] = [:]
         var free = placed.map(\.layer)
-        var next: [(label: MapElementContainer, bounds: CGRect, layer: CALayer)] = []
+        var next: [Placed] = []
         next.reserveCapacity(ordered.count)
         for label in ordered {
-            let rendered = images[label] ?? label.render(scale: scale)
+            let rendered = image(of: label, scale: scale, rotation: rotation, cache: images[label] ?? nil)
             cache[label] = rendered
             guard let rendered else { continue }
             let layer = free.popLast() ?? makeLayer()
             layer.contents = rendered.image
             layer.contentsScale = scale
             layer.bounds = CGRect(origin: .zero, size: rendered.bounds.size)
-            next.append((label, rendered.bounds, layer))
+            next.append(Placed(label: label, bounds: rendered.bounds, inverted: rendered.inverted, layer: layer))
         }
         for layer in free { layer.removeFromSuperlayer() }
         placed = next
@@ -157,27 +180,58 @@ final class MapLabelsView: UIView {
         CATransaction.commit()
     }
 
+    /// The image of a label at this turn of the map; the one already drawn is kept while the text still reads
+    /// the same way round.
+    private func image(of label: MapElementContainer, scale: CGFloat, rotation: CGFloat,
+                       cache: Rendered?) -> Rendered? {
+        let inverted = label.inverts(at: rotation)
+        if let cache, cache.inverted == inverted { return cache }
+        guard let drawn = label.render(scale: scale, rotation: rotation) else { return nil }
+        return Rendered(image: drawn.image, bounds: drawn.bounds, inverted: inverted)
+    }
+
     private func makeLayer() -> CALayer {
         let layer = CALayer()
         layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         layer.actions = ["position": NSNull(), "transform": NSNull(), "contents": NSNull(), "bounds": NSNull()]
-        layer.isGeometryFlipped = false
         return layer
     }
 
-    /// Moves every label to where its place on the map is now.
-    private func position(on mapView: MKMapView) {
-        guard !placed.isEmpty, let t = transform(on: mapView, zoom: zoom) else { return }
-        // Scale and rotation of the map, without the shift: between two zoom levels the tiles are drawn
-        // enlarged and the labels grow with them, and a turned map turns them – both as it was while they were
-        // part of the tile. Letting a label keep its own direction is the next step.
-        let turn = CATransform3DMakeAffineTransform(CGAffineTransform(a: t.a, b: t.b, c: t.c, d: t.d,
-                                                                      tx: 0, ty: 0))
+    /// Moves every label to where its place on the map is now. A label that turns with the map gets the whole
+    /// scale and turn of the map; one that keeps its direction gets the scale alone, and its box is put around
+    /// the anchor point in the direction of the screen, so that a name stays above its symbol.
+    private func place(with t: CGAffineTransform, rotation turn: CGFloat) {
+        guard !placed.isEmpty else { return }
+        // between two zoom levels the tiles are drawn enlarged; the labels grow with them, as they did inside
+        let scale = (abs(t.a * t.d - t.b * t.c)).squareRoot()
+        let withMap = CGAffineTransform(a: t.a, b: t.b, c: t.c, d: t.d, tx: 0, ty: 0)
+        let upright = CGAffineTransform(scaleX: scale, y: scale)
+        let withMap3D = CATransform3DMakeAffineTransform(withMap)
+        let upright3D = CATransform3DMakeScale(scale, scale, 1)
+        // only when the map really turned can a text have to be drawn the other way round
+        let turned = abs(turn - rotation) > 0.0005
+        if turned { rotation = turn }
+        let displayScale = max(traitCollection.displayScale, 1)
+
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        for p in placed {
-            p.layer.position = CGPoint(x: p.bounds.midX, y: p.bounds.midY).applying(t)
-            p.layer.transform = turn
+        for i in placed.indices {
+            let label = placed[i].label
+            if turned, label.rotatesWithMap, label.inverts(at: turn) != placed[i].inverted,
+               let rendered = image(of: label, scale: displayScale, rotation: turn, cache: nil) {
+                images[label] = rendered
+                placed[i].bounds = rendered.bounds
+                placed[i].inverted = rendered.inverted
+                placed[i].layer.contents = rendered.image
+                placed[i].layer.bounds = CGRect(origin: .zero, size: rendered.bounds.size)
+            }
+            let p = placed[i]
+            let anchor = label.anchor
+            let offset = CGPoint(x: p.bounds.midX - anchor.x, y: p.bounds.midY - anchor.y)
+                .applying(label.rotatesWithMap ? withMap : upright)
+            let onScreen = anchor.applying(t)
+            p.layer.position = CGPoint(x: onScreen.x + offset.x, y: onScreen.y + offset.y)
+            p.layer.transform = label.rotatesWithMap ? withMap3D : upright3D
         }
         CATransaction.commit()
     }

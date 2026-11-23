@@ -13,7 +13,9 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     Mini-SVG-Renderer für Theme-Symbole, `TileRenderer` (`renderTile(…, labels:)` gibt die Labels heraus,
     statt sie in die Kachel zu zeichnen – mapsforge `DatabaseRenderer` mit `TileBasedLabelStore`;
     `MapElementContainer.render` zeichnet ein Label einzeln in ein Bild, `withoutDuplicateCaptions` wirft
-    Doppel an Kachelgrenzen weg)
+    Doppel an Kachelgrenzen weg; `rotatesWithMap` trennt Beschriftung, die sich mitdreht (Wegtexte,
+    `lineSymbol`), von der aufrecht bleibenden, `inverts(at:)` dreht Wegtexte bei gedrehter Karte um, statt
+    sie kopfüber zu zeigen – nicht in mapsforge, das alles in die Kachel zeichnet)
   - `mfdump` – Entwickler-CLI: `info`, `dump` (Tags einer Kachel), `render`, `grid` (Kachelraster, zufällige
     Reihenfolge), `bench`; Theme-Argument `pfad.xml#stil,+overlay,-overlay` wählt Stil/Overlays
   - `Resources/themes/` – interne Themes (default, osmarender) + Symbole/Patterns aus Cachebox
@@ -83,7 +85,11 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     Punkten, gilt damit auch bei gedrehter Karte). Die Zoomstufe meldet der Renderer
     (`MapLabelStore.setZoom`) – aus der Kamera geraten lag sie zwischen zwei Stufen daneben, dann fehlten alle
     Labels. Die Ebene ist die erste Subview des `CacheMapView`, MapKit hängt seine Annotationen später darüber,
-    also liegen die Cache-Marker über den Labels
+    also liegen die Cache-Marker über den Labels. Bei gedrehter Karte bekommt jedes Label nur den Teil der
+    Abbildung, der zu ihm passt: Namen von Orten, Bezirken und Punkten nur die Vergrößerung (sie bleiben
+    waagerecht, ihr Kasten liegt in Bildschirmrichtung um den Ankerpunkt), Wegtexte und `lineSymbol` die ganze
+    Drehung; ein Wegtext, der dabei kopfüber stünde, wird umgedreht neu gezeichnet (nur beim Überschreiten des
+    rechten Winkels zum Weg)
   - Caches: `CacheListModel.swift` (Listen in `Documents/Lists`, Sortierung, Filter, Import), `CacheListView.swift`,
     `CacheListsView.swift`, `CacheFilterView.swift`, `ImportView.swift`, `CacheDetailView.swift`, `HTMLView.swift`
     (WKWebView ohne JavaScript), `LocationModel.swift`, `CachePresentation.swift` (Cachetyp-/Wegpunkt-Icons
@@ -462,8 +468,21 @@ Darstellung an derselben Stelle, Ziehen, Zoomen per Geste, Drehen, Zoomstufen 13
 Labels, Karten-/Themewechsel leert den Store). Nicht geprüft: echtes Gerät, Speicherbedarf der Label-Bilder,
 iPad, VoiceOver.
 
+Aufrechte Labels bei gedrehter Karte (seit 24.11.2026, Schritt 2, wie ACB): Namen von Orten, Bezirken und
+Punkten bleiben waagerecht und lesbar, wenn die Karte gedreht ist; Straßen- und Flussnamen drehen mit, werden
+aber umgedreht gezeichnet, sobald sie kopfüber stünden (`MapElementContainer.inverts(at:)` wendet mapsforges
+Regel aus `WayTextContainer.generatePath` auf die Richtung auf dem Bildschirm an statt auf die der Karte; ohne
+Drehung kommt genau die alte Entscheidung heraus). Einbahnpfeile und andere `lineSymbol` drehen weiter mit dem
+Weg mit. Geprüft mit acht Tests in MapsforgeRender (Richtungen, Umschlagpunkte bei ±90° zur Wegrichtung, feste
+Orientierungen `right`/`left`, was mitdreht und was nicht) und im Simulator (Drehung in Schritten über 360°,
+z13–z17, Zurückdrehen nach Norden über den Kompassknopf: Bild wie ohne Drehung). Messung: Während der Drehung
+werden 1–6 Texte je Bild neu gezeichnet, das Setzen aller Positionen kostet dabei 0,4–2,8 ms statt 0,2 ms –
+die Umschlagpunkte verteilen sich über die Drehung, es gibt also keinen Ruck. Abweichung: Die Kollisionskästen
+liegen weiter im Kartenraster (wie in mapsforge), bei gedrehter Karte können waagerechte Namen deshalb etwas
+überlappen – das richtet erst Schritt 3. Nicht geprüft: echtes Gerät, Drehung über den Kompass unterwegs
+(Simulator hat kein Magnetometer), iPad, VoiceOver.
+
 Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
-Nachtmodus, Kachel-Cache auf Platte, aufrechte Labels bei gedrehter Karte (Schritt 2: Punktlabels waagerecht,
-Wegtexte mitgedreht, aber gespiegelt statt kopfüber; Schritt 3: Kollisionskästen im gedrehten Raum,
-Label-Bilder im Hintergrund zeichnen), Pixel-Vergleich gegen Java-AWT-Rendering, SVG `<use>`/Gradienten/`<pattern>` (betrifft z. B.
+Nachtmodus, Kachel-Cache auf Platte, Schritt 3 der Beschriftung (Kollisionskästen im gedrehten Raum,
+Label-Bilder im Hintergrund zeichnen, Labels beim Zoomen aus der Nachbarstufe übernehmen), Pixel-Vergleich gegen Java-AWT-Rendering, SVG `<use>`/Gradienten/`<pattern>` (betrifft z. B.
 Elevates `s_mall.svg`), Test auf echtem Gerät.

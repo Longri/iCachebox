@@ -32,8 +32,21 @@ public class MapElementContainer: @unchecked Sendable {
 
     public func intersects(_ rect: CGRect) -> Bool { boundaryAbsolute.intersects(rect) }
 
-    /// Draws the element into a y-down context whose origin lies at the absolute pixel `origin`.
-    public func draw(_ cg: CGContext, origin: CGPoint) {}
+    /// The point on the map the element belongs to; its box lies around this point.
+    public var anchor: CGPoint { xy }
+
+    /// Whether the element turns with the map – text and symbols that follow a way – or keeps its own
+    /// direction on the screen, like the names of towns and districts and the symbols of single points.
+    /// Not in mapsforge, which draws every element into the tile and turns them all with it.
+    public var rotatesWithMap: Bool { false }
+
+    /// Whether the text runs right to left on the screen while the map is turned by `rotation` (radians,
+    /// clockwise) and has to be drawn the other way round, so that it is not upside down.
+    public func inverts(at rotation: CGFloat) -> Bool { false }
+
+    /// Draws the element into a y-down context whose origin lies at the absolute pixel `origin`; `rotation`
+    /// is the angle the map is turned by on the screen, which decides which way round text along a way reads.
+    public func draw(_ cg: CGContext, origin: CGPoint, rotation: CGFloat = 0) {}
 
     /// Text of a caption, to find the labels two tiles made for the same thing; `nil` for symbols and for text
     /// along a way, which may well repeat.
@@ -44,7 +57,7 @@ public extension MapElementContainer {
     /// Draws the label on its own into an image, for a label layer that places it on the screen itself. The
     /// returned rect is the part of the absolute pixel plane the image covers; `margin` leaves room for the halo
     /// around the text, which reaches beyond the boundary used for collision detection.
-    func render(scale: CGFloat, margin: CGFloat = 6) -> (image: CGImage, bounds: CGRect)? {
+    func render(scale: CGFloat, rotation: CGFloat = 0, margin: CGFloat = 6) -> (image: CGImage, bounds: CGRect)? {
         let bounds = boundaryAbsolute.insetBy(dx: -margin, dy: -margin)
         guard bounds.width > 0, bounds.height > 0 else { return nil }
         let px = Int((bounds.width * scale).rounded()), py = Int((bounds.height * scale).rounded())
@@ -58,7 +71,7 @@ public extension MapElementContainer {
         cg.translateBy(x: 0, y: CGFloat(py))
         cg.scaleBy(x: scale, y: -scale)
         cg.setShouldAntialias(true)
-        draw(cg, origin: bounds.origin)
+        draw(cg, origin: bounds.origin, rotation: rotation)
         guard let image = cg.makeImage() else { return nil }
         return (image, bounds)
     }
@@ -96,7 +109,7 @@ final class PointTextContainer: MapElementContainer, @unchecked Sendable {
         boundaryAbsolute = b.offsetBy(dx: point.x, dy: point.y)
     }
 
-    public override func draw(_ cg: CGContext, origin: CGPoint) {
+    public override func draw(_ cg: CGContext, origin: CGPoint, rotation: CGFloat = 0) {
         let topLeft = CGPoint(x: boundaryAbsolute.minX - origin.x, y: boundaryAbsolute.minY - origin.y)
         let alignment: CTTextAlignment = position.isLeft ? .right : (position.isRight ? .left : .center)
         layout.draw(in: cg, topLeft: topLeft, alignment: alignment)
@@ -107,17 +120,23 @@ final class SymbolContainer: MapElementContainer, @unchecked Sendable {
     let bitmap: ThemeBitmap
     let theta: CGFloat
     let boundary: CGRect
+    /// A symbol placed along a way (`lineSymbol`, e.g. the arrows of a one-way street) lies in the direction
+    /// of the way and has to turn with the map; the symbol of a point does not.
+    private let alongWay: Bool
+    public override var rotatesWithMap: Bool { alongWay }
 
-    init(point: CGPoint, display: Display, priority: Int, boundary: CGRect?, bitmap: ThemeBitmap, theta: CGFloat) {
+    init(point: CGPoint, display: Display, priority: Int, boundary: CGRect?, bitmap: ThemeBitmap, theta: CGFloat,
+         alongWay: Bool = false) {
         self.bitmap = bitmap
         self.theta = theta
+        self.alongWay = alongWay
         self.boundary = boundary ?? CGRect(x: -bitmap.size.width / 2, y: -bitmap.size.height / 2,
                                            width: bitmap.size.width, height: bitmap.size.height)
         super.init(xy: point, display: display, priority: priority)
         boundaryAbsolute = self.boundary.offsetBy(dx: point.x, dy: point.y)
     }
 
-    public override func draw(_ cg: CGContext, origin: CGPoint) {
+    public override func draw(_ cg: CGContext, origin: CGPoint, rotation: CGFloat = 0) {
         cg.saveGState()
         cg.translateBy(x: xy.x - origin.x, y: xy.y - origin.y)
         if theta != 0 { cg.rotate(by: theta) }
@@ -144,17 +163,27 @@ final class WayTextContainer: MapElementContainer, @unchecked Sendable {
         boundaryAbsolute = r.insetBy(dx: -textHeight / 2, dy: -textHeight / 2)
     }
 
-    public override func draw(_ cg: CGContext, origin: CGPoint) {
+    public override var rotatesWithMap: Bool { true }
+
+    /// mapsforge `WayTextContainer.generatePath` decides this from the direction of the first segment on the
+    /// map, which is the same as on the screen while the map points north. With the map turned, the direction
+    /// on the screen counts, so that the name of a street is never upside down: `rotation` turns the segment
+    /// first. At `rotation` 0 this is mapsforge's rule unchanged.
+    public override func inverts(at rotation: CGFloat) -> Bool {
         let first = points[0], second = points[1]
-        let invert: Bool
+        let dx = second.x - first.x, dy = second.y - first.y
+        let onScreen = rotation == 0 ? dx : dx * cos(rotation) - dy * sin(rotation)
         switch orientation {
-        case .autoDown: invert = second.x > first.x
-        case .right: invert = false
-        case .left: invert = true
-        default: invert = second.x <= first.x
+        case .autoDown: return onScreen > 0
+        case .right: return false
+        case .left: return true
+        default: return onScreen <= 0
         }
+    }
+
+    public override func draw(_ cg: CGContext, origin: CGPoint, rotation: CGFloat = 0) {
         var path = points.map { CGPoint(x: $0.x - origin.x, y: $0.y - origin.y) }
-        if invert { path.reverse() }
+        if inverts(at: rotation) { path.reverse() }
         TextRenderer.drawText(text, alongPath: path, paint: paint, in: cg)
     }
 }
@@ -234,7 +263,7 @@ enum WayDecorator {
             while offset + bitmap.size.width * 0.75 < length {
                 let p = CGPoint(x: prev.x + offset * dx / length, y: prev.y + offset * dyy / length)
                 ctx.addLabel(SymbolContainer(point: p, display: display, priority: priority, boundary: boundary,
-                                             bitmap: bitmap, theta: theta))
+                                             bitmap: bitmap, theta: theta, alongWay: true))
                 offset += bitmap.size.width + repeatGap
                 if !repeats { return }
             }
