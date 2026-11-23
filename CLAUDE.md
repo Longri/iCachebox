@@ -376,6 +376,13 @@ Ist die registrierte URI dagegen eine `https`-Seite, die den Code nur weiterreic
 `gc-oauth.longri.de` für das Android-Cachebox), bleibt sie als `RedirectURI` stehen – HQ vergleicht sie
 Zeichen für Zeichen – und `CallbackScheme` sagt der App, auf welches Schema sie warten soll; die Seite muss
 dann per `Location: icachebox://oauth?code=…&state=…` weiterleiten.
+Geprüfte Sackgasse (23.11.2026): Der Android-Key aus dem alten PHP (ACB, `B024B47D-…`) taugt nicht zum Testen.
+Am echten Autorisierungs-Endpunkt antwortet geocaching.com mit
+`error=unauthorized_client&error_description=client_id+is+not+activated`. Der Schlüssel ist dort also bekannt,
+aber abgeschaltet – daran ändert kein Eintrag in der Plist etwas, nur HQ kann ihn aktivieren. (Unangemeldet
+lässt sich das nicht prüfen: ohne Sitzung leitet der Endpunkt jeden `client_id` gleich auf die Anmeldeseite um,
+auch einen frei erfundenen.) Dazu passt, dass `gc-oauth.longri.de` keinen DNS-Eintrag mehr hat – die
+API-Anmeldung des Android-Cachebox dürfte damit ebenfalls tot sein.
 Geprüft: 83 Tests im Paket, darunter der RFC-7636-Testvektor für PKCE, Form-Kodierung (`%20` statt `+`),
 State-Prüfung, abgelehnter Refresh-Token, acht gleichzeitige Anfragen lösen genau einen Refresh aus,
 Schlüsselbund-Durchlauf, dazu der komplette Fluss über echtes HTTP gegen einen Test-Server im Test; im Simulator
