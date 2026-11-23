@@ -22,7 +22,8 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `createFreeGcCode`), `CacheListStore.swift` (Listen anlegen/umbenennen/löschen), `ZipArchive.swift`, `SQLite.swift`,
     `CoordinateEntry.swift` (Logik der Koordinateneingabe = Cachebox `EditCoord`: Zellen je Ziffer, Formate Dec/Min/Sec/UTM,
     Fokus-Sprung `setNextFocus`/`focusStartLon`), `UTM.swift` (eigene Krüger-Reihe, Zonen/Bänder wie Cachebox
-    `UTMConvert`), `CoordinateParser.swift` (`Coordinate(parsing:)` für Einfügen, wie `Coordinate.parseCoordinate`)
+    `UTMConvert`), `CoordinateParser.swift` (`Coordinate(parsing:)` für Einfügen, wie `Coordinate.parseCoordinate`),
+    `HeadingDamper.swift` (glättet Kompass-/Kursrichtungen für die ausgerichtete Karte; nicht in Cachebox)
   - `Geocaching/` – Anmeldung an der Geocaching-API (OAuth 2.0 mit PKCE, RFC 7636): `GeocachingOAuth.swift`
     (Autorisierungs-URL, Callback lesen, Token- und Refresh-Anfrage, Antwort auswerten – alles ohne Netz und
     damit testbar), `GeocachingTokenStore.swift` (`GeocachingTokens`, Schlüsselbund, Speicher für Tests),
@@ -112,7 +113,11 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `AppState.mapEntries`; `MapsforgeMapView.alignsToHeading` → `Coordinator.alignToHeading` setzt
     `camera.heading` = `LocationModel.heading` ohne Animation (ab 0,5° Abweichung), auch in Free, um die Kartenmitte;
     solange an: Drehgeste und `MKCompassButton` aus (`CacheMapView.showsCompassButton`), aus → animiert nach Norden.
-    Labels drehen mit (wie Cachebox)
+    Labels drehen mit (wie Cachebox). Nicht die rohe Richtung, sondern die gedämpfte (`HeadingDamper` in
+    CacheboxCore): tote Zone 6° (Zittern bewegt die Karte gar nicht, dafür hinkt sie einer echten Drehung um bis zu
+    6° hinterher) und Tiefpass mit 0,7 s Zeitkonstante; `setAligning(true)` setzt ihn zurück, damit die Karte beim
+    Einschalten sofort springt. Solange ausgerichtet wird, zeigt auch der Positionspfeil die gedämpfte Richtung,
+    sonst würde er vor der stillstehenden Karte zucken
   - Letzte Karte: `MapModel` merkt Karte/Theme/Stil/Overlays (Pfad relativ zum Quellordner, UserDefaults `map.*`),
     `MapCamera` Mitte + Kachel-Zoom; `CacheMapView.setCenter(_:zoomLevel:)` korrigiert, weil MapKit
     `setVisibleMapRect` in die Safe Area einpasst (auch `centerCoordinate`/`setCenter` meinen die Mitte der Safe Area)
@@ -301,6 +306,11 @@ Karte nach Kompass ausrichten (seit 13.11.2026, wie Cachebox): Kartenmenü bzw. 
 mit Häkchen, die Karte dreht mit der Richtung (Kompass im Stehen, GPS-Kurs in Bewegung), Pfeil zeigt nach oben.
 Abweichung: der Car-Modus fehlt weiter (er dreht in Cachebox immer, unter 20 km/h ohne neue Richtung). Im Simulator geprüft (simulierte Route mit GPS-Kurs, Ein/Aus, Zurückdrehen nach Norden, Zoomen,
 Neustart behält die Einstellung). Nicht geprüft: echter Kompass (Zittern, Querformat), echtes Gerät, Akku.
+Seit 23.11.2026 gedämpft (nicht in Cachebox, Wunsch des Nutzers nach einem Video vom Wackeln unterwegs):
+`HeadingDamper` (tote Zone 6°, Tiefpass 0,7 s) glättet Kompass bzw. GPS-Kurs, bevor die Karte und der
+Positionspfeil ihm folgen. Geprüft mit sieben Tests in CacheboxCore (Zittern bewegt nichts, echte Drehung kommt
+nach ~1 s an, kurzer Weg über Norden, Nachholen nach einer Pause). Nicht geprüft: echtes Gerät – der Simulator
+hat kein Magnetometer, das Wackeln lässt sich dort nicht nachstellen.
 Anleitung samt allen Screenshots am 13.11.2026 erneuert (Leiste oben, grüne Menüs, Zoom-Knöpfe, neu: Zusatzknöpfe,
 Wegpunkt anlegen, Koordinateneingabe, gedrehte Karte).
 

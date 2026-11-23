@@ -178,6 +178,8 @@ struct MapsforgeMapView: UIViewRepresentable {
         private var positionAnnotation: OwnPositionAnnotation?
         private var followsPosition = false
         private var alignsToHeading = false
+        /// Smooths the compass before it turns the map (not in Cachebox, see `alignToHeading`).
+        private var headingDamper = HeadingDamper()
         /// Position the map was last centered on in GPS mode.
         private var followed: Coordinate?
         private var lastCenter: CLLocationCoordinate2D?
@@ -382,6 +384,8 @@ struct MapsforgeMapView: UIViewRepresentable {
             mapView.isRotateEnabled = !aligns
             mapView.showsCompassButton = !aligns
             if aligns {
+                // just switched on: turn to the heading at once instead of creeping towards it
+                headingDamper.reset()
                 alignToHeading(on: mapView)
             } else if mapView.camera.heading != 0, !mapView.isSettingCamera {
                 let camera = mapView.camera.copy() as! MKMapCamera
@@ -394,9 +398,13 @@ struct MapsforgeMapView: UIViewRepresentable {
         /// rotates by `mapHeading`, the position arrow then points up). Rotates around the middle of the map, also
         /// in Free mode like Cachebox. Without a heading the map keeps its last rotation. Not animated: the compass
         /// sends small steps (`headingFilter` 2°), and MapKit's animation would lag behind.
+        ///
+        /// Unlike Cachebox the map does not follow the raw heading but the damped one (`HeadingDamper`): the
+        /// compass swings by a few degrees all the time, and with the raw heading the whole map wobbled back and
+        /// forth while walking.
         func alignToHeading(on mapView: CacheMapView) {
-            guard alignsToHeading, let heading = position?.heading, mapView.bounds.width > 0,
-                  !mapView.isSettingCamera else { return }
+            guard alignsToHeading, mapView.bounds.width > 0, !mapView.isSettingCamera else { return }
+            guard let heading = headingDamper.update(position?.heading, at: CACurrentMediaTime()) else { return }
             let current = mapView.camera.heading
             var delta = (heading - current).truncatingRemainder(dividingBy: 360)
             if delta < 0 { delta += 360 }
@@ -418,8 +426,13 @@ struct MapsforgeMapView: UIViewRepresentable {
         /// Turns the position arrow with heading and map rotation, sizes the accuracy circle and places the arrows at
         /// the map edge.
         func refreshPositionViews(on mapView: MKMapView) {
-            if let position, let positionAnnotation,
+            if var position, let positionAnnotation,
                let view = mapView.view(for: positionAnnotation) as? OwnPositionView {
+                // while the map follows the compass the arrow follows the damped heading too, so that it keeps
+                // pointing up instead of twitching against a map that stands still
+                if alignsToHeading, let damped = headingDamper.value, position.heading != nil {
+                    position.heading = damped
+                }
                 view.update(position: position, mapHeading: mapView.camera.heading,
                             accuracyRadius: accuracyRadius(of: position, on: mapView))
             }
