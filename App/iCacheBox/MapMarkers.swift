@@ -2,11 +2,13 @@ import CacheboxCore
 import SwiftUI
 import UIKit
 
-/// A cache or a waypoint on the map (Cachebox `MapViewCacheList.WayPointRenderInfo`).
+/// A cache, a waypoint or the parking place on the map (Cachebox `MapViewCacheList.WayPointRenderInfo`).
 struct MapMarker: Equatable, Identifiable {
     enum Content: Equatable {
         case cache(CacheSummary)
         case waypoint(Waypoint)
+        /// "Mein Parkplatz" (Cachebox draws its pseudo cache `CBPark` like any other cache).
+        case parking
     }
 
     /// Cache code, or `cacheCode/code` for a waypoint.
@@ -33,6 +35,13 @@ struct MapMarker: Equatable, Identifiable {
                   longitude: coordinate.longitude, isSelected: true, isTarget: isTarget)
     }
 
+    static func parking(at coordinate: Coordinate, isTarget: Bool) -> MapMarker {
+        MapMarker(id: ParkingPlace.code, content: .parking, latitude: coordinate.latitude,
+                  longitude: coordinate.longitude, isSelected: true, isTarget: isTarget)
+    }
+
+    var isParking: Bool { content == .parking }
+
     var waypoint: Waypoint? {
         if case .waypoint(let waypoint) = content { waypoint } else { nil }
     }
@@ -45,6 +54,7 @@ struct MapMarker: Equatable, Identifiable {
         switch content {
         case .cache(let cache): cache.name
         case .waypoint(let waypoint): waypoint.title.isEmpty ? waypoint.type.title : waypoint.title
+        case .parking: ParkingPlace.name
         }
     }
 
@@ -52,6 +62,7 @@ struct MapMarker: Equatable, Identifiable {
         switch content {
         case .cache(let cache): "\(cache.code) · \(cache.ratingText)"
         case .waypoint(let waypoint): "\(waypoint.code) · \(waypoint.type.title)"
+        case .parking: ParkingPlace.code
         }
     }
 
@@ -72,6 +83,8 @@ struct MapMarker: Equatable, Identifiable {
             var parts = [waypoint.type.title, title, waypoint.code]
             if isTarget { parts.append("Ziel") }
             return parts.joined(separator: ", ")
+        case .parking:
+            return isTarget ? "\(ParkingPlace.name), Ziel" : ParkingPlace.name
         }
     }
 }
@@ -122,6 +135,10 @@ final class MarkerImages {
             // Cachebox frames the waypoints of the selected cache at every zoom; at the smallest size the icon would
             // cover the frame completely, so they stay medium there. The chosen target gets the red frame.
             return framed(waypoint.type.iconName, size: marker.isTarget ? .large : max(zoomSize, .medium),
+                          selected: marker.isTarget, favorite: false, disabled: false)
+        case .parking:
+            // like a waypoint: always framed, red and big while it is the target
+            return framed(ParkingPlace.iconName, size: marker.isTarget ? .large : max(zoomSize, .medium),
                           selected: marker.isTarget, favorite: false, disabled: false)
         }
     }
@@ -237,6 +254,48 @@ struct CacheBubble: View {
                     .foregroundStyle(.tint)
             } else {
                 Button("Auswählen", systemImage: "checkmark.circle", action: onSelect)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+            }
+        }
+        .tint(.cachebox)
+        .padding(.bottom, 2)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+/// Content of the info bubble of "Mein Parkplatz" on the map: icon, coordinates, distance and the button that makes
+/// it the navigation target (Cachebox selects its pseudo cache instead). Deleting it stays in the parking dialog.
+struct ParkingBubble: View {
+    let coordinate: Coordinate
+    /// The parking place is the navigation target.
+    let isTarget: Bool
+    /// Device position for the distance, if known.
+    let here: Coordinate?
+    let onSelectTarget: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 10) {
+                CacheboxIcon(name: ParkingPlace.iconName, size: 34)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(ParkingPlace.code)
+                    Text(coordinate.formatted).monospacedDigit()
+                    if let here {
+                        Text(Format.distance(here.distance(to: coordinate)) + " entfernt")
+                    }
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            }
+            if isTarget {
+                Label("Ziel", systemImage: "scope")
+                    .font(.footnote)
+                    .foregroundStyle(.tint)
+            } else {
+                Button("Als Ziel", systemImage: "scope", action: onSelectTarget)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
             }

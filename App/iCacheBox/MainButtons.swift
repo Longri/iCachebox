@@ -172,8 +172,9 @@ enum MainAction: Hashable {
     /// comes later.
     var level: FeatureLevel {
         switch self {
-        case .show, .share, .hint, .notes, .navigate, .mapDownload, .settings, .help, .torch: .standard
-        case .browser, .parking, .trackables, .tracks: .advanced
+        // "Parkplatz" is an everyday function (finding the car again), so it stays in every level
+        case .show, .share, .hint, .notes, .navigate, .mapDownload, .parking, .settings, .help, .torch: .standard
+        case .browser, .trackables, .tracks: .advanced
         case .solver, .solver2, .photo, .video, .voiceNote: .expert
         }
     }

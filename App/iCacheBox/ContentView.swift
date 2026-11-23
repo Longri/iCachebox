@@ -34,6 +34,7 @@ struct ContentView: View {
                                  onSelect: { state.select($0, show: .map, onMap: true) },
                                  onShowDetails: { state.select($0) },
                                  onSelectWaypoint: { state.selectWaypoint($0) },
+                                 onSelectParking: { state.selectParking() },
                                  onCameraChange: { model.cameraChanged($0) },
                                  onCenterChange: {
                                      viewport.center = $0
@@ -156,7 +157,7 @@ struct ContentView: View {
 
     /// The caches of the list as filtered there (Cachebox draws the filtered `CacheList`), each at its target
     /// (corrected coordinates, else a final with coordinates), plus the selected cache even if the filter hides it,
-    /// and the waypoints of the selected cache that have coordinates.
+    /// the waypoints of the selected cache that have coordinates and the parking place.
     private var markers: [MapMarker] {
         let selected = state.selectedCache?.code
         let own: String? = if case .signedIn(let username, _) = state.account.status { username.lowercased() } else { nil }
@@ -172,6 +173,10 @@ struct ContentView: View {
             if let coordinate = waypoint.coordinate {
                 markers.append(.waypoint(waypoint, at: coordinate, isTarget: waypoint.code == targetCode))
             }
+        }
+        // "Mein Parkplatz" (Cachebox draws its pseudo cache in the list of caches)
+        if let parking = state.parking.coordinate {
+            markers.append(.parking(at: parking, isTarget: state.targetsParking))
         }
         return markers
     }

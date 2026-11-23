@@ -70,6 +70,8 @@ struct MapsforgeMapView: UIViewRepresentable {
     var onShowDetails: (CacheSummary) -> Void = { _ in }
     /// "Als Ziel" in the info bubble of a waypoint (Cachebox `setSelectedWaypoint`).
     var onSelectWaypoint: (Waypoint) -> Void = { _ in }
+    /// "Als Ziel" in the info bubble of "Mein Parkplatz".
+    var onSelectParking: () -> Void = {}
     /// The map came to rest at a new position (after panning, zooming or a jump).
     var onCameraChange: (MapCamera) -> Void = { _ in }
     /// The map center moved (also while panning); for the coordinates in the info panel.
@@ -112,6 +114,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         c.onSelect = onSelect
         c.onShowDetails = onShowDetails
         c.onSelectWaypoint = onSelectWaypoint
+        c.onSelectParking = onSelectParking
         c.onCameraChange = onCameraChange
         c.onCenterChange = onCenterChange
         c.onUserPan = onUserPan
@@ -166,6 +169,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         var onSelect: (CacheSummary) -> Void = { _ in }
         var onShowDetails: (CacheSummary) -> Void = { _ in }
         var onSelectWaypoint: (Waypoint) -> Void = { _ in }
+        var onSelectParking: () -> Void = {}
         var onCameraChange: (MapCamera) -> Void = { _ in }
         var onCenterChange: (Coordinate) -> Void = { _ in }
         var onUserPan: () -> Void = {}
@@ -256,6 +260,7 @@ struct MapsforgeMapView: UIViewRepresentable {
             view.zPriority = switch marker.content {
             case .cache: marker.isSelected ? MKAnnotationViewZPriority(rawValue: 999) : .defaultUnselected
             case .waypoint: MKAnnotationViewZPriority(rawValue: 750)
+            case .parking: MKAnnotationViewZPriority(rawValue: 750)
             }
             view.accessibilityLabel = marker.accessibilityLabel
         }
@@ -472,6 +477,15 @@ struct MapsforgeMapView: UIViewRepresentable {
                     [weak self, weak mapView] in
                     mapView?.deselectAnnotation(annotation, animated: true)
                     self?.onSelectWaypoint(waypoint)
+                }
+                host = UIHostingController(rootView: AnyView(content))
+            } else if annotation.marker.isParking {
+                let coordinate = Coordinate(latitude: annotation.marker.latitude,
+                                            longitude: annotation.marker.longitude)
+                let content = ParkingBubble(coordinate: coordinate, isTarget: annotation.marker.isTarget,
+                                            here: here) { [weak self, weak mapView] in
+                    mapView?.deselectAnnotation(annotation, animated: true)
+                    self?.onSelectParking()
                 }
                 host = UIHostingController(rootView: AnyView(content))
             } else {

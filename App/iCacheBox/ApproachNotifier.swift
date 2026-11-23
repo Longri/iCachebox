@@ -131,7 +131,13 @@ final class ApproachNotifier: NSObject, UNUserNotificationCenterDelegate {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         guard !isDenied else { return }
         let content = UNMutableNotificationContent()
-        content.title = target.isWaypoint ? "Wegpunkt in der Nähe" : "Cache in der Nähe"
+        content.title = if target.isParking {
+            "Parkplatz in der Nähe"
+        } else if target.isWaypoint {
+            "Wegpunkt in der Nähe"
+        } else {
+            "Cache in der Nähe"
+        }
         content.body = "\(target.name) (\(target.code)) – noch \(MapFormat.distance(distance))"
         content.sound = .default
         let request = UNNotificationRequest(identifier: "approach." + target.id, content: content, trigger: nil)

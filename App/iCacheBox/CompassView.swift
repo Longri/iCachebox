@@ -165,7 +165,9 @@ private struct CompassInfo: View {
     var body: some View {
         let options = state.compass
         let iconSize = CompassLayout.iconSize(width: width)
-        if let cache = state.selectedCache, let target = state.target {
+        // the target is the chosen waypoint, the selected cache or "Mein Parkplatz", which belongs to no cache
+        if let target = state.target {
+            let cache = target.cache
             VStack(alignment: .leading, spacing: 7) {
                 if options[.icon] || options[.name] {
                     // Cachebox `setCache`: with a chosen waypoint its icon and title stand here instead of the cache
@@ -176,13 +178,13 @@ private struct CompassInfo: View {
                         if options[.name] {
                             Text(target.name)
                                 .font(.headline)
-                                .strikethrough(cache.isArchived && !target.isWaypoint)
+                                .strikethrough(cache?.isArchived == true && !target.isWaypoint)
                                 .lineLimit(2)
                         }
                     }
                     .accessibilityElement(children: .combine)
                 }
-                if target.isWaypoint, options[.name] {
+                if target.isWaypoint, options[.name], let cache {
                     Text("Wegpunkt von \(cache.name)")
                         .font(.footnote)
                         .lineLimit(1)
@@ -190,8 +192,8 @@ private struct CompassInfo: View {
                 if options[.coordinates] || options[.code] {
                     // Cachebox: coordinates with a fixed width, the code behind them
                     ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 16) { coordinatesAndCode(target, cache, options) }
-                        VStack(alignment: .leading, spacing: 4) { coordinatesAndCode(target, cache, options) }
+                        HStack(spacing: 16) { coordinatesAndCode(target, options) }
+                        VStack(alignment: .leading, spacing: 4) { coordinatesAndCode(target, options) }
                     }
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
@@ -211,14 +213,16 @@ private struct CompassInfo: View {
                 if options[.targetDirection] {
                     TargetDirectionText(location: state.location, target: target.coordinate)
                 }
-                if options[.sizeDifficultyTerrain] {
+                if options[.sizeDifficultyTerrain], let cache {
                     SizeDifficultyTerrain(cache: cache)
                 }
-                if options[.lastFound], let date = lastFound {
+                // the parking place has no cache behind it, so no logs and no attributes either
+                if options[.lastFound], !target.isParking, let date = lastFound {
                     Text("Zuletzt gefunden: \(date.formatted(.dateTime.day(.twoDigits).month(.twoDigits).year(.twoDigits)))")
                         .font(.footnote)
                 }
-                if options[.attributes], let attributes = state.selectedDetails?.cache.attributes, !attributes.isEmpty {
+                if options[.attributes], !target.isParking,
+                   let attributes = state.selectedDetails?.cache.attributes, !attributes.isEmpty {
                     CacheAttributeIcons(attributes: attributes, size: iconSize)
                 }
             }
@@ -236,8 +240,7 @@ private struct CompassInfo: View {
     }
 
     @ViewBuilder
-    private func coordinatesAndCode(_ target: NavigationTarget, _ cache: CacheSummary,
-                                    _ options: CompassOptions) -> some View {
+    private func coordinatesAndCode(_ target: NavigationTarget, _ options: CompassOptions) -> some View {
         if options[.coordinates] {
             Text(MapFormat.coordinate(target.coordinate))
                 .lineLimit(1)
@@ -245,10 +248,16 @@ private struct CompassInfo: View {
                 .accessibilityLabel("Ziel \(target.coordinate.formatted)")
         }
         if options[.code] {
-            // Cachebox shows the GC code of the cache also for a waypoint; its own code stands in front of it
-            Text(target.isWaypoint ? "\(target.code) · \(cache.code)" : cache.code)
+            Text(codeText(target))
                 .lineLimit(1)
         }
+    }
+
+    /// Cachebox shows the GC code of the cache also for a waypoint; its own code stands in front of it. The parking
+    /// place has only its own code.
+    private func codeText(_ target: NavigationTarget) -> String {
+        guard let cache = target.cache else { return target.code }
+        return target.isWaypoint ? "\(target.code) · \(cache.code)" : cache.code
     }
 
     /// Cachebox `CacheInfo.getLastFoundLogDate`: date of the latest "found" log.

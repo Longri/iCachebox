@@ -314,24 +314,33 @@ private struct SliderBar: View {
                 }
                 .layoutPriority(1)
                 Spacer(minLength: 0)
-                if let here = state.location.coordinate, let target = state.target {
-                    // arrow and distance go to the navigation target: the chosen waypoint, else the cache
-                    let bearing = here.bearing(to: target.coordinate) - (state.location.heading ?? 0)
-                    VStack(spacing: 1) {
-                        Image(systemName: "location.north.fill")
-                            .rotationEffect(.degrees(bearing))
-                        Text(Format.distance(here.distance(to: target.coordinate)))
-                            .font(.caption.weight(.semibold).monospacedDigit())
-                            .lineLimit(1)
-                    }
+            } else if state.target?.isParking == true {
+                // no cache, but the parking place is the target (Cachebox would show its pseudo cache here)
+                CacheboxIcon(name: ParkingPlace.iconName, size: 32)
+                Text(ParkingPlace.name)
+                    .font(.subheadline.weight(.bold))
                     .foregroundStyle(Color(white: 0.05))
-                    .fixedSize()
-                }
+                    .lineLimit(1)
+                    .layoutPriority(1)
+                Spacer(minLength: 0)
             } else {
                 Text("Kein Cache gewählt")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color(white: 0.2))
                 Spacer(minLength: 0)
+            }
+            if let here = state.location.coordinate, let target = state.target {
+                // arrow and distance go to the navigation target: the parking place, the chosen waypoint, else the cache
+                let bearing = here.bearing(to: target.coordinate) - (state.location.heading ?? 0)
+                VStack(spacing: 1) {
+                    Image(systemName: "location.north.fill")
+                        .rotationEffect(.degrees(bearing))
+                    Text(Format.distance(here.distance(to: target.coordinate)))
+                        .font(.caption.weight(.semibold).monospacedDigit())
+                        .lineLimit(1)
+                }
+                .foregroundStyle(Color(white: 0.05))
+                .fixedSize()
             }
         }
         .padding(.leading, 6)
@@ -372,12 +381,17 @@ private struct SliderBar: View {
     }
 
     private var accessibilityText: String {
-        guard let cache = state.selectedCache else { return "Kein Cache gewählt" }
+        guard let cache = state.selectedCache else {
+            guard let target = state.target, target.isParking else { return "Kein Cache gewählt" }
+            guard let here = state.location.coordinate else { return ParkingPlace.name }
+            return "\(ParkingPlace.name), Entfernung \(Format.distance(here.distance(to: target.coordinate)))"
+        }
         var text = "Gewählter Cache: \(cache.name), \(cache.code), Größe \(cache.container.title), "
             + "Schwierigkeit \(CacheSummary.rating(cache.difficulty)), Gelände \(CacheSummary.rating(cache.terrain))"
         if let here = state.location.coordinate, let target = state.target {
             text += ", Entfernung \(Format.distance(here.distance(to: target.coordinate)))"
             if target.isWaypoint { text += " zum Wegpunkt \(target.name)" }
+            if target.isParking { text += " zum Parkplatz" }
         }
         return text
     }
@@ -441,7 +455,7 @@ private struct SliderCacheInfo: View {
                                     .accessibilityLabel(cache.target.formatted)
                                 Text(cache.code)
                                 // the chosen waypoint, which the compass and the arrows point to
-                                if let target = state.target, target.isWaypoint {
+                                if let target = state.target, target.isWaypoint || target.isParking {
                                     Text("Ziel: \(target.name) (\(target.code))")
                                 }
                                 if let date = lastFound {

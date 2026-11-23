@@ -409,6 +409,32 @@ einer Route zum Ziel – also zum gewählten Wegpunkt, sonst zum Cache.
 
 Im Querformat steht der Kasten links neben dem Kompass.
 
+## Mein Parkplatz
+
+![Mein Parkplatz](bilder/parkplatz.png)
+
+Damit du dein Auto wiederfindest, merkt sich iCacheBox einen **Parkplatz** – wie Cachebox. Den Dialog öffnest du
+über den **Cacheliste**-Knopf (nach unten wischen) oder den **Sonstiges**-Knopf (nach rechts wischen); in beiden
+Menüs steht er als **Parkplatz**. Er hat drei Knöpfe:
+
+- **Parkplatz vom GPS setzen:** speichert deine jetzige Position als Parkplatz. Ein schon gesetzter Parkplatz wird
+  dabei überschrieben. Ohne GPS-Position passiert nichts, der Dialog sagt es dir.
+- **Setze Ziel auf Parkplatz:** macht den Parkplatz zum **Ziel**. Kompass, Pfeil und Entfernung in der Leiste, der
+  Randpfeil auf der Karte, „Navigieren“ und die Annäherungsmeldung zeigen dann dorthin statt zum Cache. Die Karte
+  springt zum Parkplatz.
+- **Parkplatz löschen:** vergisst ihn wieder. War er das Ziel, gilt wieder der gewählte Cache.
+
+Unter den Knöpfen stehen die Koordinaten des Parkplatzes und wie weit er entfernt ist. Auf der **Karte** liegt er
+als grünes Auto-Symbol; ein Tipp darauf öffnet seine Info-Blase, aus der du ihn ebenfalls als Ziel wählen kannst.
+Ist er das Ziel, hat er den roten Rahmen.
+
+Der Parkplatz bleibt über den Neustart hinweg gespeichert – das Ziel nicht: nach dem Start zielt die App wieder auf
+den gewählten Cache. Wählst du einen Cache oder einen Wegpunkt als Ziel, gibt der Parkplatz das Ziel ebenfalls ab.
+
+Unterschied zu Cachebox: Dort ist der Parkplatz ein eigener Pseudo-Cache („CBPark“), der oben in der Cacheliste
+steht und wie ein Cache ausgewählt wird. In iCacheBox kommen Caches immer aus der Liste; der Parkplatz ist darum ein
+eigenes Ziel und taucht in der Cacheliste nicht auf. Symbol und Code („CBPark“) sind dieselben.
+
 ## Funktionsumfang
 
 ![Funktionsumfang wählen](bilder/funktionsumfang.png)
@@ -417,7 +443,8 @@ Cachebox hat viele Funktionen – mehr, als man am Anfang braucht. Unter **Sonst
 Funktionsumfang** stellst du darum ein, wie viel in den Menüs steht:
 
 - **Standard** (voreingestellt): nur das, was man zum Suchen braucht – Liste, Filter, Import, Karte, Kompass,
-  Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen, **Nach Kompass ausrichten**.
+  Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen, **Nach Kompass ausrichten**,
+  **Parkplatz**.
 - **Erweitert**: dazu **Projektion** und **Vom GPS**, „WP vom Kartenmittelpunkt“,
   die Theme-Auswahl, „Koordinaten kopieren“, „Im Browser öffnen“, „Caches löschen“ und „Aus der Liste löschen“.
 - **Expert**: alles, auch **Stil** und **Overlays** der Themes und die Einträge, die noch nicht gebaut sind
@@ -478,7 +505,7 @@ keine Caches. Ist die Datei beschädigt, nennt die Fehlermeldung die Zeile, an d
 
 Im Vergleich zu Cachebox für Android fehlen noch: Laden und Aktualisieren über die Geocaching-API, Spoilerbilder,
 die kleine Karte im Kompass, die Kartenmodi WP, Lock und Car, Feldnotizen hochladen, Solver,
-Tracks, Trackables, Parkplatz, Foto, Video und Sprachnotiz, Schnell-Entwurf und automatisches Sortieren sowie eine
+Tracks, Trackables, Foto, Video und Sprachnotiz, Schnell-Entwurf und automatisches Sortieren sowie eine
 eigene Auswahl der Zusatzknöpfe. Diese Einträge stehen – je nach Funktionsumfang – in den Menüs und bei den
 Zusatzknöpfen schon ausgegraut an ihrem Platz. Den Tag-/Nachtmodus von Cachebox gibt es nicht; die Knöpfe und der Kompass bleiben auch im
 dunklen Erscheinungsbild hell.

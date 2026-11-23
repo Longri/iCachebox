@@ -23,8 +23,10 @@ extension AppState {
         case .notes: selectedDetails != nil
         case .browser: selectedCacheURL != nil
         case .torch: Torch.isAvailable
+        // Cachebox `ShowParkingMenu.getEnabled`: always open; the dialog itself greys out what is not possible
+        case .parking: true
         // not built yet
-        case .parking, .trackables, .tracks, .solver, .solver2, .photo, .video, .voiceNote, .settings, .help: false
+        case .trackables, .tracks, .solver, .solver2, .photo, .video, .voiceNote, .settings, .help: false
         }
     }
 
@@ -39,7 +41,8 @@ extension AppState {
         case .navigate: navigateToSelectedCache()
         case .mapDownload: showMapDownload = true
         case .torch: isTorchOn = Torch.set(!isTorchOn)
-        case .parking, .trackables, .tracks, .solver, .solver2, .photo, .video, .voiceNote, .settings, .help: break
+        case .parking: showParking = true
+        case .trackables, .tracks, .solver, .solver2, .photo, .video, .voiceNote, .settings, .help: break
         }
     }
 

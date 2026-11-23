@@ -262,10 +262,11 @@ struct CacheDetailView: View {
                 } label: {
                     waypointRow(icon: details.cache.type.iconName(solved: details.cache.correctedCoordinate != nil || hasFinal),
                                 title: "Cache", code: details.cache.code, coordinate: details.cache.target,
-                                comment: "", isTarget: target == nil)
+                                comment: "", isTarget: target == nil && state.target?.isParking != true)
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint(target == nil ? "" : "Wählt den Cache als Ziel")
+                .accessibilityHint(target == nil && state.target?.isParking != true ? ""
+                                   : "Wählt den Cache als Ziel")
             }
             Section {
                 ForEach(details.waypoints) { waypoint in

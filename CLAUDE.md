@@ -87,6 +87,14 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `clearDiscordantValue` alle 10 Messungen Ausreißer > 3 m; `LocationModel.fixCount` zählt die Fixes, weil
     `coordinate` sich bei festem Ort nicht ändert). Kompass, Karte, Leiste, „Navigieren“ und Annäherung zielen auf
     `AppState.target`
+  - Mein Parkplatz (wie Cachebox `ParkingMenu`): `ParkingPlace.swift` (Koordinate in UserDefaults `parking.*`,
+    0/0 = keiner wie Cachebox `ParkingLatitude`/`ParkingLongitude`; Code „CBPark“, Name, Icon `bigMyParking`),
+    `ParkingView.swift` (Sheet mit den drei Cachebox-Knöpfen `my-parking-set`/`-wp`/`-delete`,
+    `Assets.xcassets/CacheboxParking`), `AppState.saveParking`/`selectParking`/`deleteParking`/`targetsParking`,
+    `showParking` (Knopf-Funktion `MainAction.parking`). `NavigationTarget.cache` ist dafür optional: der Parkplatz
+    ist ein Ziel ohne Cache (`isParking`) – Cachebox baut stattdessen einen Pseudo-Cache „CBPark“ und schiebt ihn
+    oben in die Cacheliste (`CacheListChangedListeners`), was hier nicht geht, weil Caches aus der Listen-Datenbank
+    kommen. Marker auf der Karte: `MapMarker.Content.parking` + `ParkingBubble`
   - Funktionsumfang (Cachebox `SettingsShowExpert`/`SettingsShowAll`, dort versteckt): `FeatureLevel.swift`
     (`standard`/`advanced`/`expert`, UserDefaults `settings.featureLevel`), `MenuEntry.level` +
     `[MenuEntry].shown(at:)` filtert die Menüs (auch Untermenüs und übrige Trennlinien), `MainAction.level` die
@@ -348,9 +356,10 @@ Nicht geprüft: echtes Gerät, streuende Messungen unter freiem Himmel, iPad, Vo
 Funktionsumfang Standard/Erweitert/Expert (seit 13.11.2026, nicht in Cachebox sichtbar): Mehr › Einstellungen ›
 Funktionsumfang blendet Menüeinträge stufenweise ein. Standard = Suchen (Liste, Filter, Import, Karte, Kompass,
 Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen, Nach Kompass ausrichten – seit
-23.11.2026 auch hier, es ist nur ein Anzeigeschalter und steht in Cachebox ebenfalls im einfachen Kartenmenü),
+23.11.2026 auch hier, es ist nur ein Anzeigeschalter und steht in Cachebox ebenfalls im einfachen Kartenmenü –,
+Parkplatz – seit 23.11.2026, eine Alltagsfunktion),
 Erweitert = dazu Projektion, Vom GPS, WP vom Kartenmittelpunkt, Theme-Auswahl, Koordinaten kopieren, Im Browser
-öffnen, Caches löschen, Aus der Liste löschen, Tracks/Parkplatz/Trackables (ausgegraut), Expert = alles (Stil, Overlays,
+öffnen, Caches löschen, Aus der Liste löschen, Tracks/Trackables (ausgegraut), Expert = alles (Stil, Overlays,
 Aktualisieren, Solver, Foto, Video, Sprachnotiz). Im Simulator geprüft (alle drei Stufen, Knopf- und ⋯-Menüs,
 Wegpunkt-Knöpfe, Neustart behält die Stufe). Nicht geprüft: echtes Gerät, VoiceOver.
 Anleitung samt Screenshots am 13.11.2026 erneut nachgezogen (Wegpunkt als Ziel, Projektion, Vom GPS,
@@ -391,6 +400,21 @@ Rückleitung, Token-Tausch mit PKCE-Prüfung durch den Server, Nutzerdaten, Neus
 Schlüsselbund, Abmelden). Nicht geprüft: die echte Anmeldung bei geocaching.com (kein Schlüssel), echtes Gerät,
 iPad, VoiceOver, Verhalten bei abgelaufenem Refresh-Token nach einem Jahr. Nicht übernommen: die
 RC4-Verschleierung des Tokens (sie schützte nur den Weg über die Webseite) und der Proxy selbst.
+
+Mein Parkplatz (seit 23.11.2026, wie Cachebox `ParkingMenu`; Website-Eintrag „Mein Parkplatz“ damit erledigt):
+Cacheliste-Knopf (nach unten wischen) und Sonstiges-Knopf (nach rechts) öffnen den Dialog „Verwalte deinen
+Parkplatz!“ mit den drei Cachebox-Knöpfen – Parkplatz vom GPS setzen, Setze Ziel auf Parkplatz, Parkplatz löschen
+(die letzten beiden ausgegraut, solange keiner gesetzt ist). Der Parkplatz liegt in UserDefaults, überlebt den
+Neustart und erscheint auf der Karte als `bigMyParking` mit Info-Blase („Als Ziel“); als Ziel gilt er für Kompass,
+Leiste, Randpfeil, „Navigieren“ und Annäherung. Abweichungen: Cachebox baut einen Pseudo-Cache „CBPark“ und wählt
+ihn als Cache aus – hier ist der Parkplatz ein Ziel ohne Cache (`NavigationTarget.cache` optional), steht nicht in
+der Cacheliste, und die Leiste zeigt weiter den gewählten Cache (nur Pfeil und Entfernung gehen zum Parkplatz);
+der Dialog zeigt zusätzlich Koordinaten und Entfernung und sagt es, wenn noch keine GPS-Position da ist (Cachebox
+würde 0/0 speichern); das Ziel wird nicht über den App-Start hinweg gemerkt (wie beim Wegpunkt). Im Simulator
+geprüft (setzen, als Ziel wählen, löschen, beide Knopf-Wege, Marker und Blase auf der Karte, Kompass und Leiste mit
+und ohne gewählten Cache, Wegpunktzeile „Cache“ holt das Ziel zurück, Neustart behält den Parkplatz und setzt das
+Ziel zurück). Nicht geprüft: Speichern ohne jede GPS-Position (der Simulator liefert den letzten Fix weiter),
+echtes Gerät, iPad, VoiceOver, Querformat. Anleitung um den Abschnitt „Mein Parkplatz“ samt Screenshot ergänzt.
 
 Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
 Nachtmodus, Kachel-Cache auf Platte, Kartenrotation mit

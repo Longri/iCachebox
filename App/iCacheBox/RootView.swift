@@ -129,6 +129,12 @@ private struct MainScreen: View {
         } message: {
             Text(state.waypointError ?? "")
         }
+        // "Mein Parkplatz" of the list and the "Sonstiges" button (Cachebox `ParkingMenu`)
+        .sheet(isPresented: $app.showParking) {
+            ParkingView()
+                .presentationDetents([.height(330)])
+                .presentationBackground(Color.cacheboxActivity)
+        }
         .sheet(isPresented: $app.showMapDownload) {
             NavigationStack {
                 MapDownloadView()

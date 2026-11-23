@@ -18,20 +18,26 @@ struct NavigationTarget: Equatable {
     let coordinate: Coordinate
     /// The chosen waypoint, if the target is one.
     let waypoint: Waypoint?
-    let cache: CacheSummary
+    /// The cache the target belongs to; "Mein Parkplatz" belongs to none (Cachebox makes a pseudo cache of it).
+    let cache: CacheSummary?
+
+    /// The target is the parking place (`ParkingPlace`).
+    var isParking: Bool { cache == nil }
 
     /// Name of the waypoint, else of the cache (Cachebox `CompassView`: `getTitleForGui`, else the cache name).
     var name: String {
-        guard let waypoint else { return cache.name }
+        guard let waypoint else { return cache?.name ?? ParkingPlace.name }
         return waypoint.title.isEmpty ? waypoint.type.title : waypoint.title
     }
 
     /// Cachebox shows the GC code of the cache also for a waypoint; the waypoint has its own code besides.
-    var code: String { waypoint?.code ?? cache.code }
+    var code: String { waypoint?.code ?? cache?.code ?? ParkingPlace.code }
 
     /// Icon of the waypoint type, else of the cache type (Cachebox `CompassView.setCache`).
     var iconName: String {
-        waypoint?.type.iconName ?? cache.type.iconName(solved: cache.isSolved)
+        if let waypoint { return waypoint.type.iconName }
+        guard let cache else { return ParkingPlace.iconName }
+        return cache.type.iconName(solved: cache.isSolved)
     }
 
     /// Description of the waypoint (Cachebox `CompassShowWpDesc`); a cache has none here.
@@ -42,7 +48,7 @@ struct NavigationTarget: Equatable {
     var isWaypoint: Bool { waypoint != nil }
 
     /// Tells targets apart for the approach notification.
-    var id: String { waypoint.map { $0.id } ?? cache.code }
+    var id: String { waypoint.map { $0.id } ?? cache?.code ?? ParkingPlace.code }
 }
 
 /// App-wide UI state: the shown view and the selected cache (Cachebox: `ViewManager`, `GlobalCore.getSelectedCache`).
@@ -80,6 +86,12 @@ final class AppState {
     let compass = CompassOptions()
     /// Notifies when the selected cache comes near (Cachebox `SoundApproachDistance`).
     let approach = ApproachNotifier()
+    /// Where the car stands (Cachebox `ParkingMenu`, settings `ParkingLatitude`/`ParkingLongitude`).
+    let parking = ParkingPlace()
+    /// The parking place is the navigation target (Cachebox selects its pseudo cache "CBPark" instead).
+    private(set) var targetsParking = false
+    /// "Parkplatz" of the list and the "Sonstiges" button opens the dialog (Cachebox `ParkingMenu`).
+    var showParking = false
     /// Main button 3 › "Karten und Themes" shows the download as a sheet.
     var showMapDownload = false
     /// The torch is on (main button 5 › "Taschenlampe", Cachebox `SwitchTorch`).
@@ -109,6 +121,9 @@ final class AppState {
     /// Where compass, map arrows, distances and the approach notification point: the chosen waypoint of the
     /// selected cache, else the cache itself (Cachebox `GlobalCore.getSelectedCoordinate`).
     var target: NavigationTarget? {
+        if targetsParking, let coordinate = parking.coordinate {
+            return NavigationTarget(coordinate: coordinate, waypoint: nil, cache: nil)
+        }
         guard let cache = selectedCache else { return nil }
         if let waypoint = selectedWaypoint, let coordinate = waypoint.coordinate, coordinate.isValid {
             return NavigationTarget(coordinate: coordinate, waypoint: waypoint, cache: cache)
@@ -120,6 +135,7 @@ final class AppState {
     /// `GlobalCore.setSelectedWaypoint`). A waypoint without coordinates cannot be a target.
     func selectWaypoint(_ waypoint: Waypoint?) {
         guard waypoint?.cacheCode == nil || waypoint?.cacheCode == selectedCache?.code else { return }
+        targetsParking = false
         selectedWaypoint = waypoint.flatMap { $0.coordinate?.isValid == true ? $0 : nil }
         approach.reset()
         checkApproach()
@@ -134,6 +150,42 @@ final class AppState {
         guard let chosen = selectedWaypoint else { return }
         guard let waypoints = selectedDetails?.waypoints else { return }
         selectedWaypoint = waypoints.first { $0.code == chosen.code && $0.coordinate?.isValid == true }
+    }
+
+    // MARK: - My parking area (Cachebox `ParkingMenu`)
+
+    /// Cachebox `btnSetGPS`: saves the own position as the parking place. Without a fix nothing is saved and the
+    /// dialog says so.
+    @discardableResult
+    func saveParking() -> Bool {
+        guard let here = location.coordinate, here.isValid else { return false }
+        parking.set(here)
+        if targetsParking {
+            // the target moved: announce the new place again
+            approach.reset()
+            checkApproach()
+            mapFocus = MapFocus(coordinate: here)
+        }
+        return true
+    }
+
+    /// Cachebox `btnSelectWP`: the parking place becomes the navigation target (Cachebox selects its pseudo cache).
+    func selectParking() {
+        guard let coordinate = parking.coordinate else { return }
+        targetsParking = true
+        selectedWaypoint = nil
+        approach.reset()
+        checkApproach()
+        mapFocus = MapFocus(coordinate: coordinate)
+    }
+
+    /// Cachebox `btnDeleteP`: forgets the parking place; the target falls back to the selected cache.
+    func deleteParking() {
+        parking.clear()
+        guard targetsParking else { return }
+        targetsParking = false
+        approach.reset()
+        checkApproach()
     }
 
     /// Notifies when the target is nearer than the set distance and, if asked for, shows the compass
@@ -174,6 +226,8 @@ final class AppState {
         }
         // another cache drops its predecessor's waypoint (Cachebox `setSelectedCache` → `setSelectedWaypoint(null)`)
         if cache.code != selectedCache?.code { selectedWaypoint = nil }
+        // choosing a cache takes the target off the parking place (Cachebox replaces the selected pseudo cache)
+        targetsParking = false
         selectedCache = cache
         lists.rememberSelection(cache.code)
         checkApproach()
