@@ -244,9 +244,9 @@ struct CacheListView: View {
     }
 }
 
-/// One cache in the list (Cachebox `CacheListViewItem` with `CacheInfo.VIEW_MODE_CACHE_LIST`): the GCVote rating
-/// as a blue star column at the left edge, type icon with status marks, name and code, distance and direction, and
-/// below over the whole width size, difficulty and terrain as Cachebox icons with trackables and favourite points.
+/// One cache in the list (Cachebox `CacheListViewItem` with `CacheInfo.VIEW_MODE_CACHE_LIST`): type icon with status
+/// marks, name and code, distance and direction, and below over the whole width size, difficulty and terrain as
+/// Cachebox icons with trackables and favourite points.
 struct CacheRowView: View {
     let row: CacheRow
     var heading: Double?
@@ -258,8 +258,6 @@ struct CacheRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 12) {
-                // GCVote rating as a blue star column at the left edge, as in Cachebox (`SHOW_VOTE`)
-                GCVoteStars(vote: cache.gcVote, isCompact: true, showsValue: false, isVertical: true)
                 CacheTypeIcon(type: cache.type, isFound: cache.isFound, isFavorite: cache.isFavorite,
                               isArchived: cache.isArchived, isUnavailable: !cache.isAvailable,
                               isSolved: cache.isSolved)

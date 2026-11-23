@@ -25,9 +25,6 @@ public final class FeatureCatalog {
                     new Feature("cacheliste-08", "Nach Name, GC-Code und Owner suchen", true),
                     new Feature("cacheliste-09", "Nach Status, Typ, Schwierigkeit und Gelände filtern, Filter zurücksetzen", true),
                     new Feature("cacheliste-10", "Nach Größe, Favoritenpunkten, Attributen, GPX-Datei, Notiz, Trackables und korrigierten Koordinaten filtern", false),
-                    new Feature("geocaching-live-13", "GCVote-Bewertungen importieren (der Dienst gcvote.com ist zurzeit abgeschaltet)", true),
-                    new Feature("cacheliste-24", "GCVote-Bewertung in Liste, Cache-Info, Karten-Blase und Details anzeigen", true),
-                    new Feature("cacheliste-25", "Nach GCVote-Bewertung filtern und sortieren", true),
                     new Feature("cacheliste-11", "Filtervorlagen „Alle Caches“ und „Alle zu findenden“", true),
                     new Feature("cacheliste-12", "Weitere Filtervorlagen (Schnelle Caches, Anfänger, Highlights, TB ablegen …) und eigene Vorlagen speichern", false),
                     new Feature("cacheliste-13", "Cache als Favorit markieren", true),
@@ -96,7 +93,9 @@ public final class FeatureCatalog {
                     new Feature("loggen-05", "Entwürfe als Feldnotiz oder direkt als Log hochladen, Logbild hochladen", false),
                     new Feature("loggen-06", "Entwürfe als hochgeladen markieren und löschen", false))),
             new Section("dayGcLiveIcon.png", "Geocaching Live",
-                    "Caches über die offizielle Geocaching-API laden und aktuell halten.", List.of(
+                    "Caches über die offizielle Geocaching-API laden und aktuell halten. GCVote-Bewertungen stehen "
+                            + "nicht mehr auf der Liste: gcvote.com ist abgeschaltet, und der Nachfolger CacheVote "
+                            + "ist eine Browser-Erweiterung für geocaching.com ohne Schnittstelle für Apps.", List.of(
                     new Feature("geocaching-live-01", "Geocaching-Konto verbinden und API-Zugriff autorisieren", false),
                     new Feature("geocaching-live-02", "Cache-Status prüfen und Cache-Daten aktualisieren", false),
                     new Feature("geocaching-live-03", "Caches um GPS-Position, Kartenmitte oder Koordinaten importieren", false),

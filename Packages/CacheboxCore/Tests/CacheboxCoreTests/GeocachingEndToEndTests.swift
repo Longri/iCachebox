@@ -54,8 +54,6 @@ final class TinyHTTPServer: @unchecked Sendable {
     struct Response {
         var status: Int = 200
         var json: String = "{}"
-        /// The GCVote test answers XML; everything else keeps JSON.
-        var contentType = "application/json"
     }
 
     private let listener: NWListener
@@ -156,7 +154,7 @@ final class TinyHTTPServer: @unchecked Sendable {
         let body = Data(response.json.utf8)
         let head = """
         HTTP/1.1 \(response.status) \(response.status == 200 ? "OK" : "Error")\r
-        Content-Type: \(response.contentType)\r
+        Content-Type: application/json\r
         Content-Length: \(body.count)\r
         Connection: close\r
         \r

@@ -4,7 +4,7 @@ import Observation
 
 /// Sort orders of the cache list. Cachebox sorts by distance only; the others are additions.
 enum CacheSortOrder: String, CaseIterable, Identifiable, Codable {
-    case distance, name, code, difficulty, terrain, hidden, favoritePoints, gcVote
+    case distance, name, code, difficulty, terrain, hidden, favoritePoints
 
     var id: Self { self }
 
@@ -17,7 +17,6 @@ enum CacheSortOrder: String, CaseIterable, Identifiable, Codable {
         case .terrain: "Gelände"
         case .hidden: "Neueste zuerst"
         case .favoritePoints: "Favoritenpunkte"
-        case .gcVote: "GCVote-Bewertung"
         }
     }
 }
@@ -37,20 +36,10 @@ struct CacheFilter: Codable, Equatable {
     var types: Set<CacheType> = []
     var difficulty: ClosedRange<Double> = 1...5
     var terrain: ClosedRange<Double> = 1...5
-    /// GCVote rating (Cachebox `FilterProperties.minRating`/`maxRating`, also 0…5). From 1 on, caches without a
-    /// rating drop out, because they count as 0 - as in Cachebox.
-    var gcVote: ClosedRange<Double> = 0...5
 
     static let all = CacheFilter()
     /// Cachebox preset "All to find": not found, available, not archived.
-    /// (Built by hand: the struct reads itself leniently and therefore has no memberwise init.)
-    static let toFind: CacheFilter = {
-        var filter = CacheFilter()
-        filter.found = .hide
-        filter.unavailable = .hide
-        filter.archived = .hide
-        return filter
-    }()
+    static let toFind = CacheFilter(found: .hide, unavailable: .hide, archived: .hide)
 
     var isActive: Bool { self != .all }
 
@@ -68,24 +57,7 @@ struct CacheFilter: Codable, Equatable {
             && check(favorites, cache.isFavorite)
             && (types.isEmpty || types.contains(cache.type))
             && difficulty.contains(cache.difficulty) && terrain.contains(cache.terrain)
-            && gcVote.contains(cache.gcVote.value)
     }
-
-    /// Read leniently: a filter stored by an older version does not know every field, and a missing one must not
-    /// throw the whole filter away.
-    init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        found = try container.decodeIfPresent(Tristate.self, forKey: .found) ?? .all
-        unavailable = try container.decodeIfPresent(Tristate.self, forKey: .unavailable) ?? .all
-        archived = try container.decodeIfPresent(Tristate.self, forKey: .archived) ?? .all
-        favorites = try container.decodeIfPresent(Tristate.self, forKey: .favorites) ?? .all
-        types = try container.decodeIfPresent(Set<CacheType>.self, forKey: .types) ?? []
-        difficulty = try container.decodeIfPresent(ClosedRange<Double>.self, forKey: .difficulty) ?? 1...5
-        terrain = try container.decodeIfPresent(ClosedRange<Double>.self, forKey: .terrain) ?? 1...5
-        gcVote = try container.decodeIfPresent(ClosedRange<Double>.self, forKey: .gcVote) ?? 0...5
-    }
-
-    init() {}
 }
 
 /// A row of the cache list: the cache plus distance and bearing from the reference point.
@@ -287,10 +259,6 @@ final class CacheListModel {
         case .terrain: rows.sort { $0.cache.terrain == $1.cache.terrain ? byName($0, $1) : $0.cache.terrain < $1.cache.terrain }
         case .hidden: rows.sort { ($0.cache.hidden ?? .distantPast) > ($1.cache.hidden ?? .distantPast) }
         case .favoritePoints: rows.sort { ($0.cache.favoritePoints ?? -1) > ($1.cache.favoritePoints ?? -1) }
-        // best first, caches without a rating last (not in Cachebox, which sorts by distance only)
-        case .gcVote: rows.sort {
-            $0.cache.gcVote.value == $1.cache.gcVote.value ? byName($0, $1) : $0.cache.gcVote.value > $1.cache.gcVote.value
-        }
         }
         self.rows = rows
     }

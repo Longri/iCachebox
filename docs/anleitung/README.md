@@ -110,9 +110,7 @@ Wie in Cachebox ist jede Liste eine eigene Datenbank, zum Beispiel eine für zu 
 
 Jede Zeile zeigt:
 
-- ganz links eine Säule aus blauen Sternen, sobald eine **GCVote-Bewertung** geladen ist (wie in Cachebox, dort
-  stehen die Sterne ebenfalls hochkant am Rand);
-- daneben das Symbol des Cache-Typs wie in Cachebox (bei korrigierten Koordinaten in der „gelösten“ Variante),
+- links das Symbol des Cache-Typs wie in Cachebox (bei korrigierten Koordinaten in der „gelösten“ Variante),
   darauf ein Smiley für gefunden, ein Herz für Favorit und ein Verbotszeichen, wenn der Cache deaktiviert ist, bzw.
   ein Leitkegel, wenn er archiviert ist;
 - den Namen (rot, wenn der Cache nicht verfügbar ist, durchgestrichen, wenn er archiviert ist);
@@ -131,8 +129,8 @@ nach links wischen markiert ihn als Favorit. Langes Drücken bietet außerdem **
 
 **Suchen:** Das Suchfeld findet Caches nach Name, GC-Code oder Owner.
 
-**Sortieren:** Unter **⋯ › Sortieren** stehen Entfernung, Name, GC-Code, Schwierigkeit, Gelände, Neueste zuerst,
-Favoritenpunkte und GCVote-Bewertung (beste zuerst) zur Wahl. Ohne Standort misst iCacheBox die Entfernung vom gewählten Cache aus; der Pfeil ist
+**Sortieren:** Unter **⋯ › Sortieren** stehen Entfernung, Name, GC-Code, Schwierigkeit, Gelände, Neueste zuerst
+und Favoritenpunkte zur Wahl. Ohne Standort misst iCacheBox die Entfernung vom gewählten Cache aus; der Pfeil ist
 dann grau.
 
 **Filtern:** Das Filtersymbol oben links öffnet den Filter. Es ist gefüllt, solange ein Filter aktiv ist.
@@ -142,8 +140,6 @@ dann grau.
 - **Vorlagen:** „Alle Caches“ oder „Noch zu finden“ (nicht gefunden, verfügbar, nicht archiviert).
 - **Status:** Für Gefunden, Deaktiviert, Archiviert und Favoriten jeweils „Alle“, „Nur“ oder „Ohne“.
 - **Schwierigkeit und Gelände:** Bereich von 1 bis 5.
-- **GCVote-Bewertung:** Bereich von „ohne“ bis 5. Ab 1 fallen Caches ohne Bewertung heraus, denn sie zählen als 0 –
-  wie in Cachebox. Siehe [GCVote-Bewertungen](#gcvote-bewertungen).
 - **Typen:** Nur die angehakten Cache-Typen; ohne Auswahl alle.
 
 **Aufräumen:** Unter **⋯ › Caches löschen** entfernst du alle gefundenen, alle archivierten oder alle gerade
@@ -439,59 +435,6 @@ Unterschied zu Cachebox: Dort ist der Parkplatz ein eigener Pseudo-Cache („CBP
 steht und wie ein Cache ausgewählt wird. In iCacheBox kommen Caches immer aus der Liste; der Parkplatz ist darum ein
 eigenes Ziel und taucht in der Cacheliste nicht auf. Symbol und Code („CBPark“) sind dieselben.
 
-## GCVote-Bewertungen
-
-![GCVote-Bewertungen laden](bilder/gcvote.png)
-
-**GCVote** ist ein Dienst außerhalb von geocaching.com, bei dem Cacher die Qualität eines Caches von 1 bis 5
-bewerten. Cachebox lädt diese Bewertungen beim Import mit; in iCacheBox haben sie eine eigene Seite unter
-**Sonstiges › Mehr › GCVote-Bewertungen** – im Menü der Cacheliste steht sie ebenfalls (ab Funktionsumfang
-**Erweitert**).
-
-**Laden:**
-
-- **Caches:** „Nur angezeigte Caches“ fragt nach den Caches, die Filter und Suche gerade übrig lassen (so macht es
-  Cachebox mit seinem Filter), „Alle Caches der Liste“ nach allen.
-- **Bewertungen für … Caches laden** startet. iCacheBox fragt in Paketen von 100 Caches – wie Cachebox – und zeigt
-  den Fortschritt; **Abbrechen** hält nach dem laufenden Paket an, das schon Geladene bleibt erhalten.
-- Danach steht da, was angekommen ist, zum Beispiel „250 Bewertungen, 51 ohne Bewertung, 50 × deine Stimme“, und
-  wann die Liste zuletzt Bewertungen bekommen hat.
-- **GCVote-Konto:** Die Durchschnittswerte kommen auch ohne Anmeldung. Benutzername (der von geocaching.com) und
-  GCVote-Passwort braucht nur, wer zusätzlich die **eigene Stimme** sehen möchte. Das Passwort liegt im
-  Schlüsselbund des iPhones.
-- **Bewertungen dieser Liste löschen** wirft sie wieder weg; ein neues Laden holt sie zurück.
-
-**Wo die Bewertung steht:**
-
-![Cacheliste nach Bewertung sortiert](bilder/gcvote-liste.png)
-
-- in der **Cacheliste** als Säule aus blauen Sternen links in der Zeile,
-- in der **Cache-Info** der Leiste oben (Leiste ganz herunterziehen) und in der **Info-Blase** der Karte mit dem
-  Zahlenwert,
-- in den **Details** als Zeile „GCVote“ mit Sternen, Wert, Zahl der Stimmen und – falls vorhanden – deiner eigenen
-  Stimme.
-
-**Filtern und sortieren:**
-
-![Filter nach Bewertung](bilder/gcvote-filter.png)
-
-Im **Filter** stellst du unter „GCVote-Bewertung“ einen Bereich ein, zum Beispiel 4 bis 5 für die Rosinen. Caches
-ohne Bewertung zählen dabei als 0 und fallen ab 1 heraus. Unter **⋯ › Sortieren › GCVote-Bewertung** stehen die
-bestbewerteten Caches oben.
-
-> **Der Dienst ist zurzeit abgeschaltet:** gcvote.com antwortet seit geraumer Zeit auf jede Anfrage mit „410 Gone“ –
-> auch Cachebox für Android kommt dort nicht mehr durch. Als Nachfolger gibt es cachevote.org, eine
-> Browser-Erweiterung für geocaching.com, die aber keine Schnittstelle für Apps anbietet. In iCacheBox ist alles
-> fertig: Sobald es wieder einen erreichbaren Server gibt, trägst du ihn unter **Server** ein (Funktionsumfang
-> **Expert**) und das Laden funktioniert ohne weitere Änderung. Mit der Standardadresse meldet die Seite ehrlich,
-> dass es die Adresse nicht mehr gibt.
-
-Unterschiede zu Cachebox: Dort steckt das Laden im Import-Dialog („GCVoteRatings“) und läuft bei jedem Import mit;
-hier ist es eine eigene Seite, damit du es gezielt startest. Die eigene Stimme lässt sich in iCacheBox nur ansehen,
-nicht abgeben – Cachebox kann sie auch hochladen. Cachebox färbt sein rotes Sternebild mit Hellblau ein (was im
-Ergebnis dunkelrot aussieht); iCacheBox zeichnet eigene blaue Sterne, damit die Bewertung nicht mit D und T
-verwechselt wird. Sortieren nach Bewertung kennt Cachebox nicht.
-
 ## Funktionsumfang
 
 ![Funktionsumfang wählen](bilder/funktionsumfang.png)
@@ -502,10 +445,10 @@ Funktionsumfang** stellst du darum ein, wie viel in den Menüs steht:
 - **Standard** (voreingestellt): nur das, was man zum Suchen braucht – Liste, Filter, Import, Karte, Kompass,
   Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen, **Nach Kompass ausrichten**,
   **Parkplatz**.
-- **Erweitert**: dazu **Projektion** und **Vom GPS**, „WP vom Kartenmittelpunkt“, **GCVote-Bewertungen**,
+- **Erweitert**: dazu **Projektion** und **Vom GPS**, „WP vom Kartenmittelpunkt“,
   die Theme-Auswahl, „Koordinaten kopieren“, „Im Browser öffnen“, „Caches löschen“ und „Aus der Liste löschen“.
-- **Expert**: alles, auch **Stil** und **Overlays** der Themes, die Serveradresse für GCVote und die Einträge, die
-  noch nicht gebaut sind (Solver, Aktualisieren über die API, Foto, Video, Sprachnotiz).
+- **Expert**: alles, auch **Stil** und **Overlays** der Themes und die Einträge, die noch nicht gebaut sind
+  (Solver, Aktualisieren über die API, Foto, Video, Sprachnotiz).
 
 Die Einstellung blendet nur Menüeinträge ein und aus; an den Daten ändert sie nichts. In Cachebox gibt es dafür
 versteckte Schalter, die bestimmen, welche Einstellungen der Dialog zeigt.
@@ -554,11 +497,6 @@ Karten sind von der iCloud-Sicherung ausgenommen, weil sie sich jederzeit wieder
 Ohne Freigabe des Standorts misst iCacheBox vom gewählten Cache aus. Die Freigabe änderst du in den
 iOS-Einstellungen unter **Datenschutz & Sicherheit › Ortungsdienste › iCacheBox**.
 
-**Warum kommen keine GCVote-Bewertungen?**
-Weil gcvote.com abgeschaltet ist: Der Server antwortet auf jede Anfrage mit „410 Gone“. iCacheBox sagt das in der
-Fehlermeldung. Das Laden selbst ist fertig gebaut – sobald es einen erreichbaren Server gibt, trägst du ihn unter
-**Sonstiges › Mehr › GCVote-Bewertungen › Server** ein (Funktionsumfang **Expert**).
-
 **Die Datei lässt sich nicht importieren.**
 iCacheBox braucht GPX-Dateien mit Geocaches (Groundspeak-Erweiterung). Reine Track- oder Routendateien enthalten
 keine Caches. Ist die Datei beschädigt, nennt die Fehlermeldung die Zeile, an der das Lesen scheiterte.
@@ -568,6 +506,6 @@ keine Caches. Ist die Datei beschädigt, nennt die Fehlermeldung die Zeile, an d
 Im Vergleich zu Cachebox für Android fehlen noch: Laden und Aktualisieren über die Geocaching-API, Spoilerbilder,
 die kleine Karte im Kompass, die Kartenmodi WP, Lock und Car, Feldnotizen hochladen, Solver,
 Tracks, Trackables, Foto, Video und Sprachnotiz, Schnell-Entwurf und automatisches Sortieren sowie eine
-eigene Auswahl der Zusatzknöpfe, eine eigene GCVote-Stimme abgeben (nur ansehen geht). Diese Einträge stehen – je nach Funktionsumfang – in den Menüs und bei den
+eigene Auswahl der Zusatzknöpfe. Diese Einträge stehen – je nach Funktionsumfang – in den Menüs und bei den
 Zusatzknöpfen schon ausgegraut an ihrem Platz. Den Tag-/Nachtmodus von Cachebox gibt es nicht; die Knöpfe und der Kompass bleiben auch im
 dunklen Erscheinungsbild hell.

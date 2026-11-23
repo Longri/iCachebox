@@ -32,14 +32,6 @@ struct CacheFilterView: View {
                 range("Gelände", filter.terrain)
             }
             Section {
-                gcVoteRange(filter.gcVote)
-            } header: {
-                Text("GCVote-Bewertung")
-            } footer: {
-                Text("Ab 1 fallen Caches ohne Bewertung heraus, denn sie zählen als 0 (wie in Cachebox). "
-                     + "Bewertungen holst du über „GCVote-Bewertungen“.")
-            }
-            Section {
                 ForEach(CacheType.filterChoices, id: \.self) { type in
                     Toggle(isOn: typeBinding(type)) {
                         Label {
@@ -86,26 +78,6 @@ struct CacheFilterView: View {
                                    set: { value.wrappedValue = min($0, value.wrappedValue.lowerBound)...$0 }),
                     in: 1...5, step: 0.5)
         }
-    }
-
-    /// Like `range`, but from 0 on: 0 is "every cache, also without a rating" (Cachebox `minRating` = 0).
-    private func gcVoteRange(_ value: Binding<ClosedRange<Double>>) -> some View {
-        VStack(alignment: .leading) {
-            Text("Bewertung: \(Self.gcVoteText(value.wrappedValue.lowerBound)) bis "
-                 + Self.gcVoteText(value.wrappedValue.upperBound))
-            Stepper("von \(Self.gcVoteText(value.wrappedValue.lowerBound))",
-                    value: Binding(get: { value.wrappedValue.lowerBound },
-                                   set: { value.wrappedValue = $0...max($0, value.wrappedValue.upperBound) }),
-                    in: 0...5, step: 0.5)
-            Stepper("bis \(Self.gcVoteText(value.wrappedValue.upperBound))",
-                    value: Binding(get: { value.wrappedValue.upperBound },
-                                   set: { value.wrappedValue = min($0, value.wrappedValue.lowerBound)...$0 }),
-                    in: 0...5, step: 0.5)
-        }
-    }
-
-    private static func gcVoteText(_ value: Double) -> String {
-        value == 0 ? "ohne" : CacheSummary.rating(value)
     }
 
     private func typeBinding(_ type: CacheType) -> Binding<Bool> {

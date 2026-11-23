@@ -24,12 +24,6 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     Fokus-Sprung `setNextFocus`/`focusStartLon`), `UTM.swift` (eigene Krüger-Reihe, Zonen/Bänder wie Cachebox
     `UTMConvert`), `CoordinateParser.swift` (`Coordinate(parsing:)` für Einfügen, wie `Coordinate.parseCoordinate`),
     `HeadingDamper.swift` (glättet Kompass-/Kursrichtungen für die ausgerichtete Karte; nicht in Cachebox)
-  - `GCVote/` – Bewertungen von GCVote (Cachebox `GCVote`/`GCVoteDAO`/`Importer.importGcVote`): `GCVote.swift`
-    (`GCVoteRating`, `GCVoteCredentials`, `GCVoteService` fragt `<server>/getVotes.php?…&waypoints=GC1,GC2`,
-    XML-Parser für die `vote`-Elemente, `GCVoteError.gone` für das heutige 410 von gcvote.com; Server ist
-    einstellbar, weil der Dienst abgeschaltet ist), `GCVoteImporter.swift` (Pakete zu 100 Caches wie Cachebox,
-    Fortschritt, Abbruch, schreibt über `CacheDatabase.setGCVote`, merkt den Zeitpunkt in `info`),
-    `GCVoteCredentialStore.swift` (Passwort im Schlüsselbund statt in der Settings-Datei)
   - `Geocaching/` – Anmeldung an der Geocaching-API (OAuth 2.0 mit PKCE, RFC 7636): `GeocachingOAuth.swift`
     (Autorisierungs-URL, Callback lesen, Token- und Refresh-Anfrage, Antwort auswerten – alles ohne Netz und
     damit testbar), `GeocachingTokenStore.swift` (`GeocachingTokens`, Schlüsselbund, Speicher für Tests),
@@ -76,10 +70,6 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     LRU in zwei Stufen (volle Auflösung, verdrängte Kacheln halb aufgelöst nur als Ersatz). Beim Karten-/Theme-/
     Stilwechsel zeigt der neue Renderer die Kacheln des alten, bis die eigenen fertig sind. Kein PNG mehr.
     `overrideUserInterfaceStyle = .light` am `MKMapView`: MapKits Platzhalter-Raster ist im Dunkelmodus schwarz
-  - GCVote-Bewertungen (seit 23.11.2026): `GCVoteModel.swift` (Konto, Server, Umfang, laufender Import),
-    `GCVoteView.swift` (Seite in Mehr und Fenster aus dem Listenmenü, dazu `GCVoteStars` – blaue Sterne, in der
-    Liste hochkant wie Cachebox `SHOW_VOTE`), `AppState.startGCVoteImport`/`gcVoteCodes`/`clearGCVotes`;
-    `CacheFilter.gcVote` + `CacheSortOrder.gcVote` in `CacheListModel.swift`
   - Caches: `CacheListModel.swift` (Listen in `Documents/Lists`, Sortierung, Filter, Import), `CacheListView.swift`,
     `CacheListsView.swift`, `CacheFilterView.swift`, `ImportView.swift`, `CacheDetailView.swift`, `HTMLView.swift`
     (WKWebView ohne JavaScript), `LocationModel.swift`, `CachePresentation.swift` (Cachetyp-/Wegpunkt-Icons
@@ -234,8 +224,7 @@ bei Hintergrund-Downloads, ZIP64 (aktuelle Freizeitkarte-ZIPs sind < 4 GB).
 GPX-Import und Listen (Caches-Tab): Import über Dateiauswahl, „Teilen › iCacheBox“ (Document Types in
 `iCacheBox-Info.plist`) oder Mehr › GPX importieren; Fortschritt als Karte über den Tabs. Liste = SQLite-Datei wie eine
 Cachebox-Datenbank (eigenes Schema, nicht Cachebox-kompatibel). Sortierung nach Entfernung (Standort, sonst gewählter
-Cache), Name, Code, D, T, Datum, Favoritenpunkte, GCVote-Bewertung; Filter: Status dreistufig, Typen (alle), D/T,
-GCVote-Bewertung; Suche nach Name, Code,
+Cache), Name, Code, D, T, Datum, Favoritenpunkte; Filter: Status dreistufig, Typen (alle), D/T; Suche nach Name, Code,
 Owner. Gewählter Cache: seit 12.11.2026 im Slider oben (siehe unten), Kontextmenü Details/Auf der Karte; die Karte springt bei neuer Auswahl dorthin (ohne Animation, sonst
 verwirft MapKit Kachelanfragen) und wechselt bei Bedarf auf eine Karte, die den Ort abdeckt; ohne passende Karte
 Hinweis. Website-Kachel „Cacheliste“ ist seit 11.11.2026 kein
@@ -369,9 +358,9 @@ Funktionsumfang blendet Menüeinträge stufenweise ein. Standard = Suchen (Liste
 Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen, Nach Kompass ausrichten – seit
 23.11.2026 auch hier, es ist nur ein Anzeigeschalter und steht in Cachebox ebenfalls im einfachen Kartenmenü –,
 Parkplatz – seit 23.11.2026, eine Alltagsfunktion),
-Erweitert = dazu Projektion, Vom GPS, WP vom Kartenmittelpunkt, GCVote-Bewertungen, Theme-Auswahl, Koordinaten
-kopieren, Im Browser öffnen, Caches löschen, Aus der Liste löschen, Tracks/Trackables (ausgegraut), Expert = alles
-(Stil, Overlays, GCVote-Server, Aktualisieren, Solver, Foto, Video, Sprachnotiz). Im Simulator geprüft (alle drei Stufen, Knopf- und ⋯-Menüs,
+Erweitert = dazu Projektion, Vom GPS, WP vom Kartenmittelpunkt, Theme-Auswahl, Koordinaten kopieren, Im Browser
+öffnen, Caches löschen, Aus der Liste löschen, Tracks/Trackables (ausgegraut), Expert = alles (Stil, Overlays,
+Aktualisieren, Solver, Foto, Video, Sprachnotiz). Im Simulator geprüft (alle drei Stufen, Knopf- und ⋯-Menüs,
 Wegpunkt-Knöpfe, Neustart behält die Stufe). Nicht geprüft: echtes Gerät, VoiceOver.
 Anleitung samt Screenshots am 13.11.2026 erneut nachgezogen (Wegpunkt als Ziel, Projektion, Vom GPS,
 Funktionsumfang, Kompass mit Wegpunkt, Wegpunkt-Blase auf der Karte).
@@ -427,32 +416,19 @@ und ohne gewählten Cache, Wegpunktzeile „Cache“ holt das Ziel zurück, Neus
 Ziel zurück). Nicht geprüft: Speichern ohne jede GPS-Position (der Simulator liefert den letzten Fix weiter),
 echtes Gerät, iPad, VoiceOver, Querformat. Anleitung um den Abschnitt „Mein Parkplatz“ samt Screenshot ergänzt.
 
-GCVote-Bewertungen (seit 23.11.2026, wie Cachebox `Importer.importGcVote`; Website-Eintrag „GCVote-Bewertungen
-importieren“ damit erledigt): Mehr › GCVote-Bewertungen bzw. Listenmenü lädt die Bewertungen für die angezeigten
-oder alle Caches der Liste, in Paketen zu 100 wie Cachebox, mit Fortschritt und Abbruch; sie stehen danach in der
-Liste (blaue Sternsäule links), in der Cache-Info der Leiste, in der Info-Blase der Karte und in den Details (mit
-Stimmenzahl und eigener Stimme), lassen sich filtern (0…5 wie Cachebox `minRating`/`maxRating`) und sortieren
-(nicht in Cachebox). Konto: Benutzername in UserDefaults, Passwort im Schlüsselbund; ohne Anmeldung kommen nur die
-Durchschnitte. **Der Dienst ist tot:** gcvote.com antwortet auf jede Anfrage (auch `/`) mit „410 Gone“, der Spiegel
-`ssl.webpack.de/gcvote.com` antwortet gar nicht; Cachebox kommt dort ebenfalls nicht mehr durch. Nachfolger ist
-cachevote.org – eine Browser-Erweiterung für geocaching.com ohne App-Schnittstelle. Darum ist die Serveradresse
-eine Einstellung (Funktionsumfang Expert): eine erreichbare Kopie reicht, sonst ändert sich nichts.
-Abweichungen: eigene Stimme nur ansehen, nicht hochladen (Cachebox `GCVote.sendVote`, dafür bräuchte es die GUID
-aus dem Listing); Laden als eigene Seite statt im Import-Dialog; Cachebox färbt sein rotes Sternebild mit Hellblau
-ein (multipliziert, ergibt Dunkelrot) – hier eigene blaue Sterne, damit die Bewertung nicht nach D/T aussieht;
-Werte werden als Fließkommazahl gespeichert, Cachebox als `rating × 100`. Datenbank: Schema 3 (`gcvote_rating`,
-`gcvote_count`, `gcvote_own`), Migration von 1 und 2 getestet.
-Geprüft: 25 neue Tests im Paket (XML der echten Antwort, HTML-Seite statt XML, Request-Aufbau mit und ohne Konto,
-410, Pakete zu 100, Nicht-GC-Codes, Fehler in einem Paket, Abbruch, Migration, Schlüsselbund) sowie einmal komplett
-über echtes HTTP gegen einen Test-Server im Test; im Simulator der ganze Weg gegen einen lokalen Testserver statt
-gcvote.com (301 Caches in 4 Paketen, 5117 Caches in 52 Paketen, Abbruch mitten im Lauf, Anzeige in Liste, Leiste,
-Blase und Details, Filter 4–5, Sortierung, Löschen, Migration zweier echter Version-2-Listen). Nicht geprüft: der
-echte Dienst (abgeschaltet), eigene Stimme von einem echten GCVote-Konto, echtes Gerät, iPad, VoiceOver.
-Anleitung um den Abschnitt „GCVote-Bewertungen“ samt drei Screenshots ergänzt (Ladeseite, Liste nach Bewertung
-sortiert, Filter); auf der Website ist der Eintrag abgehakt und in den Abschnitt „Cacheliste“ gewandert, damit
-„Geocaching Live“ sein „Coming Soon“ behält.
-Fundstück: `Task.detached` erbt die Stornierung nicht – „Abbrechen“ wirkte erst, als der Abbruch an die detachte
-Aufgabe selbst ging (wie in `CacheListModel.importFiles`).
+Geprüfte Sackgasse, Bewertungen (23.11.2026): GCVote war einmal gebaut (Client, Paket-Import zu 100 Caches,
+Sternanzeige, Filter, Sortierung, Schema 3) und ist auf Wunsch wieder entfernt worden (Commit „Import, show and
+filter GCVote ratings like Cachebox“ und sein Revert; der Code steht noch auf dem Branch `gcvote-bewertungen`).
+Grund: gcvote.com antwortet auf jede Anfrage mit „410 Gone“, der Spiegel `ssl.webpack.de/gcvote.com` antwortet gar
+nicht. Der Nachfolger cachevote.org lebt (Express/nginx, laut Startseite ~239.000 Bewertungen), ist aber eine
+Browser-Erweiterung für geocaching.com: Öffentlich erreichbar ist nur `https://cachevote.org/api/banner/<GC-Code>`,
+und das liefert ein PNG (145 × 45) statt eines Wertes. Die Schnittstelle der Erweiterung ist undokumentiert, geht
+pro Cache (bei einer PQ also 300 Anfragen) und gehört einem Hobbyprojekt – ohne Zusage des Betreibers nicht
+benutzen. Vor einem neuen Anlauf also erst Fabian Schedler (Kontakt auf cachevote.org) nach einem Lese-Endpunkt
+fragen, am besten als Stapel wie GCVotes `getVotes.php`. Bis dahin decken die Favoritenpunkte aus der GPX den
+Zweck ab (werden angezeigt und sortiert). Hinweis für Listen, die den Umweg schon mitgemacht haben: Sie stehen auf
+`user_version = 3` und haben drei ungenutzte Spalten (`gcvote_rating`, `gcvote_count`, `gcvote_own`); die Migration
+überspringt sie, weil ihre Version über der erwarteten liegt.
 
 Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
 Nachtmodus, Kachel-Cache auf Platte, Kartenrotation mit

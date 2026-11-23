@@ -135,13 +135,6 @@ private struct MainScreen: View {
                 .presentationDetents([.height(330)])
                 .presentationBackground(Color.cacheboxActivity)
         }
-        // "GCVote-Bewertungen" of the list menu (Cachebox: the import dialog's GCVote box)
-        .sheet(isPresented: $app.showGCVote) {
-            NavigationStack {
-                GCVoteView(isSheet: true)
-            }
-            .environment(\.colorScheme, .light)   // the page is in the Cachebox day skin
-        }
         .sheet(isPresented: $app.showMapDownload) {
             NavigationStack {
                 MapDownloadView()
