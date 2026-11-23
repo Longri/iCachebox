@@ -10,7 +10,10 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
   - `MapsforgeCore` – Kartenleser: Header, Index-Cache, POIs/Wege, Mehrsprachigkeit (Port von `mapsforge-map-reader`)
   - `MapsforgeRender` – RenderTheme-Parser inkl. Stylemenü (`StyleMenu.swift`, Kategorien wie Cachebox),
     Render-Instruktionen, Label-Platzierung inkl. Kachel-Abhängigkeiten, CoreText-Text (auch entlang Pfaden),
-    Mini-SVG-Renderer für Theme-Symbole, `TileRenderer`
+    Mini-SVG-Renderer für Theme-Symbole, `TileRenderer` (`renderTile(…, labels:)` gibt die Labels heraus,
+    statt sie in die Kachel zu zeichnen – mapsforge `DatabaseRenderer` mit `TileBasedLabelStore`;
+    `MapElementContainer.render` zeichnet ein Label einzeln in ein Bild, `withoutDuplicateCaptions` wirft
+    Doppel an Kachelgrenzen weg)
   - `mfdump` – Entwickler-CLI: `info`, `dump` (Tags einer Kachel), `render`, `grid` (Kachelraster, zufällige
     Reihenfolge), `bench`; Theme-Argument `pfad.xml#stil,+overlay,-overlay` wählt Stil/Overlays
   - `Resources/themes/` – interne Themes (default, osmarender) + Symbole/Patterns aus Cachebox
@@ -70,6 +73,17 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     LRU in zwei Stufen (volle Auflösung, verdrängte Kacheln halb aufgelöst nur als Ersatz). Beim Karten-/Theme-/
     Stilwechsel zeigt der neue Renderer die Kacheln des alten, bis die eigenen fertig sind. Kein PNG mehr.
     `overrideUserInterfaceStyle = .light` am `MKMapView`: MapKits Platzhalter-Raster ist im Dunkelmodus schwarz
+  - Beschriftung in eigener Ebene: `MapLabels.swift` – `MapLabelStore` (Labels je Kachel wie mapsforge
+    `TileBasedLabelStore`, liegt als `CacheMapView.labelStore` beim Kartenfenster und wird beim Rendern gefüllt)
+    und `MapLabelsView` (mapsforge `LabelLayer`): Die Kacheln werden ohne Labels gerendert
+    (`TileRenderer.renderLabels = false`), die Ebene über der Karte sucht aus allen sichtbaren Kacheln die
+    kollisionsfreien Labels (`withoutDuplicateCaptions` + `collisionFreeOrdered`), zeichnet jedes einmal in ein
+    Bild und zeigt es in einem eigenen `CALayer`; bei jedem `mapViewDidChangeVisibleRegion` werden nur noch
+    Positionen gesetzt (Abbildung absolute Mapsforge-Pixel → Viewpunkte aus drei von MapKit umgerechneten
+    Punkten, gilt damit auch bei gedrehter Karte). Die Zoomstufe meldet der Renderer
+    (`MapLabelStore.setZoom`) – aus der Kamera geraten lag sie zwischen zwei Stufen daneben, dann fehlten alle
+    Labels. Die Ebene ist die erste Subview des `CacheMapView`, MapKit hängt seine Annotationen später darüber,
+    also liegen die Cache-Marker über den Labels
   - Caches: `CacheListModel.swift` (Listen in `Documents/Lists`, Sortierung, Filter, Import), `CacheListView.swift`,
     `CacheListsView.swift`, `CacheFilterView.swift`, `ImportView.swift`, `CacheDetailView.swift`, `HTMLView.swift`
     (WKWebView ohne JavaScript), `LocationModel.swift`, `CachePresentation.swift` (Cachetyp-/Wegpunkt-Icons
@@ -430,7 +444,26 @@ Zweck ab (werden angezeigt und sortiert). Hinweis für Listen, die den Umweg sch
 `user_version = 3` und haben drei ungenutzte Spalten (`gcvote_rating`, `gcvote_count`, `gcvote_own`); die Migration
 überspringt sie, weil ihre Version über der erwarteten liegt.
 
+Beschriftung in eigener Ebene (seit 23.11.2026, Schritt 1 zu aufrechten Labels bei gedrehter Karte; in ACB macht
+das der alte Vektor-Renderer mit `TileGL_RotateDrawables`/`SortedRotateList`, die im heutigen Cachebox-Code nur
+noch als Reste stehen – es rendert inzwischen Bitmap-Kacheln): Die Labels stecken nicht mehr in den Kacheln,
+sondern im `MapLabelStore`, und `MapLabelsView` zeichnet sie über der Karte. Das Bild bleibt wie bisher, Labels
+drehen und wachsen weiter mit der Karte; die Auswahl läuft aber über alle sichtbaren Kacheln statt Kachel für
+Kachel, `TileDependencies` entfällt dabei. Messung im Simulator (Release, iPhone 18 Pro, Freizeitkarte Bremen):
+Kollisionsprüfung über 750 Labels < 1 ms, ein Label in ein Bild zeichnen 0,1–0,25 ms, Positionen aller 400
+sichtbaren Labels setzen 0,17–0,29 ms je Frame, Neuaufbau beim Eintreffen neuer Kacheln 1–19 ms (das erste
+Füllen eines Bildschirms 43 ms) – der Neuaufbau läuft auf dem Hauptthread und ist damit der Posten, den Schritt 3
+auslagern sollte. Abweichungen: Benachbarte Kacheln rechnen für dieselbe Fläche je eine eigene Beschriftung aus;
+vorher verwarf die Kachelgrenzen-Logik eine davon, jetzt `withoutDuplicateCaptions` (gleicher Text, etwa eine
+Kastenbreite auseinander; mapsforge löst das erst mit `MapDataStoreLabelStore`, der die Labels eines ganzen
+Bereichs auf einmal liest). Beim Zoomen erscheinen Labels erst, wenn die Kachel der neuen Stufe gerendert ist
+(vorher wurde die alte Kachel samt Beschriftung vergrößert gezeigt). Im Simulator geprüft (A/B gegen die alte
+Darstellung an derselben Stelle, Ziehen, Zoomen per Geste, Drehen, Zoomstufen 13–19, Marker liegen über den
+Labels, Karten-/Themewechsel leert den Store). Nicht geprüft: echtes Gerät, Speicherbedarf der Label-Bilder,
+iPad, VoiceOver.
+
 Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
-Nachtmodus, Kachel-Cache auf Platte, Kartenrotation mit
-aufrechten Labels, Pixel-Vergleich gegen Java-AWT-Rendering, SVG `<use>`/Gradienten/`<pattern>` (betrifft z. B.
+Nachtmodus, Kachel-Cache auf Platte, aufrechte Labels bei gedrehter Karte (Schritt 2: Punktlabels waagerecht,
+Wegtexte mitgedreht, aber gespiegelt statt kopfüber; Schritt 3: Kollisionskästen im gedrehten Raum,
+Label-Bilder im Hintergrund zeichnen), Pixel-Vergleich gegen Java-AWT-Rendering, SVG `<use>`/Gradienten/`<pattern>` (betrifft z. B.
 Elevates `s_mall.svg`), Test auf echtem Gerät.

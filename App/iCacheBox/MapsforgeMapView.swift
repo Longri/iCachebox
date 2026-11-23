@@ -133,6 +133,7 @@ struct MapsforgeMapView: UIViewRepresentable {
                 oldTiles.cancel()
                 overlay.previousTiles = oldTiles.cache
             }
+            mapView.resetLabels()
             mapView.addOverlay(overlay, level: .aboveLabels)
             if let old = c.overlay { mapView.removeOverlay(old) }
             c.overlay = overlay
@@ -269,6 +270,7 @@ struct MapsforgeMapView: UIViewRepresentable {
         /// coordinates in the info panel move with the map; the zoom buttons follow the zoom level.
         func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
             refreshPositionViews(on: mapView)
+            (mapView as? CacheMapView)?.updateLabels()
             (mapView as? CacheMapView)?.updateZoomButtons()
             let center = mapView.centerCoordinate
             if mapView.bounds.width > 0,
@@ -609,7 +611,11 @@ struct MapsforgeMapView: UIViewRepresentable {
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let tiles = overlay as? MapsforgeTileOverlay {
                 let screen = mapView.window?.windowScene?.screen.bounds.size ?? mapView.bounds.size
-                return MapsforgeOverlayRenderer(overlay: tiles, cache: TileCache(screen: screen))
+                // the labels of the tiles go to the label layer of the map view, not into the tiles
+                let map = mapView as? CacheMapView
+                return MapsforgeOverlayRenderer(overlay: tiles, cache: TileCache(screen: screen),
+                                                labels: map?.labelStore,
+                                                onLabels: { [weak map] in map?.labelsNeedUpdate() })
             }
             return MKOverlayRenderer(overlay: overlay)
         }
@@ -623,6 +629,9 @@ final class CacheMapView: MKMapView {
     private var pending: (center: CLLocationCoordinate2D, zoom: Double)?
     private var isApplying = false
     let edgeArrows = EdgeArrowsView()
+    /// Labels of the Mapsforge tiles, drawn above the map instead of into the tiles (see `MapLabelsView`).
+    let labelStore = MapLabelStore()
+    private lazy var labelsView = MapLabelsView(store: labelStore)
     private lazy var compassButton = MKCompassButton(mapView: self)
     private lazy var scaleView = MKScaleView(mapView: self)
     private let zoomButtons = ZoomButtonsView()
@@ -656,6 +665,9 @@ final class CacheMapView: MKMapView {
         scaleView.legendAlignment = .leading
         zoomButtons.zoomIn.addTarget(self, action: #selector(zoomInTapped), for: .touchUpInside)
         zoomButtons.zoomOut.addTarget(self, action: #selector(zoomOutTapped), for: .touchUpInside)
+        // first, so that the labels stay under the controls and under the annotation views MapKit adds later
+        addSubview(labelsView)
+        labelsView.attach(to: self)
         addSubview(compassButton)
         addSubview(scaleView)
         addSubview(zoomButtons)
@@ -663,6 +675,21 @@ final class CacheMapView: MKMapView {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    // MARK: Labels
+
+    /// Places the labels of the visible tiles again, after the map moved or was resized.
+    func updateLabels() { labelsView.update(on: self) }
+
+    /// Tiles have been rendered, so there may be new labels (called from the rendering threads).
+    func labelsNeedUpdate() { labelsView.setNeedsUpdate() }
+
+    /// Another map, theme or style: the labels of the old one are gone.
+    func resetLabels() {
+        labelStore.removeAll()
+        labelsView.reset()
+    }
+
     /// A position set with `setCenter(_:zoomLevel:)` waits for the first layout or is being applied; MapKit reports
     /// the intermediate regions as changes, which must not be remembered.
     var isSettingCamera: Bool { pending != nil || isApplying }
@@ -773,6 +800,8 @@ final class CacheMapView: MKMapView {
         scaleView.frame = CGRect(x: area.minX + margin, y: zoomButtons.frame.minY - 4,
                                  width: max(scale.width, scaleWidth), height: scale.height)
         edgeArrows.frame = bounds
+        labelsView.frame = bounds
+        updateLabels()
         updateZoomButtons()
         // MapKit inserts its own views (annotations, callouts) later; keep the controls on top
         if subviews.last !== edgeArrows {

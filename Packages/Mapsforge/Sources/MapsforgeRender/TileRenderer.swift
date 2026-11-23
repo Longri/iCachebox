@@ -172,7 +172,12 @@ public final class TileRenderer: @unchecked Sendable {
     }
 
     /// Renders `tile` (size in points = `tile.tileSize`) into a bitmap with `scale` pixels per point.
-    public func renderTile(_ tile: Tile, scale: CGFloat = 1, statistics: UnsafeMutablePointer<Statistics>? = nil) -> CGImage? {
+    ///
+    /// With `renderLabels` off the labels are left out of the image and handed to `labels` instead, for a label
+    /// layer that draws them on the screen itself (mapsforge `DatabaseRenderer` with a `TileBasedLabelStore`).
+    public func renderTile(_ tile: Tile, scale: CGFloat = 1,
+                           labels: UnsafeMutablePointer<[MapElementContainer]>? = nil,
+                           statistics: UnsafeMutablePointer<Statistics>? = nil) -> CGImage? {
         let px = Int((CGFloat(tile.tileSize) * scale).rounded())
         guard let cg = CGContext(data: nil, width: px, height: px, bitsPerComponent: 8, bytesPerRow: 0,
                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
@@ -182,12 +187,14 @@ public final class TileRenderer: @unchecked Sendable {
         cg.translateBy(x: 0, y: CGFloat(px))
         cg.scaleBy(x: scale, y: -scale)
         cg.setShouldAntialias(true)
-        render(tile, into: cg, statistics: statistics)
+        render(tile, into: cg, labels: labels, statistics: statistics)
         return cg.makeImage()
     }
 
     /// Renders into an existing y-down context whose user space is `tile.tileSize` points wide.
-    public func render(_ tile: Tile, into cg: CGContext, statistics: UnsafeMutablePointer<Statistics>? = nil) {
+    public func render(_ tile: Tile, into cg: CGContext,
+                       labels: UnsafeMutablePointer<[MapElementContainer]>? = nil,
+                       statistics: UnsafeMutablePointer<Statistics>? = nil) {
         let size = CGFloat(tile.tileSize)
         let tileRect = CGRect(x: 0, y: 0, width: size, height: size)
 
@@ -232,12 +239,17 @@ public final class TileRenderer: @unchecked Sendable {
         drawWays(ctx, cg)
 
         if renderLabels {
-            let labels = dependencies.processLabels(ctx.labels, tile: tile)
-            statistics?.pointee.labels = labels.count
+            let drawn = dependencies.processLabels(ctx.labels, tile: tile)
+            statistics?.pointee.labels = drawn.count
             let origin = CGPoint(x: tile.origin.x, y: tile.origin.y)
-            for label in labels.sorted(by: { $0.priority < $1.priority }) {
+            for label in drawn.sorted(by: { $0.priority < $1.priority }) {
                 label.draw(cg, origin: origin)
             }
+        } else if let labels {
+            // mapsforge `DatabaseRenderer`: the labels of the tile go to the label store, untouched. Which of
+            // them are drawn is decided there over all visible tiles, so `TileDependencies` is not needed.
+            labels.pointee = ctx.labels
+            statistics?.pointee.labels = ctx.labels.count
         }
 
         if let outside = theme.mapBackgroundOutside {
@@ -352,8 +364,8 @@ public final class TileRenderer: @unchecked Sendable {
 // MARK: - Label dependencies between neighbouring tiles
 
 extension MapElementContainer: Hashable {
-    static func == (lhs: MapElementContainer, rhs: MapElementContainer) -> Bool { lhs === rhs }
-    func hash(into hasher: inout Hasher) { hasher.combine(ObjectIdentifier(self)) }
+    public static func == (lhs: MapElementContainer, rhs: MapElementContainer) -> Bool { lhs === rhs }
+    public func hash(into hasher: inout Hasher) { hasher.combine(ObjectIdentifier(self)) }
 }
 
 /// Port of mapsforge `TileDependencies` + `DatabaseRenderer.processLabels`: labels crossing tile

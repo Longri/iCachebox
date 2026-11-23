@@ -186,6 +186,11 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
     private let maximumZ: Int
     /// Fills the parts of a tile for which nothing at all has been rendered yet.
     private let background: CGColor
+    /// Where the labels of the rendered tiles go; while it is set they are not drawn into the tiles but by
+    /// `MapLabelsView` (mapsforge `DatabaseRenderer` with a `TileBasedLabelStore`).
+    private let labels: MapLabelStore?
+    /// Called on the main thread once a tile has put its labels into the store.
+    private let onLabels: @MainActor @Sendable () -> Void
 
     private let lock = NSLock()
     /// Tiles of the replaced overlay; dropped once all requested tiles of this one are rendered.
@@ -204,8 +209,13 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
     private static let queue = DispatchQueue(label: "mapsforge.render", qos: .userInitiated, attributes: .concurrent)
     private var memoryWarning: NSObjectProtocol?
 
-    init(overlay: MapsforgeTileOverlay, cache: TileCache) {
+    init(overlay: MapsforgeTileOverlay, cache: TileCache, labels: MapLabelStore? = nil,
+         onLabels: @escaping @MainActor @Sendable () -> Void = {}) {
         self.cache = cache
+        self.labels = labels
+        self.onLabels = onLabels
+        // set before the first tile is rendered: the labels are drawn by the label layer, not into the tiles
+        if labels != nil { overlay.renderer.renderLabels = false }
         tileRenderer = overlay.renderer
         minimumZ = overlay.minimumZ
         maximumZ = overlay.maximumZ
@@ -244,6 +254,10 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
         let previous = lock.withLock {
             currentZoom = z
             return self.previous
+        }
+        // the label layer draws the labels of exactly these tiles
+        if labels?.setZoom(z) == true {
+            DispatchQueue.main.async { MainActor.assumeIsolated { self.onLabels() } }
         }
         context.interpolationQuality = .medium
         for key in TileKey.covering(mapRect, zoom: max(0, z)) {
@@ -326,7 +340,10 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
     private func work() {
         while let key = next() {
             let scale = contentScaleFactor > 0 ? contentScaleFactor : 2
-            finish(key, image: tileRenderer.renderTile(key.tile, scale: scale))
+            var tileLabels: [MapElementContainer] = []
+            let image = tileRenderer.renderTile(key.tile, scale: scale, labels: &tileLabels)
+            labels?.store(tileLabels, for: key)
+            finish(key, image: image)
         }
     }
 
@@ -351,6 +368,9 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
             let scales = rendering.removeValue(forKey: key) ?? []
             if pending.isEmpty, rendering.isEmpty { previous = nil }
             return scales
+        }
+        if labels != nil {
+            DispatchQueue.main.async { MainActor.assumeIsolated { self.onLabels() } }
         }
         // without an image the replacement stays; redrawing would only ask for the tile again
         guard image != nil else { return }

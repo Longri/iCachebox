@@ -8,12 +8,16 @@ import Foundation
 import MapsforgeCore
 
 /// A label or symbol placed in absolute map pixel coordinates.
-class MapElementContainer {
+///
+/// Public because the app can keep the labels out of the tile images and draw them in a layer of its own
+/// (mapsforge `TileBasedLabelStore` + `LabelLayer`): an element is only read after it has been created, so it
+/// can be handed from the rendering threads to that layer.
+public class MapElementContainer: @unchecked Sendable {
     let xy: CGPoint
     let display: Display
-    let priority: Int
+    public let priority: Int
     /// Boundary in absolute pixel coordinates (used for collision detection).
-    var boundaryAbsolute: CGRect = .null
+    public internal(set) var boundaryAbsolute: CGRect = .null
 
     init(xy: CGPoint, display: Display, priority: Int) {
         self.xy = xy
@@ -26,12 +30,42 @@ class MapElementContainer {
         return boundaryAbsolute.intersects(other.boundaryAbsolute)
     }
 
-    func intersects(_ rect: CGRect) -> Bool { boundaryAbsolute.intersects(rect) }
+    public func intersects(_ rect: CGRect) -> Bool { boundaryAbsolute.intersects(rect) }
 
-    func draw(_ cg: CGContext, origin: CGPoint) {}
+    /// Draws the element into a y-down context whose origin lies at the absolute pixel `origin`.
+    public func draw(_ cg: CGContext, origin: CGPoint) {}
+
+    /// Text of a caption, to find the labels two tiles made for the same thing; `nil` for symbols and for text
+    /// along a way, which may well repeat.
+    public var captionText: String? { nil }
 }
 
-final class PointTextContainer: MapElementContainer {
+public extension MapElementContainer {
+    /// Draws the label on its own into an image, for a label layer that places it on the screen itself. The
+    /// returned rect is the part of the absolute pixel plane the image covers; `margin` leaves room for the halo
+    /// around the text, which reaches beyond the boundary used for collision detection.
+    func render(scale: CGFloat, margin: CGFloat = 6) -> (image: CGImage, bounds: CGRect)? {
+        let bounds = boundaryAbsolute.insetBy(dx: -margin, dy: -margin)
+        guard bounds.width > 0, bounds.height > 0 else { return nil }
+        let px = Int((bounds.width * scale).rounded()), py = Int((bounds.height * scale).rounded())
+        guard px > 0, py > 0, px * py <= 16_000_000,
+              let cg = CGContext(data: nil, width: px, height: py, bitsPerComponent: 8, bytesPerRow: 0,
+                                 space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                 bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+                                    | CGBitmapInfo.byteOrder32Little.rawValue)
+        else { return nil }
+        // y-down coordinate system in points, like `TileRenderer.renderTile`
+        cg.translateBy(x: 0, y: CGFloat(py))
+        cg.scaleBy(x: scale, y: -scale)
+        cg.setShouldAntialias(true)
+        draw(cg, origin: bounds.origin)
+        guard let image = cg.makeImage() else { return nil }
+        return (image, bounds)
+    }
+}
+
+final class PointTextContainer: MapElementContainer, @unchecked Sendable {
+    public override var captionText: String? { text }
     let text: String
     let paint: TextPaint
     let position: Position
@@ -62,14 +96,14 @@ final class PointTextContainer: MapElementContainer {
         boundaryAbsolute = b.offsetBy(dx: point.x, dy: point.y)
     }
 
-    override func draw(_ cg: CGContext, origin: CGPoint) {
+    public override func draw(_ cg: CGContext, origin: CGPoint) {
         let topLeft = CGPoint(x: boundaryAbsolute.minX - origin.x, y: boundaryAbsolute.minY - origin.y)
         let alignment: CTTextAlignment = position.isLeft ? .right : (position.isRight ? .left : .center)
         layout.draw(in: cg, topLeft: topLeft, alignment: alignment)
     }
 }
 
-final class SymbolContainer: MapElementContainer {
+final class SymbolContainer: MapElementContainer, @unchecked Sendable {
     let bitmap: ThemeBitmap
     let theta: CGFloat
     let boundary: CGRect
@@ -83,7 +117,7 @@ final class SymbolContainer: MapElementContainer {
         boundaryAbsolute = self.boundary.offsetBy(dx: point.x, dy: point.y)
     }
 
-    override func draw(_ cg: CGContext, origin: CGPoint) {
+    public override func draw(_ cg: CGContext, origin: CGPoint) {
         cg.saveGState()
         cg.translateBy(x: xy.x - origin.x, y: xy.y - origin.y)
         if theta != 0 { cg.rotate(by: theta) }
@@ -92,7 +126,7 @@ final class SymbolContainer: MapElementContainer {
     }
 }
 
-final class WayTextContainer: MapElementContainer {
+final class WayTextContainer: MapElementContainer, @unchecked Sendable {
     let text: String
     let paint: TextPaint
     let points: [CGPoint]
@@ -110,7 +144,7 @@ final class WayTextContainer: MapElementContainer {
         boundaryAbsolute = r.insetBy(dx: -textHeight / 2, dy: -textHeight / 2)
     }
 
-    override func draw(_ cg: CGContext, origin: CGPoint) {
+    public override func draw(_ cg: CGContext, origin: CGPoint) {
         let first = points[0], second = points[1]
         let invert: Bool
         switch orientation {
@@ -125,8 +159,38 @@ final class WayTextContainer: MapElementContainer {
     }
 }
 
+/// Drops captions that say the same thing at nearly the same place, before the collision check.
+///
+/// Not in mapsforge: a way that crosses a tile border is in the data of both tiles, and each tile works out a
+/// caption of its own for it, a few pixels apart. While the labels were drawn into the tiles, `TileDependencies`
+/// dropped most of these by accident – a long caption reaches into the neighbouring tile and is left to it –
+/// and a caption with `display="always"` is never dropped by the collision check. mapsforge has the same
+/// doubling with a `TileBasedLabelStore`; it goes away with the newer `MapDataStoreLabelStore`, which reads the
+/// labels of a whole area at once instead of tile by tile.
+///
+/// Two captions count as the same when they read the same and lie within about one box of each other; the first
+/// one in the input stays.
+public func withoutDuplicateCaptions(_ input: [MapElementContainer]) -> [MapElementContainer] {
+    var kept: [String: [MapElementContainer]] = [:]
+    var result: [MapElementContainer] = []
+    result.reserveCapacity(input.count)
+    for item in input {
+        guard let text = item.captionText else { result.append(item); continue }
+        let box = item.boundaryAbsolute
+        let same = kept[text]?.contains { other in
+            let o = other.boundaryAbsolute
+            return abs(box.midX - o.midX) < (box.width + o.width) / 2
+                && abs(box.midY - o.midY) < box.height + o.height
+        }
+        if same == true { continue }
+        kept[text, default: []].append(item)
+        result.append(item)
+    }
+    return result
+}
+
 /// mapsforge `LayerUtil.collisionFreeOrdered`: highest priority first, drop clashing elements.
-func collisionFreeOrdered(_ input: [MapElementContainer]) -> [MapElementContainer] {
+public func collisionFreeOrdered(_ input: [MapElementContainer]) -> [MapElementContainer] {
     // stable sort, descending priority (Collections.sort(reverseOrder()) is stable too)
     let sorted = input.enumerated().sorted { a, b in
         a.element.priority != b.element.priority ? a.element.priority > b.element.priority : a.offset < b.offset
