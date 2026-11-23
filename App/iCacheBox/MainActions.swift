@@ -219,8 +219,10 @@ extension AppState {
         // Cachebox `ShowMap.getContextMenu` › "AlignToCompass", "CenterWP"
         entries += [
             .divider("waypoint"),
+            // in every "Funktionsumfang": only a switch of how the map is drawn, and Cachebox has it in the plain
+            // map menu as well
             MenuEntry("Nach Kompass ausrichten", systemImage: "location.north.line", isChecked: model.alignsToCompass,
-                      runsImmediately: true, level: .advanced) { model.alignsToCompass.toggle() },
+                      runsImmediately: true) { model.alignsToCompass.toggle() },
             MenuEntry("WP vom Kartenmittelpunkt", systemImage: "mappin.and.ellipse", isDisabled: selectedCache == nil,
                       level: .advanced) { [weak self] in self?.addWaypointAtMapCenter() },
         ]

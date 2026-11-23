@@ -255,7 +255,9 @@ der Richtung, Pfeil rot/türkis wie auf der Karte, Sonne/Mond; Optionen über Kn
 keine Minikarte (erster Schritt) und keine Satellitenbalken (iOS liefert keine); Ziel = `AppState.target`
 (gewählter Wegpunkt, sonst Cache); Kompass verkleinert sich unter das Entfernungsfeld statt es zu
 überlappen; Querformat mit Kasten links (Cachebox nur Hochformat); Kontextmenü der Wegpunkte/Logs/Spoiler = das der
-Beschreibung; Tag/Nacht und Beenden entfallen, „Mehr“ steht für About/Credits. Im Simulator geprüft (Antippen,
+Beschreibung; Tag/Nacht und Beenden entfallen, „Mehr“ steht für About/Credits; die roten Menüpunkte
+(`MENUFILTERED`) stehen nur auf dem Listenknopf, wenn ein Filter gesetzt ist – auf den anderen Knöpfen bleiben
+sie gelb (Cachebox färbt auch den Navigationsknopf). Im Simulator geprüft (Antippen,
 zweites Antippen, Wischen in alle Richtungen, Langdruck, Menüs mit Untermenüs, Hinweis/Notiz/Teilen/Kartendownload
 aus dem Menü, Filter-Rot, Tastatur, Quer-/Hochformat, Dunkelmodus, Sonne/Mond mit Standort Sydney). Nicht geprüft:
 echter Kompass, Taschenlampe (Simulator hat keine), Navigieren (öffnet Apple Karten), VoiceOver, iPad. Die Knopf-
@@ -345,9 +347,10 @@ Nicht geprüft: echtes Gerät, streuende Messungen unter freiem Himmel, iPad, Vo
 
 Funktionsumfang Standard/Erweitert/Expert (seit 13.11.2026, nicht in Cachebox sichtbar): Mehr › Einstellungen ›
 Funktionsumfang blendet Menüeinträge stufenweise ein. Standard = Suchen (Liste, Filter, Import, Karte, Kompass,
-Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen), Erweitert = dazu Projektion, Vom GPS,
-WP vom Kartenmittelpunkt, Nach Kompass ausrichten, Theme-Auswahl, Koordinaten kopieren, Im Browser öffnen, Caches
-löschen, Aus der Liste löschen, Tracks/Parkplatz/Trackables (ausgegraut), Expert = alles (Stil, Overlays,
+Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen, Nach Kompass ausrichten – seit
+23.11.2026 auch hier, es ist nur ein Anzeigeschalter und steht in Cachebox ebenfalls im einfachen Kartenmenü),
+Erweitert = dazu Projektion, Vom GPS, WP vom Kartenmittelpunkt, Theme-Auswahl, Koordinaten kopieren, Im Browser
+öffnen, Caches löschen, Aus der Liste löschen, Tracks/Parkplatz/Trackables (ausgegraut), Expert = alles (Stil, Overlays,
 Aktualisieren, Solver, Foto, Video, Sprachnotiz). Im Simulator geprüft (alle drei Stufen, Knopf- und ⋯-Menüs,
 Wegpunkt-Knöpfe, Neustart behält die Stufe). Nicht geprüft: echtes Gerät, VoiceOver.
 Anleitung samt Screenshots am 13.11.2026 erneut nachgezogen (Wegpunkt als Ziel, Projektion, Vom GPS,

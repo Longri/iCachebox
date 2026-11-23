@@ -358,6 +358,11 @@ und dein Pfeil zeigt immer nach oben. Die Richtung kommt wie beim Pfeil im Stehe
 GPS. Wo Norden ist, zeigt dann der Kompass im Infofeld. Ein Häkchen im Menü zeigt, dass die Ausrichtung an ist;
 noch einmal antippen dreht die Karte zurück nach Norden. Die Einstellung bleibt auch nach einem Neustart.
 
+Damit die Karte unterwegs ruhig bleibt, folgt sie der Richtung gedämpft: Das Zittern des Kompasses – ein paar Grad
+hin und her – bewegt sie gar nicht, eine echte Drehung ist nach etwa einer Sekunde übernommen. Die Karte hängt
+dadurch bis zu ein paar Grad hinter der Wirklichkeit, was man nicht sieht. Der Kompass selbst zeigt weiter die
+ungedämpfte Richtung.
+
 Die Drehung funktioniert in GPS und Free; die Karte dreht sich um ihre Mitte. Solange sie eingeschaltet ist, lässt
 sich die Karte nicht mit zwei Fingern drehen. Ohne Ausrichtung kannst du die Karte jederzeit mit zwei Fingern drehen;
 dann erscheint oben rechts eine kleine Kompassnadel, ein Tipp darauf stellt Norden wieder nach oben. Beschriftungen
@@ -412,8 +417,8 @@ Cachebox hat viele Funktionen – mehr, als man am Anfang braucht. Unter **Sonst
 Funktionsumfang** stellst du darum ein, wie viel in den Menüs steht:
 
 - **Standard** (voreingestellt): nur das, was man zum Suchen braucht – Liste, Filter, Import, Karte, Kompass,
-  Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen.
-- **Erweitert**: dazu **Projektion** und **Vom GPS**, „WP vom Kartenmittelpunkt“, **Nach Kompass ausrichten**,
+  Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen, **Nach Kompass ausrichten**.
+- **Erweitert**: dazu **Projektion** und **Vom GPS**, „WP vom Kartenmittelpunkt“,
   die Theme-Auswahl, „Koordinaten kopieren“, „Im Browser öffnen“, „Caches löschen“ und „Aus der Liste löschen“.
 - **Expert**: alles, auch **Stil** und **Overlays** der Themes und die Einträge, die noch nicht gebaut sind
   (Solver, Aktualisieren über die API, Foto, Video, Sprachnotiz).

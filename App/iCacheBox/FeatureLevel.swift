@@ -10,7 +10,7 @@ import Foundation
 enum FeatureLevel: Int, CaseIterable, Identifiable, Comparable, Codable {
     /// Everything needed to find a cache.
     case standard
-    /// … and what helps with a multi or a mystery: projection, measuring, themes, map rotation.
+    /// … and what helps with a multi or a mystery: projection, measuring, themes, waypoints from the map.
     case advanced
     /// Everything, including what is rarely needed or still being built.
     case expert
@@ -28,7 +28,7 @@ enum FeatureLevel: Int, CaseIterable, Identifiable, Comparable, Codable {
     var summary: String {
         switch self {
         case .standard: "Nur die Funktionen, die man zum Suchen braucht."
-        case .advanced: "Dazu Projektion, Messen vom GPS, Themes und das Drehen der Karte."
+        case .advanced: "Dazu Projektion, Messen vom GPS, Themes und Wegpunkte vom Kartenmittelpunkt."
         case .expert: "Alles, auch selten Gebrauchtes und noch nicht Gebautes."
         }
     }
