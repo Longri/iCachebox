@@ -248,6 +248,7 @@ struct CacheBubble: View {
                 .minimumScaleFactor(0.8)
             }
             SizeDifficultyTerrain(cache: cache, isCompact: true)
+            GCVoteStars(vote: cache.gcVote, isCompact: true)
             if isSelected {
                 Label("Gewählter Cache", systemImage: "checkmark.circle.fill")
                     .font(.footnote)

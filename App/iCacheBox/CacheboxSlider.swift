@@ -469,6 +469,7 @@ private struct SliderCacheInfo: View {
                         Spacer(minLength: 0)
                     }
                     SizeDifficultyTerrain(cache: cache)
+                    GCVoteStars(vote: cache.gcVote)
                     if let attributes = state.selectedDetails?.cache.attributes, !attributes.isEmpty {
                         // Cachebox `AttributesPerLine = 12`
                         CacheAttributeIcons(attributes: attributes, size: max(22, (width - 32) / 12 - 4))

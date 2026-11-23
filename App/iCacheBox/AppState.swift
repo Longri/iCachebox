@@ -88,12 +88,16 @@ final class AppState {
     let approach = ApproachNotifier()
     /// Where the car stands (Cachebox `ParkingMenu`, settings `ParkingLatitude`/`ParkingLongitude`).
     let parking = ParkingPlace()
+    /// Loading GCVote ratings into the open list (Cachebox: "GCVoteRatings" in the import dialog).
+    let gcVote = GCVoteModel()
     /// The parking place is the navigation target (Cachebox selects its pseudo cache "CBPark" instead).
     private(set) var targetsParking = false
     /// "Parkplatz" of the list and the "Sonstiges" button opens the dialog (Cachebox `ParkingMenu`).
     var showParking = false
     /// Main button 3 › "Karten und Themes" shows the download as a sheet.
     var showMapDownload = false
+    /// "GCVote-Bewertungen" of the list menu opens as a sheet.
+    var showGCVote = false
     /// The torch is on (main button 5 › "Taschenlampe", Cachebox `SwitchTorch`).
     var isTorchOn = false
     /// The waypoint shown in the `WaypointEditor` (Cachebox `EditWaypoint`).
@@ -252,6 +256,46 @@ final class AppState {
         if cache?.code != selectedCache?.code { selectedWaypoint = nil }
         selectedCache = cache
         checkApproach()
+    }
+
+    // MARK: - GCVote ratings (Cachebox `Importer.importGcVote`)
+
+    /// The list file the caches are read from and written to.
+    var currentListURL: URL? {
+        lists.currentName.map { lists.store.url(of: $0) }
+    }
+
+    /// Which caches are asked about: those the list shows (filter and search, as Cachebox uses its filter) or
+    /// every cache of the list.
+    func gcVoteCodes() -> [String] {
+        switch gcVote.scope {
+        case .shown: listUI.shown(in: lists).map { $0.cache.code }
+        case .all: lists.caches.map(\.code)
+        }
+    }
+
+    /// Loads the ratings and reads the list again afterwards, so that stars and filter see them at once.
+    func startGCVoteImport() {
+        guard let list = currentListURL else { return }
+        gcVote.start(codes: gcVoteCodes(), list: list) { [weak self] in
+            guard let self else { return }
+            Task {
+                await self.lists.loadCaches()
+                self.refreshSelection()
+            }
+        }
+    }
+
+    /// Forgets the ratings of the open list ("Bewertungen dieser Liste löschen").
+    func clearGCVotes() {
+        guard let database = lists.database() else { return }
+        try? database.clearGCVotes()
+        gcVote.clearResult()
+        gcVote.readLastUpdated(list: currentListURL)
+        Task {
+            await lists.loadCaches()
+            refreshSelection()
+        }
     }
 
     /// Updates the selected cache after its flags changed in the list.

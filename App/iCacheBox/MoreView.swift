@@ -8,7 +8,9 @@ struct MoreView: View {
     @AppStorage(StorageKey.onboardingCompleted) private var onboardingCompleted = true
 
     var body: some View {
-        NavigationStack {
+        // the GCVote row only appears from "Erweitert" on; the rows behind it keep their white/grey order
+        let offset = state.featureLevel >= .advanced ? 1 : 0
+        return NavigationStack {
             List {
                 NavigationLink {
                     AccountView()
@@ -33,21 +35,30 @@ struct MoreView: View {
                     Label("Karten und Themes", systemImage: "map")
                 }
                 .cacheboxListRow(index: 2)
-                row("Schnellzugriffe", "rectangle.grid.1x2", index: 3)
+                if state.featureLevel >= .advanced {
+                    // like the menu entry of the cache list: loading ratings needs at least "Erweitert"
+                    NavigationLink {
+                        GCVoteView()
+                    } label: {
+                        Label("GCVote-Bewertungen", systemImage: "star.bubble")
+                    }
+                    .cacheboxListRow(index: 3)
+                }
+                row("Schnellzugriffe", "rectangle.grid.1x2", index: 3 + offset)
                 NavigationLink {
                     SettingsView()
                 } label: {
                     Label("Einstellungen", systemImage: "gearshape")
                 }
-                .cacheboxListRow(index: 4)
+                .cacheboxListRow(index: 4 + offset)
                 CacheboxDivider().cacheboxListDivider()
-                row("Hilfe", "questionmark.circle", index: 5)
+                row("Hilfe", "questionmark.circle", index: 5 + offset)
                 Button {
                     withAnimation { onboardingCompleted = false }
                 } label: {
                     Label("Willkommensseite zeigen", systemImage: "hand.wave")
                 }
-                .cacheboxListRow(index: 6)
+                .cacheboxListRow(index: 6 + offset)
                 NavigationLink {
                     AboutView()
                 } label: {
@@ -58,7 +69,7 @@ struct MoreView: View {
                         Label("Über", systemImage: "info.circle")
                     }
                 }
-                .cacheboxListRow(index: 7)
+                .cacheboxListRow(index: 7 + offset)
             }
             .cacheboxPage()
             .navigationTitle("Mehr")

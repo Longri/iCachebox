@@ -217,6 +217,19 @@ struct CacheDetailView: View {
                     Text("\(points) Punkte")
                 }
             }
+            // GCVote (Cachebox shows the rating with the stars of the description view)
+            if cache.gcVote.isRated {
+                GridRow {
+                    Text("GCVote").foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        GCVoteStars(vote: cache.gcVote, showsValue: false)
+                        Text(GCVoteStars.text(cache.gcVote))
+                        if let own = cache.gcVote.ownVote {
+                            Text("· deine Stimme \(CacheSummary.rating(own))").foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
             if !details.trackables.isEmpty {
                 GridRow {
                     Text("Trackables").foregroundStyle(.secondary)

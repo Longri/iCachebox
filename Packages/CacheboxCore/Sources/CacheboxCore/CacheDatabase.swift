@@ -8,8 +8,9 @@ public final class CacheDatabase {
     let db: SQLiteConnection
 
     /// Schema version stored in `PRAGMA user_version`.
-    /// 1: first schema; 2: waypoints got `clue` and `is_start` (waypoint editor).
-    static let schemaVersion = 2
+    /// 1: first schema; 2: waypoints got `clue` and `is_start` (waypoint editor); 3: caches got the GCVote
+    /// rating (`gcvote_rating`, `gcvote_count`, `gcvote_own`).
+    static let schemaVersion = 3
 
     public init(url: URL) throws {
         self.url = url
@@ -24,13 +25,22 @@ public final class CacheDatabase {
             // read again under the write lock: another connection may have migrated meanwhile
             let version = db.userVersion
             guard version < Self.schemaVersion else { return }
-            if version >= 1 {
-                // version 1 lists keep their data
+            // lists of an older version keep their data: every step only adds columns
+            if version == 1 {
                 try db.execute("""
                     ALTER TABLE waypoints ADD COLUMN clue TEXT NOT NULL DEFAULT '';
                     ALTER TABLE waypoints ADD COLUMN is_start INTEGER NOT NULL DEFAULT 0;
-                    PRAGMA user_version = \(Self.schemaVersion);
                     """)
+            }
+            if version >= 1, version < 3 {
+                try db.execute("""
+                    ALTER TABLE caches ADD COLUMN gcvote_rating REAL;
+                    ALTER TABLE caches ADD COLUMN gcvote_count INTEGER NOT NULL DEFAULT 0;
+                    ALTER TABLE caches ADD COLUMN gcvote_own REAL;
+                    """)
+            }
+            if version > 0 {
+                try db.execute("PRAGMA user_version = \(Self.schemaVersion);")
                 return
             }
             try db.execute("""
@@ -65,7 +75,11 @@ public final class CacheDatabase {
                     note TEXT NOT NULL DEFAULT '',
                     favorite INTEGER NOT NULL DEFAULT 0,
                     gpx_file TEXT NOT NULL DEFAULT '',
-                    updated REAL
+                    updated REAL,
+                    -- GCVote: average (1…5), number of votes and the user's own vote (Cachebox: Rating, Vote)
+                    gcvote_rating REAL,
+                    gcvote_count INTEGER NOT NULL DEFAULT 0,
+                    gcvote_own REAL
                 );
                 CREATE TABLE IF NOT EXISTS waypoints (
                     cache_code TEXT NOT NULL REFERENCES caches(code) ON DELETE CASCADE,
@@ -115,7 +129,7 @@ public final class CacheDatabase {
                    c.favorite, c.favorite_points,
                    (SELECT COUNT(*) FROM waypoints w WHERE w.cache_code = c.code),
                    (SELECT COUNT(*) FROM trackables t WHERE t.cache_code = c.code),
-                   f.latitude, f.longitude
+                   f.latitude, f.longitude, c.gcvote_rating, c.gcvote_count, c.gcvote_own
             FROM caches c
             LEFT JOIN (
                 -- first final with coordinates per cache; SQLite takes the bare columns from the MIN(code) row
@@ -135,7 +149,9 @@ public final class CacheDatabase {
                 container: ContainerSize(rawValue: r.string(7)) ?? .notChosen,
                 difficulty: r.double(8), terrain: r.double(9), owner: r.string(10), hidden: r.date(11),
                 isAvailable: r.bool(12), isArchived: r.bool(13), isFound: r.bool(14), isFavorite: r.bool(15),
-                favoritePoints: r.isNull(16) ? nil : r.int(16), waypointCount: r.int(17), trackableCount: r.int(18))
+                favoritePoints: r.isNull(16) ? nil : r.int(16), waypointCount: r.int(17), trackableCount: r.int(18),
+                gcVote: GCVote(rating: r.isNull(21) ? nil : r.double(21), count: r.int(22),
+                               ownVote: r.isNull(23) ? nil : r.double(23)))
         }
     }
 
@@ -144,7 +160,7 @@ public final class CacheDatabase {
             SELECT code, source_id, name, latitude, longitude, corrected_latitude, corrected_longitude, type, container,
                    difficulty, terrain, owner, placed_by, hidden, available, archived, found, country, state, url,
                    short_description, short_html, long_description, long_html, hint, favorite_points, attributes,
-                   note, favorite, updated, gpx_file
+                   note, favorite, updated, gpx_file, gcvote_rating, gcvote_count, gcvote_own
             FROM caches WHERE code = ?
             """).first([code]) { r in
             var cache = Geocache(code: r.string(0), name: r.string(2),
@@ -174,6 +190,8 @@ public final class CacheDatabase {
             cache.isFavorite = r.bool(28)
             cache.updated = r.date(29)
             cache.gpxFile = r.string(30)
+            cache.gcVote = GCVote(rating: r.isNull(31) ? nil : r.double(31), count: r.int(32),
+                                  ownVote: r.isNull(33) ? nil : r.double(33))
             return cache
         }
     }
@@ -222,6 +240,21 @@ public final class CacheDatabase {
 
     public func setFavorite(_ favorite: Bool, code: String) throws {
         try db.prepare("UPDATE caches SET favorite = ? WHERE code = ?").run([favorite, code])
+    }
+
+    /// Writes a GCVote rating (Cachebox `GCVoteDAO.updateRatingAndVote`, which stores it as rating × 100).
+    /// An import does not touch it, so a rating survives re-imported caches.
+    public func setGCVote(rating: Double, count: Int, ownVote: Double?, code: String) throws {
+        try db.prepare("""
+            UPDATE caches SET gcvote_rating = ?, gcvote_count = ?, gcvote_own = COALESCE(?, gcvote_own)
+            WHERE code = ?
+            """).run([rating, count, ownVote, code])
+    }
+
+    /// Forgets all ratings of the list („Bewertungen löschen“).
+    public func clearGCVotes() throws {
+        try db.execute("UPDATE caches SET gcvote_rating = NULL, gcvote_count = 0, gcvote_own = NULL")
+        try db.prepare("DELETE FROM info WHERE key = ?").run([GCVoteImporter.updatedKey])
     }
 
     public func setNote(_ note: String, code: String) throws {

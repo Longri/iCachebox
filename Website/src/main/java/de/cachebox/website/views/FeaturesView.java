@@ -22,7 +22,7 @@ public class FeaturesView extends Page {
                 "iCachebox ist dein Werkzeugkasten für die Dosensuche: Alles, was du unterwegs brauchst, "
                         + "liegt auf dem Gerät – auch dort, wo es kein Netz gibt. "
                         + "Die Checklisten zählen die Funktionen von Cachebox für Android auf; abgehakt ist, "
-                        + "was iCachebox schon kann (Stand: 12. November 2026).");
+                        + "was iCachebox schon kann (Stand: 23. November 2026).");
 
         addClassName("features");
         RouterLink vote = new RouterLink("Für die nächsten Funktionspakete abstimmen →", ComingSoonView.class);

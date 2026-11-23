@@ -137,6 +137,9 @@ extension AppState {
                 self?.listUI.showImport = true
             },
             MenuEntry("Listen verwalten …", systemImage: "folder") { [weak self] in self?.listUI.showLists = true },
+            MenuEntry("GCVote-Bewertungen …", systemImage: "star.bubble", isDisabled: !hasList, level: .advanced) {
+                [weak self] in self?.showGCVote = true
+            },
             MenuEntry("Caches löschen", systemImage: "trash", isDisabled: lists.caches.isEmpty, level: .advanced,
                       entries: CacheListView.DeleteChoice.allCases.map { choice in
                           MenuEntry(choice.menuTitle, id: "delete-\(choice.rawValue)",

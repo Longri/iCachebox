@@ -137,6 +137,31 @@ public struct CacheAttribute: Hashable, Codable, Sendable {
     }
 }
 
+/// The GCVote rating of a cache, as the list stores it (Cachebox: `Cache.gcVoteRating` and the user's `Vote`,
+/// both kept as rating × 100 there).
+///
+/// GCVote rates from 1 to 5 in half steps. `rating` is `nil` as long as no rating was loaded for the cache;
+/// GCVote also answers with 0 for a cache nobody has rated yet.
+public struct GCVote: Hashable, Codable, Sendable {
+    public var rating: Double?
+    /// How many have voted, 0 if GCVote did not say.
+    public var count: Int
+    /// The vote of the signed-in GCVote user, if they voted.
+    public var ownVote: Double?
+
+    public init(rating: Double? = nil, count: Int = 0, ownVote: Double? = nil) {
+        self.rating = rating
+        self.count = count
+        self.ownVote = ownVote
+    }
+
+    /// Somebody has rated the cache.
+    public var isRated: Bool { (rating ?? 0) > 0 }
+
+    /// The rating for sorting and filtering: 0 without one, as Cachebox stores it.
+    public var value: Double { rating ?? 0 }
+}
+
 /// All stored data of one geocache.
 public struct Geocache: Identifiable, Hashable, Codable, Sendable {
     /// GC code (or OC code for Opencaching).
@@ -175,6 +200,8 @@ public struct Geocache: Identifiable, Hashable, Codable, Sendable {
     /// Name of the GPX file the cache was last imported from (Cachebox: category).
     public var gpxFile: String
     public var updated: Date?
+    /// Rating from GCVote; loaded separately and kept on re-import.
+    public var gcVote: GCVote
 
     public init(code: String, name: String, coordinate: Coordinate, type: CacheType = .other,
                 container: ContainerSize = .notChosen, difficulty: Double = 1, terrain: Double = 1) {
@@ -202,6 +229,7 @@ public struct Geocache: Identifiable, Hashable, Codable, Sendable {
         note = ""
         isFavorite = false
         gpxFile = ""
+        gcVote = GCVote()
     }
 
     /// The position to navigate to: corrected coordinates win.
@@ -297,11 +325,14 @@ public struct CacheSummary: Identifiable, Hashable, Sendable {
     public var favoritePoints: Int?
     public var waypointCount: Int
     public var trackableCount: Int
+    /// Rating from GCVote (`GCVoteImporter`); shown in the list, the slider, the bubble and the details.
+    public var gcVote: GCVote
 
     public init(code: String, name: String, coordinate: Coordinate, hasCorrectedCoordinate: Bool = false,
                 finalCoordinate: Coordinate? = nil, type: CacheType, container: ContainerSize, difficulty: Double, terrain: Double, owner: String = "",
                 hidden: Date? = nil, isAvailable: Bool = true, isArchived: Bool = false, isFound: Bool = false,
-                isFavorite: Bool = false, favoritePoints: Int? = nil, waypointCount: Int = 0, trackableCount: Int = 0) {
+                isFavorite: Bool = false, favoritePoints: Int? = nil, waypointCount: Int = 0, trackableCount: Int = 0,
+                gcVote: GCVote = GCVote()) {
         self.code = code
         self.name = name
         self.coordinate = coordinate
@@ -320,6 +351,7 @@ public struct CacheSummary: Identifiable, Hashable, Sendable {
         self.favoritePoints = favoritePoints
         self.waypointCount = waypointCount
         self.trackableCount = trackableCount
+        self.gcVote = gcVote
     }
 
     /// Where the cache is searched: the corrected coordinates, else a final waypoint with coordinates, else the
