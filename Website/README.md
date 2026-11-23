@@ -18,6 +18,23 @@ Produktions-Build (lädt Node.js bei Bedarf automatisch nach `~/.vaadin`):
 cd Website && mvn clean package -Pproduction && java -jar target/production/cachebox-website-1.0-SNAPSHOT.jar
 ```
 
+## Wenn die Seite ohne Layout erscheint
+
+Zwei Stolperfallen beim lokalen Start – beide zeigen sich als Seite ohne Styles oder als Fehlerseite:
+
+- **Das Maven-Profil `production` darf lokal nicht aktiv sein** (in IntelliJ im Maven-Fenster unter „Profile“
+  nachsehen, keine VM-Option `-Dvaadin.productionMode=true`). Mit dem Profil läuft Vaadin im Produktionsmodus und
+  sucht das fertige Frontend-Bundle im Klassenpfad – das liegt seit der Trennung der Build-Verzeichnisse aber in
+  `target/production` und nicht in `target/classes`, aus dem IntelliJ startet. Im Log steht dann
+  `Unable to find index.html. It should be available on the classpath when running in production mode`.
+- **Es darf nur eine Instanz laufen.** Die Statistik liegt in einer H2-Datei (`data/analytics.mv.db`), die beim
+  Start gesperrt wird. Läuft schon ein `mvn spring-boot:run` oder ein zweiter Start aus der IDE, bricht der neue
+  Start mit `Database may be already in use` ab; der Browser zeigt dann die alte oder eine nackte Fehlerseite.
+  Also erst die laufende Instanz beenden (`lsof -nP -iTCP:8082 -sTCP:LISTEN`).
+
+Im Entwicklungsmodus baut Vaadin das Frontend beim ersten Aufruf selbst; `mvn clean package -Pproduction` räumt
+dabei nur `target/production` weg und lässt `target/classes` für IntelliJ in Ruhe.
+
 ## Auf den Server bringen
 
 ```bash
