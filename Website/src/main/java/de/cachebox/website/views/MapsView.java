@@ -27,6 +27,10 @@ public class MapsView extends Page {
                 "Render-Themes wie Elevate bringen eigene Stile mit: Wandern, Stadt, Rad oder MTB. "
                         + "Einzelne Ebenen schaltest du im Stilmenü an und aus.",
                 link("OpenAndroMaps", "https://www.openandromaps.org"));
+        card("compass.png", "Lesbar unterwegs",
+                "Drehst du die Karte, bleiben Ortsnamen waagerecht stehen, und Straßennamen folgen zwar "
+                        + "ihrer Straße, stehen aber nie kopfüber. Und wenn dir die Karte zu klein ist, "
+                        + "zeichnet iCachebox sie auf Wunsch bis 200 % größer, ohne Detail zu verlieren.");
         card("satellite.png", "Deine Karten",
                 "Karten und Themes lädst du selbst und wählst sie in der App aus – "
                         + "dieselben Dateien wie in Cachebox für Android.");

@@ -544,6 +544,13 @@ wird die Kachel auf halber Größe gezeichnet und die Schrift ist entsprechend k
 Einstellung (die Formel `z = round(20 + log2(zoomScale))` ist bei Normal unverändert) und nicht behoben; der
 Faktor wirkt sauber darauf, die Größe ist also immer factor-mal die von Normal. Nicht geprüft: echtes Gerät,
 Akku- und Speicherverhalten bei 200 % über längere Zeit, iPad, VoiceOver, Querformat.
+Anleitung und Website am 24.11.2026 nachgezogen: neuer Abschnitt „Karte größer zeichnen“ samt Screenshot
+(`karte-gross.jpg`, `kartendarstellung.png`), der Absatz „Beschriftung bleibt lesbar“ ersetzt den alten Satz
+„Beschriftungen drehen sich mit der Karte“ (seit Schritt 2 falsch), `karte-gedreht.jpg` neu aufgenommen (Namen
+bleiben aufrecht), `funktionsumfang.png`/`annaeherung.png` erneuert (die Einstellungsseite hat jetzt den Abschnitt
+„Karte“). Website: Kachel „Lesbar unterwegs“ auf /karten, Beschreibung der Offline-Karte auf /funktionen,
+Stand-Datum. Beides nicht in der Cachebox-Checkliste, weil das heutige Cachebox Bitmap-Kacheln rendert und die
+Vergrößerung dort gar nicht einstellbar ist.
 
 Offen (Phase 2): die Zoomstufe des Renderers aus der Kamera statt aus MapKits `zoomScale` (siehe oben),
 Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,

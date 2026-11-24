@@ -39,7 +39,7 @@ public final class FeatureCatalog {
                     new Feature("cacheliste-22", "Beschreibungs- und Spoilerbilder beim Import vorladen", false),
                     new Feature("cacheliste-23", "Alte Logs beim Import löschen und Datenbank komprimieren", false))),
             new Section("map.png", "Offline-Karte",
-                    "Mapsforge-Vektorkarten mit frei wählbarem Theme, Freizeitkarten für ganz Europa direkt in der App laden. Alle Caches der Liste liegen auf der Karte, ein Tipp öffnet ihre Info-Blase. Dein Standort als Pfeil in Blickrichtung, im GPS-Modus folgt dir die Karte.", List.of(
+                    "Mapsforge-Vektorkarten mit frei wählbarem Theme, Freizeitkarten für ganz Europa direkt in der App laden. Alle Caches der Liste liegen auf der Karte, ein Tipp öffnet ihre Info-Blase. Dein Standort als Pfeil in Blickrichtung, im GPS-Modus folgt dir die Karte. Drehst du die Karte, bleibt die Beschriftung lesbar und steht nie kopfüber; ist sie dir zu klein, zeichnet iCachebox sie auf Wunsch bis 200 % größer.", List.of(
                     new Feature("karte-01", "Mapsforge-Vektorkarten (.map) offline anzeigen", true),
                     new Feature("karte-02", "Online-Karten wählen: Mapnik, OSM Cycle Map, ESRI-Satellitenbilder", false),
                     new Feature("karte-03", "Zusätzliche Kartenebenen über die Grundkarte legen", false),

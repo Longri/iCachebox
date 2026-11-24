@@ -293,6 +293,17 @@ ausgegraut. Unten links steht immer der **Maßstab**.
 Beim nächsten Start zeigt die Karte wieder dieselbe Karte mit demselben Design, Stil und Ausschnitt wie beim
 letzten Mal.
 
+![Karte bei 150 Prozent](bilder/karte-gross.jpg)
+
+**Karte größer zeichnen:** Ist dir die Karte zu klein oder die Schrift zu fein, stell unter
+**Sonstiges › Mehr › Einstellungen › Karte › Kartendarstellung** 125 %, 150 % oder 200 % ein. Dann zeichnet
+iCacheBox alles entsprechend größer – Wege, Flächen, Symbole und Schrift. Das ist kein Hineinzoomen: Die Karte
+behält ihre Zoomstufe und damit genau die Beschriftungen und den Detailgrad, die zu dieser Stufe gehören; sie
+zeigt nur einen kleineren Ausschnitt. Beim Umschalten springt die Karte auf eine ganze Zoomstufe. Mehr Speicher
+braucht sie dafür nicht; das Zeichnen einer Kachel dauert aber länger, bei 200 % etwa viermal so lange. Die
+Cache-Symbole, das Infofeld und die Leiste oben bleiben gleich groß – die Einstellung gilt nur für die Karte
+selbst. In Cachebox für Android gibt es sie nicht.
+
 ![Caches auf der Karte mit Info-Blase](bilder/karte-cache.jpg)
 
 **Caches auf der Karte:** Alle Caches der geöffneten Liste stehen mit ihren Cachebox-Symbolen auf der Karte; ein
@@ -365,8 +376,13 @@ ungedämpfte Richtung.
 
 Die Drehung funktioniert in GPS und Free; die Karte dreht sich um ihre Mitte. Solange sie eingeschaltet ist, lässt
 sich die Karte nicht mit zwei Fingern drehen. Ohne Ausrichtung kannst du die Karte jederzeit mit zwei Fingern drehen;
-dann erscheint oben rechts eine kleine Kompassnadel, ein Tipp darauf stellt Norden wieder nach oben. Beschriftungen
-drehen sich wie in Cachebox mit der Karte.
+dann erscheint oben rechts eine kleine Kompassnadel, ein Tipp darauf stellt Norden wieder nach oben.
+
+**Beschriftung bleibt lesbar:** Namen von Orten, Stadtteilen und einzelnen Punkten bleiben waagerecht stehen, egal
+wie weit die Karte gedreht ist – wie im alten Cachebox. Straßen- und Flussnamen folgen weiter ihrer Straße, werden
+aber umgedreht gezeichnet, sobald sie sonst kopfüber stünden; Einbahnpfeile und ähnliche Symbole drehen ganz mit.
+Welche Namen nebeneinander Platz haben, entscheidet iCacheBox dabei für den Bildschirm, nicht für die Karte, so
+dass sie sich auch bei gedrehter Karte nicht überlappen.
 
 **Pfeile am Kartenrand:** Liegt deine Position außerhalb des sichtbaren Ausschnitts, zeigt ein **blauer Pfeil** am
 Rand in ihre Richtung; ein Tipp darauf springt zu dir und schaltet auf GPS. Ein **roter Pfeil** zeigt wie in
@@ -439,8 +455,11 @@ eigenes Ziel und taucht in der Cacheliste nicht auf. Symbol und Code („CBPark�
 
 ![Funktionsumfang wählen](bilder/funktionsumfang.png)
 
-Cachebox hat viele Funktionen – mehr, als man am Anfang braucht. Unter **Sonstiges › Mehr › Einstellungen ›
-Funktionsumfang** stellst du darum ein, wie viel in den Menüs steht:
+Unter **Sonstiges › Mehr › Einstellungen** stehen drei Dinge: der Funktionsumfang, die **Kartendarstellung**
+(siehe „Offline-Karten“) und die Annäherung (siehe unten).
+
+Cachebox hat viele Funktionen – mehr, als man am Anfang braucht. Unter **Funktionsumfang** stellst du darum ein,
+wie viel in den Menüs steht:
 
 - **Standard** (voreingestellt): nur das, was man zum Suchen braucht – Liste, Filter, Import, Karte, Kompass,
   Details, Hinweis, Notiz, Navigieren, Wegpunkte anlegen und als Ziel wählen, **Nach Kompass ausrichten**,
