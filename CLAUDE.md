@@ -12,10 +12,13 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     Render-Instruktionen, Label-Platzierung inkl. Kachel-Abhängigkeiten, CoreText-Text (auch entlang Pfaden),
     Mini-SVG-Renderer für Theme-Symbole, `TileRenderer` (`renderTile(…, labels:)` gibt die Labels heraus,
     statt sie in die Kachel zu zeichnen – mapsforge `DatabaseRenderer` mit `TileBasedLabelStore`;
-    `MapElementContainer.render` zeichnet ein Label einzeln in ein Bild, `withoutDuplicateCaptions` wirft
-    Doppel an Kachelgrenzen weg; `rotatesWithMap` trennt Beschriftung, die sich mitdreht (Wegtexte,
-    `lineSymbol`), von der aufrecht bleibenden, `inverts(at:)` dreht Wegtexte bei gedrehter Karte um, statt
-    sie kopfüber zu zeigen – nicht in mapsforge, das alles in die Kachel zeichnet)
+    `MapElementContainer.render` zeichnet ein Label einzeln in ein Bild, `imageBounds` sagt vorher, wo es
+    liegen wird, `withoutDuplicateCaptions` wirft Doppel an Kachelgrenzen weg; `rotatesWithMap` trennt
+    Beschriftung, die sich mitdreht (Wegtexte, `lineSymbol`), von der aufrecht bleibenden, `inverts(at:)`
+    dreht Wegtexte bei gedrehter Karte um, statt sie kopfüber zu zeigen, `screenBoundary(at:)` gibt den
+    Kasten, wie er auf dem Schirm liegt, und `collisionFreeOrdered(…, rotation:)` prüft damit die Kollision
+    im gedrehten Raum (ohne Drehung mapsforges Prüfung unverändert) – nicht in mapsforge, das alles in die
+    Kachel zeichnet)
   - `mfdump` – Entwickler-CLI: `info`, `dump` (Tags einer Kachel), `render`, `grid` (Kachelraster, zufällige
     Reihenfolge), `bench`; Theme-Argument `pfad.xml#stil,+overlay,-overlay` wählt Stil/Overlays
   - `Resources/themes/` – interne Themes (default, osmarender) + Symbole/Patterns aus Cachebox
@@ -79,10 +82,18 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `TileBasedLabelStore`, liegt als `CacheMapView.labelStore` beim Kartenfenster und wird beim Rendern gefüllt)
     und `MapLabelsView` (mapsforge `LabelLayer`): Die Kacheln werden ohne Labels gerendert
     (`TileRenderer.renderLabels = false`), die Ebene über der Karte sucht aus allen sichtbaren Kacheln die
-    kollisionsfreien Labels (`withoutDuplicateCaptions` + `collisionFreeOrdered`), zeichnet jedes einmal in ein
-    Bild und zeigt es in einem eigenen `CALayer`; bei jedem `mapViewDidChangeVisibleRegion` werden nur noch
-    Positionen gesetzt (Abbildung absolute Mapsforge-Pixel → Viewpunkte aus drei von MapKit umgerechneten
-    Punkten, gilt damit auch bei gedrehter Karte). Die Zoomstufe meldet der Renderer
+    kollisionsfreien Labels (`withoutDuplicateCaptions` + `collisionFreeOrdered(…, rotation:)`, also im
+    Bildschirmraum; neu gewählt, sobald sich die Karte um mehr als 2° weitergedreht hat), zeichnet jedes
+    einmal in ein Bild und zeigt es in einem eigenen `CALayer`; bei jedem `mapViewDidChangeVisibleRegion`
+    werden nur noch Positionen gesetzt (Abbildung absolute Mapsforge-Pixel → Viewpunkte aus drei von MapKit
+    umgerechneten Punkten, gilt damit auch bei gedrehter Karte). Die Bilder entstehen auf einer eigenen
+    Queue (`drawQueue`, wichtigstes zuerst, Übergabe in Häppchen von 16, `LabelGeneration` bricht Aufträge
+    einer überholten Auswahl ab); die Lage steht schon vorher fest (`imageBounds`), die Reihenfolge über
+    `zPosition` statt über `sublayers`, so dass ein neuer Satz nur die Differenz an Layern anfasst. Beim
+    Zoomen bleiben die Labels der alten Stufe stehen, bis die neue gerendert ist (wie der Kachel-Cache beim
+    Bild): `MapLabelStore.coverage` zählt die Kacheln, `onScreen` lässt dabei die weg, die `visibleMapRect`
+    bei gedrehter Karte nur in den Ecken hat und MapKit nie zeichnet (Trennachsensatz gegen das wirkliche
+    Sichtviereck, Randstreifen von 32 pt). Die Zoomstufe meldet der Renderer
     (`MapLabelStore.setZoom`) – aus der Kamera geraten lag sie zwischen zwei Stufen daneben, dann fehlten alle
     Labels. Die Ebene ist die erste Subview des `CacheMapView`, MapKit hängt seine Annotationen später darüber,
     also liegen die Cache-Marker über den Labels. Bei gedrehter Karte bekommt jedes Label nur den Teil der
@@ -482,7 +493,27 @@ liegen weiter im Kartenraster (wie in mapsforge), bei gedrehter Karte können wa
 überlappen – das richtet erst Schritt 3. Nicht geprüft: echtes Gerät, Drehung über den Kompass unterwegs
 (Simulator hat kein Magnetometer), iPad, VoiceOver.
 
+Kollision im Bildschirmraum, Bilder im Hintergrund, Labels beim Zoomen (seit 24.11.2026, Schritt 3): Die
+Kollisionsprüfung vergleicht die Kästen jetzt so, wie sie auf dem Schirm liegen – ein waagerecht bleibender
+Name behält seinen Kasten um den gedrehten Ankerpunkt, ein Wegtext bekommt den aufrechten Kasten um den
+gedrehten; bei gedrehter Karte überlappen sich Namen damit nicht mehr. Die Auswahl wird neu getroffen, sobald
+sich die Karte um mehr als 2° weitergedreht hat. Die Label-Bilder entstehen nicht mehr auf dem Hauptthread,
+sondern auf einer eigenen Queue, wichtigstes zuerst; ihre Lage steht vorher fest, also werden nur noch
+Bilder nachgereicht. Beim Zoomen bleibt die Beschriftung der alten Stufe stehen, bis die neue gerendert ist
+(die Kacheln zeigt der Renderer so ebenfalls, vergrößert bzw. verkleinert) – der Schirm geht also nicht mehr
+nackt. Messung im Simulator (Release, iPhone 18 Pro, Freizeitkarte Bremen, bis 1079 Labels in der Bremer
+Innenstadt): Neuaufbau auf dem Hauptthread 0,2–4 ms je nach Dichte (bei ~330 Labels 0,35–0,9 ms; der erste
+Bildschirm 1,5 ms statt 43 ms), Positionen setzen 0,004–0,99 ms je Bild (Median 0,15 ms), ein Label im
+Hintergrund zeichnen Median 0,064 ms und p90 0,6 ms – ein voller Bildschirm füllt sich also in etwa einer
+Zehntelsekunde, sichtbar von wichtig nach unwichtig. Abweichungen: Labels erscheinen beim Zoomen weiter
+gestaffelt, sobald die erste Kachel der neuen Stufe da ist (ein Satz pro Stufe, kein Mischen zweier Stufen);
+auf eine Kachel, die nur einen 32-pt-Streifen am Rand zeigt, wird nicht gewartet (MapKit zeichnet sie nicht
+immer, dann hinge der Wechsel für immer – im Simulator genau so beobachtet); ein Label, das die Kollision
+beim Drehen verliert und wiederkommt, wird neu gezeichnet (sein Bild wird nicht aufgehoben). Im Simulator
+geprüft (Drehung in Schritten auf 45°, 90° und 180° bei z17, Zoomschritte mit und ohne Drehung, Rückfall auf
+die alte Stufe bis zur letzten Kachel, Karte wieder nach Norden). Nicht geprüft: echtes Gerät, Speicherbedarf
+bei über 1000 Label-Bildern, iPad, VoiceOver.
+
 Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
-Nachtmodus, Kachel-Cache auf Platte, Schritt 3 der Beschriftung (Kollisionskästen im gedrehten Raum,
-Label-Bilder im Hintergrund zeichnen, Labels beim Zoomen aus der Nachbarstufe übernehmen), Pixel-Vergleich gegen Java-AWT-Rendering, SVG `<use>`/Gradienten/`<pattern>` (betrifft z. B.
+Nachtmodus, Kachel-Cache auf Platte, Pixel-Vergleich gegen Java-AWT-Rendering, SVG `<use>`/Gradienten/`<pattern>` (betrifft z. B.
 Elevates `s_mall.svg`), Test auf echtem Gerät.

@@ -54,10 +54,41 @@ public class MapElementContainer: @unchecked Sendable {
 }
 
 public extension MapElementContainer {
+    /// Room left around the boundary for the halo of the text, which reaches beyond the box used for collision
+    /// detection.
+    static var imageMargin: CGFloat { 6 }
+
+    /// The part of the absolute pixel plane an image of this element covers. Known without drawing it, so that a
+    /// label layer can place the element while its image is still being drawn in the background.
+    var imageBounds: CGRect { boundaryAbsolute.insetBy(dx: -Self.imageMargin, dy: -Self.imageMargin) }
+
+    /// The box the element covers on the screen while the map is turned by `rotation` (radians, clockwise), in
+    /// map pixels: the uniform scale of the map does not change which elements clash, so it is left out.
+    ///
+    /// Not in mapsforge, which only ever checks boxes of a map pointing north. An element that keeps its own
+    /// direction (the name of a town) has the same box as there, only around the turned anchor point; one that
+    /// turns with the map (the name of a street) lies across on the screen, so its box is the upright box around
+    /// the turned one.
+    func screenBoundary(at rotation: CGFloat) -> CGRect {
+        guard rotation != 0 else { return boundaryAbsolute }
+        let c = cos(rotation), s = sin(rotation)
+        let box = boundaryAbsolute, a = anchor
+        let turned = CGPoint(x: a.x * c - a.y * s, y: a.x * s + a.y * c)
+        var dx = box.midX - a.x, dy = box.midY - a.y
+        var size = box.size
+        if rotatesWithMap {
+            (dx, dy) = (dx * c - dy * s, dx * s + dy * c)
+            size = CGSize(width: abs(box.width * c) + abs(box.height * s),
+                          height: abs(box.width * s) + abs(box.height * c))
+        }
+        return CGRect(x: turned.x + dx - size.width / 2, y: turned.y + dy - size.height / 2,
+                      width: size.width, height: size.height)
+    }
+
     /// Draws the label on its own into an image, for a label layer that places it on the screen itself. The
-    /// returned rect is the part of the absolute pixel plane the image covers; `margin` leaves room for the halo
-    /// around the text, which reaches beyond the boundary used for collision detection.
-    func render(scale: CGFloat, rotation: CGFloat = 0, margin: CGFloat = 6) -> (image: CGImage, bounds: CGRect)? {
+    /// returned rect is `imageBounds`, the part of the absolute pixel plane the image covers.
+    func render(scale: CGFloat, rotation: CGFloat = 0,
+                margin: CGFloat = MapElementContainer.imageMargin) -> (image: CGImage, bounds: CGRect)? {
         let bounds = boundaryAbsolute.insetBy(dx: -margin, dy: -margin)
         guard bounds.width > 0, bounds.height > 0 else { return nil }
         let px = Int((bounds.width * scale).rounded()), py = Int((bounds.height * scale).rounded())
@@ -219,14 +250,29 @@ public func withoutDuplicateCaptions(_ input: [MapElementContainer]) -> [MapElem
 }
 
 /// mapsforge `LayerUtil.collisionFreeOrdered`: highest priority first, drop clashing elements.
-public func collisionFreeOrdered(_ input: [MapElementContainer]) -> [MapElementContainer] {
+///
+/// `rotation` (radians, clockwise) is the turn of the map on the screen: the boxes are then compared as they
+/// lie on the screen (`screenBoundary(at:)`), because that is where the elements must not cover each other.
+/// At rotation 0 – every tile of the renderer – this is mapsforge's check unchanged.
+public func collisionFreeOrdered(_ input: [MapElementContainer], rotation: CGFloat = 0) -> [MapElementContainer] {
     // stable sort, descending priority (Collections.sort(reverseOrder()) is stable too)
     let sorted = input.enumerated().sorted { a, b in
         a.element.priority != b.element.priority ? a.element.priority > b.element.priority : a.offset < b.offset
     }.map(\.element)
     var output: [MapElementContainer] = []
-    for item in sorted where !output.contains(where: { $0.clashes(with: item) }) {
+    var boxes: [CGRect] = []
+    for item in sorted {
+        let box = item.screenBoundary(at: rotation)
+        if item.display != .always {
+            var clashes = false
+            for i in output.indices where output[i].display != .always && boxes[i].intersects(box) {
+                clashes = true
+                break
+            }
+            if clashes { continue }
+        }
         output.append(item)
+        boxes.append(box)
     }
     return output
 }
