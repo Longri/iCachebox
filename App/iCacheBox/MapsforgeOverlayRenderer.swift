@@ -8,12 +8,16 @@ import UIKit
 /// every zoom step flashed black squares.
 final class MapsforgeTileOverlay: MKTileOverlay, @unchecked Sendable {
     let renderer: TileRenderer
+    /// Everything the renderer draws is shown this much bigger (see `MapScale`); the tiles are rendered with as
+    /// many more pixels and drawn over as much more of the screen.
+    let mapScale: MapScale
     /// Tiles of the overlay this one replaces (other map, theme or style), shown until the own ones are rendered.
     /// Set on the main thread before the overlay is added; taken over by the renderer.
     var previousTiles: TileCache?
 
-    init(renderer: TileRenderer) {
+    init(renderer: TileRenderer, mapScale: MapScale = .normal) {
         self.renderer = renderer
+        self.mapScale = mapScale
         super.init(urlTemplate: nil)
         canReplaceMapContent = true
         minimumZ = 6
@@ -123,10 +127,15 @@ final class TileCache: @unchecked Sendable {
 
     /// MapKit draws 512 pt squares of 2 × 2 tiles, about twice the screen in tiles per zoom level. At @3x a tile
     /// takes 2.4 MB in full and 0.6 MB in half resolution, so an iPhone keeps up to about 75 + 75 MB.
-    convenience init(screen: CGSize) {
-        let columns = Int((screen.width / 256).rounded(.up)) + 1
-        let rows = Int((screen.height / 256).rounded(.up)) + 1
-        let full = max(32, 2 * columns * rows)
+    ///
+    /// With a `scale` above 1 a tile covers that much more of the screen and holds scale² as many pixels, so the
+    /// number of tiles is divided by scale² and the memory stays about the same; one screenful is always kept.
+    convenience init(screen: CGSize, scale: CGFloat = 1) {
+        let side = 256 * max(scale, 1)
+        let columns = Int((screen.width / side).rounded(.up)) + 1
+        let rows = Int((screen.height / side).rounded(.up)) + 1
+        let budget = Double(max(2 * columns * rows, 32)) / Double(max(scale, 1) * max(scale, 1))
+        let full = max(columns * rows, Int(budget.rounded()))
         self.init(fullCapacity: full, reducedCapacity: 4 * full)
     }
 
@@ -184,6 +193,9 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
     private let tileRenderer: TileRenderer
     private let minimumZ: Int
     private let maximumZ: Int
+    /// Everything is drawn this much bigger (`MapScale`): the tiles are rendered with as many pixels more and,
+    /// because the level is picked `log2(userScale)` lower, drawn over as much more of the screen.
+    private let userScale: CGFloat
     /// Fills the parts of a tile for which nothing at all has been rendered yet.
     private let background: CGColor
     /// Where the labels of the rendered tiles go; while it is set they are not drawn into the tiles but by
@@ -219,6 +231,7 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
         tileRenderer = overlay.renderer
         minimumZ = overlay.minimumZ
         maximumZ = overlay.maximumZ
+        userScale = overlay.mapScale.factor
         background = overlay.renderer.theme.mapBackground.cgColor
         previous = overlay.previousTiles
         overlay.previousTiles = nil
@@ -248,8 +261,9 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
     // MARK: Drawing
 
     override func draw(_ mapRect: MKMapRect, zoomScale: MKZoomScale, in context: CGContext) {
-        // at zoom z a 256 pt tile covers 2^(28 − z) map points, so zoomScale (points per map point) is 2^(z − 20)
-        let zoom = Int((20 + log2(Double(zoomScale))).rounded())
+        // at zoom z a 256 pt tile covers 2^(28 − z) map points, so zoomScale (points per map point) is 2^(z − 20).
+        // A tile is to be shown `userScale` times as large, so the level taken is that much lower.
+        let zoom = Int((20 + log2(Double(zoomScale)) - log2(Double(userScale))).rounded())
         let z = min(zoom, maximumZ)   // further in: the most detailed tiles, enlarged
         let previous = lock.withLock {
             currentZoom = z
@@ -339,7 +353,8 @@ final class MapsforgeOverlayRenderer: MKOverlayRenderer, @unchecked Sendable {
 
     private func work() {
         while let key = next() {
-            let scale = contentScaleFactor > 0 ? contentScaleFactor : 2
+            // the tile is drawn over `userScale` times its usual 256 pt, so it needs that many pixels more
+            let scale = (contentScaleFactor > 0 ? contentScaleFactor : 2) * userScale
             var tileLabels: [MapElementContainer] = []
             let image = tileRenderer.renderTile(key.tile, scale: scale, labels: &tileLabels)
             labels?.store(tileLabels, for: key)

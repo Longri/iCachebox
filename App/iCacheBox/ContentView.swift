@@ -27,7 +27,8 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if let renderer = model.renderer {
-                MapsforgeMapView(renderer: renderer, center: model.center, markers: markers,
+                MapsforgeMapView(renderer: renderer, center: model.center, mapScale: model.scale,
+                                 markers: markers,
                                  location: state.location, target: state.target?.coordinate,
                                  followsPosition: mapState == .gps, alignsToHeading: model.alignsToCompass,
                                  chromeInsets: chromeInsets,
@@ -251,6 +252,11 @@ final class MapModel {
     /// `MapViewBase.setAlignToCompass`, setting `MapNorthOriented` inverted, default off).
     var alignsToCompass = UserDefaults.standard.bool(forKey: Keys.alignToCompass) {
         didSet { UserDefaults.standard.set(alignsToCompass, forKey: Keys.alignToCompass) }
+    }
+    /// Everything the renderer draws is shown this much bigger (mapsforge `DisplayModel.userScaleFactor`;
+    /// Mehr › Einstellungen › Karte, not a Cachebox setting).
+    var scale = MapScale.saved {
+        didSet { scale.save() }
     }
 
     let language = Locale.current.language.languageCode?.identifier ?? "en"

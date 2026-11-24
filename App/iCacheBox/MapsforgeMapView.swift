@@ -51,6 +51,8 @@ struct MapCamera: Codable, Equatable {
 struct MapsforgeMapView: UIViewRepresentable {
     let renderer: TileRenderer
     let center: MapCenterRequest
+    /// Everything the renderer draws is shown this much bigger (Mehr › Einstellungen › Karte).
+    var mapScale: MapScale = .normal
     var markers: [MapMarker] = []
     /// Source of the own position, drawn as an arrow in the direction the user looks. Observed by the coordinator
     /// itself, so that a new heading does not rebuild the whole map view with its thousands of markers.
@@ -125,9 +127,11 @@ struct MapsforgeMapView: UIViewRepresentable {
         c.setFollowing(followsPosition)
         c.setAligning(alignsToHeading, on: mapView)
         if mapView.chromeInsets != chromeInsets { mapView.chromeInsets = chromeInsets }
-        if c.overlay?.renderer !== renderer {
-            // new map/theme/style: replace the tile overlay (MapKit has no API to flush its tile cache)
-            let overlay = MapsforgeTileOverlay(renderer: renderer)
+        // before the overlay is replaced: the camera has to stand on the level the new tiles are rendered for
+        mapView.mapScale = mapScale
+        if c.overlay?.renderer !== renderer || c.overlay?.mapScale != mapScale {
+            // new map/theme/style/scale: replace the tile overlay (MapKit has no API to flush its tile cache)
+            let overlay = MapsforgeTileOverlay(renderer: renderer, mapScale: mapScale)
             if let old = c.overlay, let oldTiles = mapView.renderer(for: old) as? MapsforgeOverlayRenderer {
                 // the old map stays visible until the new tiles are rendered
                 oldTiles.cancel()
@@ -613,7 +617,8 @@ struct MapsforgeMapView: UIViewRepresentable {
                 let screen = mapView.window?.windowScene?.screen.bounds.size ?? mapView.bounds.size
                 // the labels of the tiles go to the label layer of the map view, not into the tiles
                 let map = mapView as? CacheMapView
-                return MapsforgeOverlayRenderer(overlay: tiles, cache: TileCache(screen: screen),
+                return MapsforgeOverlayRenderer(overlay: tiles,
+                                                cache: TileCache(screen: screen, scale: tiles.mapScale.factor),
                                                 labels: map?.labelStore,
                                                 onLabels: { [weak map] in map?.labelsNeedUpdate() })
             }
@@ -647,8 +652,32 @@ final class CacheMapView: MKMapView {
     }
 
     /// Zoom levels the zoom buttons step through: the levels the Mapsforge overlay renders (Cachebox
-    /// `OsmMinLevel`/`OsmMaxLevel`: 7…21).
+    /// `OsmMinLevel`/`OsmMaxLevel`: 7…21). The camera sits `mapScale.zoomOffset` above the level of the tiles.
     static let zoomRange: ClosedRange<Double> = 6...21
+
+    /// Everything the map renderer draws is shown this much bigger (`MapScale`). The tiles keep their zoom level,
+    /// so the camera moves `zoomOffset` levels in: the same map with the same labels, only larger.
+    var mapScale: MapScale = .normal {
+        didSet {
+            guard mapScale != oldValue else { return }
+            labelsView.mapScale = mapScale.factor
+            zoomStep = nil
+            // Land on a whole tile level, not just `zoomOffset` away from wherever the camera stood: after a pinch
+            // or the position of the last session it is between levels, and a shift by the difference alone would
+            // keep it there – the tiles would then be drawn at some size other than the chosen one.
+            guard bounds.width > 0, bounds.height > 0 else { return }
+            let level = zoomLevel
+            guard level.isFinite, level > 0 else { return }
+            let tiles = min(max((level - oldValue.zoomOffset).rounded(), Self.zoomRange.lowerBound),
+                            Self.zoomRange.upperBound)
+            let next = camera.copy() as! MKMapCamera
+            // the camera distance halves with every level (2D map, no pitch)
+            next.centerCoordinateDistance =
+                camera.centerCoordinateDistance * pow(2, level - tiles - mapScale.zoomOffset)
+            setCamera(next, animated: false)
+            updateZoomButtons()
+        }
+    }
 
     /// The part of the map not covered by controls or bars; the strip with the scale and the zoom buttons at the
     /// bottom is left out, so that the edge arrows stay above it.
@@ -739,7 +768,10 @@ final class CacheMapView: MKMapView {
         let running = zoomStep.flatMap { Date.now.timeIntervalSince($0.time) < 1 ? $0 : nil }
         let start = running.map { ($0.startLevel, $0.startDistance) } ?? (current, camera.centerCoordinateDistance)
         let base = running?.target ?? current
-        let target = min(max((base + Double(step)).rounded(), Self.zoomRange.lowerBound), Self.zoomRange.upperBound)
+        // whole tile levels, but the camera stands `zoomOffset` above them while the map is drawn larger
+        let offset = mapScale.zoomOffset
+        let target = min(max((base + Double(step) - offset).rounded() + offset, Self.zoomRange.lowerBound + offset),
+                         Self.zoomRange.upperBound + offset)
         guard abs(target - base) > 0.01 else { return }
         zoomStep = ZoomStep(target: target, startLevel: start.0, startDistance: start.1, time: .now)
         let next = camera.copy() as! MKMapCamera
@@ -766,7 +798,7 @@ final class CacheMapView: MKMapView {
         if let step = zoomStep, abs(level - step.target) < 0.01 || Date.now.timeIntervalSince(step.time) > 1 {
             zoomStep = nil
         }
-        zoomButtons.update(zoomLevel: zoomStep?.target ?? level, range: Self.zoomRange)
+        zoomButtons.update(zoomLevel: (zoomStep?.target ?? level) - mapScale.zoomOffset, range: Self.zoomRange)
     }
 
     /// Every touch on the map brings the faded zoom buttons back (Cachebox: when the map is moved); a touch

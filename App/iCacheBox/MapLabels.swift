@@ -31,6 +31,9 @@ final class MapLabelStore: @unchecked Sendable {
 
     var currentZoom: Int? { lock.withLock { zoom } }
 
+    /// Counted up with every change; the label layer reads it to see whether it has to put its set together again.
+    var currentVersion: Int { lock.withLock { version } }
+
     func store(_ labels: [MapElementContainer], for key: TileKey) {
         lock.withLock {
             if tiles.updateValue(labels, forKey: key) == nil {
@@ -103,7 +106,7 @@ final class MapLabelsView: UIView {
     /// Zoom level, tiles and store version the current set of labels was put together for.
     private var zoom = -1
     private var tiles: [TileKey] = []
-    private var version = -1
+    private var storeVersion = -1
     /// Labels of those tiles, without the doubles two tiles worked out for the same thing; the collision check
     /// picks from these, so a turn of the map does not need the list again.
     private var candidates: [MapElementContainer] = []
@@ -115,6 +118,10 @@ final class MapLabelsView: UIView {
     private var images: [MapElementContainer: RenderedLabel] = [:]
     private let generation = LabelGeneration()
     private var updateScheduled = false
+    /// Everything the map draws is shown this much bigger (`MapScale`). The labels grow with the map by
+    /// themselves – their place comes from the transformation, which carries the factor – but their images have
+    /// to be drawn with as many pixels more, or a name would be as blurred as a stretched picture.
+    var mapScale: CGFloat = 1
 
     /// From this much turn on the labels are picked again (about 2°): their boxes have moved against each other,
     /// so other ones fit now – and a name along a way may have to be drawn the other way round.
@@ -153,7 +160,7 @@ final class MapLabelsView: UIView {
         candidates = []
         tiles = []
         zoom = -1
-        version = -1
+        storeVersion = -1
         builtRotation = 0
     }
 
@@ -186,11 +193,13 @@ final class MapLabelsView: UIView {
         // the turn of the map, taken from the transformation itself
         let turn = atan2(t.b, t.a)
         var rebuildNeeded = false
-        if z != zoom || keys != tiles || version != self.version {
+        // the store's version, not the layer's own: a tile that finished rendering brings new labels for tiles
+        // the layer already knows about
+        if z != zoom || keys != tiles || storeVersion != store.currentVersion {
             let (labels, version) = store.labels(for: keys)
             zoom = z
             tiles = keys
-            self.version = version
+            storeVersion = version
             candidates = withoutDuplicateCaptions(labels)
             rebuildNeeded = true
         }
@@ -206,7 +215,7 @@ final class MapLabelsView: UIView {
     /// lowest priority first, so that the more important ones end up on top. The order is set through `zPosition`,
     /// so that a new set only adds and removes layers instead of sorting them all again.
     private func rebuild(_ labels: [MapElementContainer], rotation: CGFloat) {
-        let scale = max(traitCollection.displayScale, 1)
+        let scale = max(traitCollection.displayScale, 1) * max(mapScale, 1)
         let ordered = collisionFreeOrdered(labels, rotation: rotation).sorted { $0.priority < $1.priority }
         let token = generation.next()
         var nextLayers: [MapElementContainer: CALayer] = [:]

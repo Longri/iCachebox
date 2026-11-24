@@ -77,8 +77,14 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     Theme-Hintergrund; Rendern im Hintergrund, neueste Anfrage zuerst, dann `setNeedsDisplay`. `TileCache` =
     LRU in zwei Stufen (volle Auflösung, verdrängte Kacheln halb aufgelöst nur als Ersatz). Beim Karten-/Theme-/
     Stilwechsel zeigt der neue Renderer die Kacheln des alten, bis die eigenen fertig sind. Kein PNG mehr.
+    `MapScale.swift` (`MapScale`, UserDefaults `map.scale`) vergrößert die ganze Darstellung wie mapsforge
+    `DisplayModel.userScaleFactor`: `draw` wählt die Zoomstufe um `log2(factor)` niedriger, `work` rendert die
+    Kachel mit `contentScaleFactor × factor` Pixeln – sie wird also über `factor × 256 pt` gezeichnet und bleibt
+    pixelgenau. `TileCache(screen:scale:)` teilt die Kachelzahl durch factor², damit der Speicher gleich bleibt.
     `overrideUserInterfaceStyle = .light` am `MKMapView`: MapKits Platzhalter-Raster ist im Dunkelmodus schwarz
-  - Beschriftung in eigener Ebene: `MapLabels.swift` – `MapLabelStore` (Labels je Kachel wie mapsforge
+  - Beschriftung in eigener Ebene (`MapLabelsView.mapScale` = derselbe Faktor, die Label-Bilder entstehen mit
+    `displayScale × factor`, die Lage kommt ohnehin aus der Abbildung):
+    `MapLabels.swift` – `MapLabelStore` (Labels je Kachel wie mapsforge
     `TileBasedLabelStore`, liegt als `CacheMapView.labelStore` beim Kartenfenster und wird beim Rendern gefüllt)
     und `MapLabelsView` (mapsforge `LabelLayer`): Die Kacheln werden ohne Labels gerendert
     (`TileRenderer.renderLabels = false`), die Ebene über der Karte sucht aus allen sichtbaren Kacheln die
@@ -514,6 +520,32 @@ geprüft (Drehung in Schritten auf 45°, 90° und 180° bei z17, Zoomschritte mi
 die alte Stufe bis zur letzten Kachel, Karte wieder nach Norden). Nicht geprüft: echtes Gerät, Speicherbedarf
 bei über 1000 Label-Bildern, iPad, VoiceOver.
 
-Offen (Phase 2): Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
+Kartendarstellung vergrößern (seit 24.11.2026, nicht in Cachebox – Wunsch des Nutzers; mapsforge kann es als
+`DisplayModel.userScaleFactor`, Cachebox ruft den aber nie auf): Mehr › Einstellungen › Karte ›
+Kartendarstellung (Normal, 125 %, 150 %, 200 %) zeichnet alles größer – Wege, Flächen, Symbole und Schrift.
+Die Kachel behält ihre Zoomstufe und damit genau die Labels und den Detailgrad, die mapsforge für diese Stufe
+wählt; sie wird nur mit `factor × displayScale` Pixeln gerendert und über `factor × 256 pt` gezeichnet. Damit
+das aufgeht, muss die Kamera `log2(factor)` Stufen über der Kachelstufe stehen: die Zoomknöpfe rasten auf dieses
+versetzte Raster ein (`CacheMapView.zoom(by:)`), und ein Wechsel der Einstellung setzt die Kamera absolut auf die
+nächste ganze Kachelstufe plus Versatz – relativ zu verschieben reichte nicht, weil sie nach einer Zoomgeste
+oder dem Wiederherstellen der letzten Sitzung zwischen den Stufen steht. Der Speicher bleibt gleich
+(`TileCache(screen:scale:)` teilt die Kachelzahl durch factor²), das Rendern einer Kachel dauert factor² mal so
+lange. Dabei ist ein Fehler aus Schritt 1 der Label-Ebene aufgefallen und behoben: `MapLabelsView` verglich
+`version != self.version`, also die eigene Eigenschaft mit sich selbst – immer falsch. Neue Kacheln wurden
+deshalb nie nachgelesen, solange Zoomstufe und Kachelsatz gleich blieben; nach einem Wechsel der Einstellung
+(Store geleert, Kacheln neu gerendert) blieb die Karte dadurch völlig unbeschriftet. Jetzt `storeVersion !=
+store.currentVersion`. Abweichungen: Cache-Marker, Infofeld und Leiste wachsen nicht mit (sie gehören nicht zur
+Mapsforge-Darstellung); nur vier feste Stufen statt eines Reglers. Im Simulator geprüft (alle vier Stufen,
+Umschalten hin und zurück, Neustart behält die Stufe, Zoomknöpfe, gedrehte Karte bei 200 %); nachgemessen, dass
+der Abbildungsmaßstab nach einem Zoomschritt exakt dem Faktor entspricht (1,000000 / 1,250000-Verhältnis /
+1,500000 / 2,000000), die Kacheln also pixelgenau liegen. Dabei ist nebenbei aufgefallen, dass MapKit dem
+Renderer manchmal eine Stufe feiner meldet, als die Kamera steht (`zoomScale` = 2^(L+1−20) statt 2^(L−20)) – dann
+wird die Kachel auf halber Größe gezeichnet und die Schrift ist entsprechend klein. Das ist älter als diese
+Einstellung (die Formel `z = round(20 + log2(zoomScale))` ist bei Normal unverändert) und nicht behoben; der
+Faktor wirkt sauber darauf, die Größe ist also immer factor-mal die von Normal. Nicht geprüft: echtes Gerät,
+Akku- und Speicherverhalten bei 200 % über längere Zeit, iPad, VoiceOver, Querformat.
+
+Offen (Phase 2): die Zoomstufe des Renderers aus der Kamera statt aus MapKits `zoomScale` (siehe oben),
+Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
 Nachtmodus, Kachel-Cache auf Platte, Pixel-Vergleich gegen Java-AWT-Rendering, SVG `<use>`/Gradienten/`<pattern>` (betrifft z. B.
 Elevates `s_mall.svg`), Test auf echtem Gerät.

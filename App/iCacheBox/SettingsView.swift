@@ -2,7 +2,8 @@ import SwiftUI
 import UIKit
 
 /// Mehr › Einstellungen, in the Cachebox day skin: the range of functions (Cachebox `SettingsShowExpert`,
-/// `SettingsShowAll`, which are hidden switches there) and the approach notification (Cachebox settings
+/// `SettingsShowAll`, which are hidden switches there), how large the map is drawn (mapsforge
+/// `DisplayModel.userScaleFactor`, not a Cachebox setting) and the approach notification (Cachebox settings
 /// `SoundApproachDistance` and `switchViewApproach` under Misc).
 struct SettingsView: View {
     @Environment(AppState.self) private var state
@@ -10,6 +11,7 @@ struct SettingsView: View {
 
     var body: some View {
         @Bindable var app = state
+        @Bindable var map = state.map
         @Bindable var options = state.approach.options
         List {
             CacheboxListText("Funktionsumfang", isHeader: true)
@@ -25,6 +27,21 @@ struct SettingsView: View {
             CacheboxListText("Je höher der Funktionsumfang, desto mehr steht in den Menüs. "
                              + state.featureLevel.summary)
             CacheboxDivider().cacheboxListDivider()
+            CacheboxListText("Karte", isHeader: true)
+            Picker(selection: $map.scale) {
+                ForEach(MapScale.allCases) { scale in
+                    Text(scale.title).tag(scale)
+                }
+            } label: {
+                Label("Kartendarstellung", systemImage: "textformat.size")
+            }
+            .pickerStyle(.menu)
+            .cacheboxListRow(index: 1)
+            CacheboxListText("Vergrößert alles, was die Karte zeichnet – Wege, Flächen, Symbole und Schrift. "
+                             + "Die Karte behält dabei ihre Zoomstufe und damit ihren Detailgrad, zeigt aber einen "
+                             + "kleineren Ausschnitt. Mehr Speicher braucht sie dafür nicht, das Zeichnen einer "
+                             + "Kachel dauert aber länger.")
+            CacheboxDivider().cacheboxListDivider()
             CacheboxListText("Annäherung", isHeader: true)
             Picker(selection: $options.distance) {
                 ForEach(ApproachOptions.distances, id: \.self) { metres in
@@ -34,7 +51,7 @@ struct SettingsView: View {
                 Label("Benachrichtigung bei", systemImage: "bell.badge")
             }
             .pickerStyle(.menu)
-            .cacheboxListRow(index: 1)
+            .cacheboxListRow(index: 2)
             CacheboxListText("Nähert man sich dem Ziel – dem gewählten Cache oder seinem gewählten Wegpunkt – auf "
                              + "diese Entfernung, meldet sich iCacheBox einmal mit Ton und Vibration. Entfernt man "
                              + "sich wieder, kommt beim nächsten Mal eine neue Benachrichtigung.")
@@ -42,13 +59,13 @@ struct SettingsView: View {
                 Toggle(isOn: $options.worksInBackground) {
                     Label("Auch bei gesperrtem Bildschirm", systemImage: "lock.iphone")
                 }
-                .cacheboxListRow(index: 2)
+                .cacheboxListRow(index: 3)
                 CacheboxListText("Dafür verfolgt iCacheBox die Position weiter, solange die App läuft; iOS zeigt "
                                  + "dann oben die blaue Standortanzeige. Das kostet Akku.")
                 Toggle(isOn: $options.switchesToCompass) {
                     Label("Auf Kompass umschalten", systemImage: "location.north.circle")
                 }
-                .cacheboxListRow(index: 3)
+                .cacheboxListRow(index: 4)
                 if state.approach.isDenied {
                     CacheboxDivider().cacheboxListDivider()
                     Button {
@@ -58,7 +75,7 @@ struct SettingsView: View {
                     } label: {
                         Label("Benachrichtigungen sind nicht erlaubt", systemImage: "exclamationmark.triangle")
                     }
-                    .cacheboxListRow(index: 4)
+                    .cacheboxListRow(index: 5)
                     CacheboxListText("Ohne Erlaubnis vibriert nur das Gerät, solange die App im Vordergrund ist. "
                                      + "In den Systemeinstellungen lässt sie sich erteilen.")
                 }
