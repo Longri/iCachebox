@@ -313,9 +313,13 @@ archivierte rot durchgestrichen, Favoriten mit Herz. Hat ein Cache korrigierte K
 mit Koordinaten (etwa einen gelösten Mystery), steht er dort und bekommt das „gelöst“-Symbol; die Entfernung in der
 Liste zählt dann ebenfalls bis dorthin.
 
-**Gewählter Cache:** Er hat einen roten Rahmen, ist immer groß und liegt obenauf. Dazu kommen seine zusätzlichen
-Wegpunkte (Parkplatz, Stationen, Final), soweit sie Koordinaten haben. Ist einer davon das **Ziel**, trägt auch er
-den roten Rahmen.
+**Gewählter Cache:** Er hat einen roten Rahmen, ist immer groß und liegt über den anderen Caches. Dazu kommen seine
+zusätzlichen Wegpunkte (Parkplatz, Stationen, Final), soweit sie Koordinaten haben. Ist einer davon das **Ziel**,
+trägt auch er den roten Rahmen.
+
+**Decken sich zwei Symbole,** liegt von unten nach oben: die Beschriftung der Karte, die Wegpunkte, die Caches, dein
+Parkplatz und ganz oben der Pfeil deiner eigenen Position. Ein Wegpunkt genau auf der Cache-Koordinate verschwindet
+also hinter dem Cache, und du selbst bleibst immer zu sehen.
 
 **Info-Blase:** Ein Tipp auf einen Cache – oder knapp daneben – öffnet seine Info-Blase: Art, GC-Code, Owner (bei
 Events auch das Datum), Koordinaten, mit Standort die Entfernung und darunter Größe, Schwierigkeit und Gelände als

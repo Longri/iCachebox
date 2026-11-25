@@ -571,6 +571,11 @@ und bei gedrehter Karte in die richtige Richtung). Nicht geprüft: das eigentlic
 im Simulator (iOS 27.2) liefert `convert` auch 29 000 pt außerhalb noch richtige Werte, der alte Code ließ sich
 dort also nicht zum Kippen bringen; der Fix beseitigt die Abhängigkeit von undefiniertem Verhalten, muss aber
 unterwegs gegengeprüft werden. Ebenfalls nicht geprüft: iPad, VoiceOver.
+Anleitung um einen Absatz „Decken sich zwei Symbole“ ergänzt (Reihenfolge von unten nach oben) und „liegt
+obenauf“ beim gewählten Cache auf „liegt über den anderen Caches“ gestellt – Parkplatz und Positionspfeil liegen
+jetzt darüber. Keine neuen Screenshots nötig (die Reihenfolge sieht man nur, wenn sich Symbole decken, was in
+keinem Bild der Anleitung vorkommt), an der Website nichts zu ändern: Der Funktionskatalog listet keine Ebene
+und keine der Beschreibungen wird durch die Änderung falsch.
 
 Offen (Phase 2): die Zoomstufe des Renderers aus der Kamera statt aus MapKits `zoomScale` (siehe oben),
 Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,
