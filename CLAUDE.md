@@ -152,7 +152,9 @@ und werden durch einen eigenen Swift-Port von Mapsforge gerendert (CoreGraphics,
     `mapIconName`/`smallMapIconName` in `CachePresentation.swift` (Cachebox `getMapIcon`/`getSmallMapIcon`,
     `Assets.xcassets/CacheboxMap` = `small1…7`, `star`); `MapsforgeMapView.Coordinator` gleicht Annotationen per ID ab,
     baut die Blase erst bei Auswahl, Tipp neben ein Symbol wählt das nächste (≤ 30 pt). Position: `CacheSummary.target`
-    (korrigiert, sonst Final mit Koordinaten – `summaries()` holt `finalCoordinate`), auch für Listen-Entfernungen
+    (korrigiert, sonst Final mit Koordinaten – `summaries()` holt `finalCoordinate`), auch für Listen-Entfernungen.
+    Reihenfolge der Ebenen über `MKAnnotationView.zPriority` (`Coordinator.configure`): Wegpunkte 300 (Ziel 400),
+    Caches 500 (gewählter 600), Parkplatz 800, eigene Position `.max` – darunter liegen Kacheln und Label-Ebene
   - Karte nach Kompass ausrichten (Cachebox `MapViewBase.setAlignToCompass`, Kartenmenü „AlignToCompass“):
     `MapModel.alignsToCompass` (UserDefaults `map.alignToCompass`, Cachebox `MapNorthOriented` umgekehrt), Eintrag in
     `AppState.mapEntries`; `MapsforgeMapView.alignsToHeading` → `Coordinator.alignToHeading` setzt
@@ -551,6 +553,24 @@ bleiben aufrecht), `funktionsumfang.png`/`annaeherung.png` erneuert (die Einstel
 „Karte“). Website: Kachel „Lesbar unterwegs“ auf /karten, Beschreibung der Offline-Karte auf /funktionen,
 Stand-Datum. Beides nicht in der Cachebox-Checkliste, weil das heutige Cachebox Bitmap-Kacheln rendert und die
 Vergrößerung dort gar nicht einstellbar ist.
+
+Reihenfolge der Kartenebenen und Randpfeil beim Zoomen (seit 25.11.2026, Wunsch des Nutzers): Gezeichnet wird
+jetzt in der Reihenfolge Kacheln → Beschriftung → Genauigkeitskreis → Wegpunkte → Caches → Parkplatz →
+Positionspfeil. Neu daran: Wegpunkte liegen unter den Caches (Cachebox zeichnet sie darüber) und der Parkplatz
+über allen Caches. Der Genauigkeitskreis lag kurzzeitig über dem Pfeil (so die erste Lesart der gewünschten
+Reihenfolge), färbte ihn mit seinem durchscheinenden Blau aber ein – er bleibt deshalb wie in Cachebox unter
+dem Pfeil. Dazu behoben: Der blaue Randpfeil zur eigenen Position zeigte beim
+Hineinzoomen plötzlich genau in die Gegenrichtung. Schuld war `MKMapView.convert(_:toPointTo:)`, das laut Apple
+nur für die sichtbare Region gilt – liegt der Punkt weit außerhalb, kippt das Ergebnis ab einer bestimmten
+Zoomstufe punktsymmetrisch durch die Kartenmitte (in den Bildern des Nutzers exakt gespiegelt). Die neue
+`MKMapView.screenPoint(of:in:)` nimmt MapKit nur noch den linearen Teil ab (drei Punkte um die Mitte, wie
+`MapLabelsView.transform`) und rechnet die Lage selbst aus dem `MKMapPoint`; damit kann kein Vorzeichen mehr
+kippen, egal wie weit der Punkt draußen liegt. Im Simulator geprüft (Parkplatz unter dem Positionspfeil,
+Wegpunkt genau auf der Cache-Koordinate liegt hinter dem Cache-Symbol, Randpfeile bei allen Zoomstufen bis 21
+und bei gedrehter Karte in die richtige Richtung). Nicht geprüft: das eigentliche Fehlerbild auf echtem Gerät –
+im Simulator (iOS 27.2) liefert `convert` auch 29 000 pt außerhalb noch richtige Werte, der alte Code ließ sich
+dort also nicht zum Kippen bringen; der Fix beseitigt die Abhängigkeit von undefiniertem Verhalten, muss aber
+unterwegs gegengeprüft werden. Ebenfalls nicht geprüft: iPad, VoiceOver.
 
 Offen (Phase 2): die Zoomstufe des Renderers aus der Kamera statt aus MapKits `zoomScale` (siehe oben),
 Minikarte im Kompass, Theme-ZIPs direkt lesen, mehrere Karten gleichzeitig (MultiMapDataStore), Hillshading,

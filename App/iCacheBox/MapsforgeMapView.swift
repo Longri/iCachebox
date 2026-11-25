@@ -261,11 +261,12 @@ struct MapsforgeMapView: UIViewRepresentable {
         private func configure(_ view: MKAnnotationView, for annotation: MarkerAnnotation) {
             let marker = annotation.marker
             view.image = images.image(for: marker, size: markerSize)
-            // the selected cache on top, then its waypoints, then the other caches (Cachebox draws the selected last)
+            // Order of the layers (wish of the user): waypoints, caches, parking place, own position on top.
+            // Cachebox draws the waypoints of the selected cache over the caches; here they stay below them.
             view.zPriority = switch marker.content {
-            case .cache: marker.isSelected ? MKAnnotationViewZPriority(rawValue: 999) : .defaultUnselected
-            case .waypoint: MKAnnotationViewZPriority(rawValue: 750)
-            case .parking: MKAnnotationViewZPriority(rawValue: 750)
+            case .waypoint: MKAnnotationViewZPriority(rawValue: marker.isTarget ? 400 : 300)
+            case .cache: marker.isSelected ? MKAnnotationViewZPriority(rawValue: 600) : .defaultUnselected
+            case .parking: MKAnnotationViewZPriority(rawValue: 800)
             }
             view.accessibilityLabel = marker.accessibilityLabel
         }
@@ -298,9 +299,9 @@ struct MapsforgeMapView: UIViewRepresentable {
             // GPS mode: zooming with two fingers or a double tap moves the middle; bring the position back
             if followsPosition, let position {
                 // MapKit's middle is the middle of the safe area, not of the view
-                let p = mapView.convert(position.clCoordinate, toPointTo: mapView)
+                let p = mapView.screenPoint(of: position.clCoordinate, in: mapView)
                 let c = mapView.convert(center, toPointTo: mapView)
-                if hypot(p.x - c.x, p.y - c.y) > 1 {
+                if let p, hypot(p.x - c.x, p.y - c.y) > 1 {
                     mapView.setCenter(position.clCoordinate, animated: true)
                 }
             }
@@ -450,11 +451,11 @@ struct MapsforgeMapView: UIViewRepresentable {
             guard let mapView = mapView as? CacheMapView else { return }
             let arrows = mapView.edgeArrows
             let point = { (coordinate: Coordinate) in
-                mapView.convert(CLLocationCoordinate2D(latitude: coordinate.latitude, longitude: coordinate.longitude),
-                                toPointTo: arrows)
+                mapView.screenPoint(of: CLLocationCoordinate2D(latitude: coordinate.latitude,
+                                                               longitude: coordinate.longitude), in: arrows)
             }
-            arrows.update(area: mapView.freeArea, position: position.map { point($0.coordinate) },
-                          target: target.map(point))
+            arrows.update(area: mapView.freeArea, position: position.flatMap { point($0.coordinate) },
+                          target: target.flatMap(point))
         }
 
         @objc func positionArrowTapped() { onPositionArrow() }
@@ -846,6 +847,35 @@ final class CacheMapView: MKMapView {
 }
 
 extension MKMapView {
+    /// Point of a coordinate in `view`, also for coordinates far outside the visible area (the edge arrows need
+    /// them). `convert(_:toPointTo:)` is only defined for the visible region: far away points come back wrong
+    /// once the map is zoomed in far enough – the arrow for the own position then pointed exactly the other way.
+    /// So only the linear part (scale and rotation) is taken from MapKit, measured on three points around the
+    /// center, and applied to the map point of the coordinate. Same approach as `MapLabelsView.transform`.
+    func screenPoint(of coordinate: CLLocationCoordinate2D, in view: UIView) -> CGPoint? {
+        let rect = visibleMapRect
+        guard rect.width > 0, bounds.width > 0 else { return nil }
+        let o = MKMapPoint(x: rect.midX, y: rect.midY)
+        let d = rect.width / 8
+        let p0 = convert(o.coordinate, toPointTo: view)
+        let px = convert(MKMapPoint(x: o.x + d, y: o.y).coordinate, toPointTo: view)
+        let py = convert(MKMapPoint(x: o.x, y: o.y + d).coordinate, toPointTo: view)
+        let a = (px.x - p0.x) / d, b = (px.y - p0.y) / d
+        let c = (py.x - p0.x) / d, e = (py.y - p0.y) / d
+        var target = MKMapPoint(coordinate)
+        // the world repeats horizontally: take the copy nearest to the center
+        let world = MKMapSize.world.width
+        if target.x - o.x > world / 2 {
+            target.x -= world
+        } else if o.x - target.x > world / 2 {
+            target.x += world
+        }
+        let dx = target.x - o.x, dy = target.y - o.y
+        let p = CGPoint(x: p0.x + a * dx + c * dy, y: p0.y + b * dx + e * dy)
+        guard p.x.isFinite, p.y.isFinite else { return nil }
+        return p
+    }
+
     /// Tile zoom level of the view (fractional, 256 pt per tile like the Mapsforge tiles). Measured along a
     /// horizontal line through the center, so it is also right when the map is rotated.
     var zoomLevel: Double {

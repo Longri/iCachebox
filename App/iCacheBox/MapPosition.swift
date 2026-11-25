@@ -69,6 +69,8 @@ final class OwnPositionView: MKAnnotationView {
         accuracyLayer.fillColor = UIColor(red: 0, green: 0, blue: 1, alpha: 50 / 255).cgColor
         accuracyLayer.strokeColor = UIColor(red: 0, green: 0, blue: 1, alpha: 0.8).cgColor
         accuracyLayer.lineWidth = 1.5
+        // the circle first, so that the arrow stays on top of it (like Cachebox): drawn over the arrow its
+        // translucent blue tinted it
         layer.addSublayer(accuracyLayer)
         arrowLayer.frame = bounds
         arrowLayer.contentsScale = UIScreen.main.scale
